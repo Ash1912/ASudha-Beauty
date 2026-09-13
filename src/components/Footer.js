@@ -1,29 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { 
-  FaInstagram, FaFacebook, FaTwitter, FaPinterest, 
-  FaYoutube, FaEnvelope, FaPhone, FaMapMarkerAlt,
-  FaCcVisa, FaCcMastercard, FaCcPaypal, FaCcAmex, FaApple,
-  FaGooglePay, FaAmazonPay, FaArrowUp, FaHeart, FaLeaf,
-  FaShoppingBag, FaGem, FaTags, FaBlog, FaEye, FaTruck,
-  FaShieldAlt, FaStar, FaUserCircle, FaLock, FaCreditCard,
-  FaQuestionCircle, FaInfoCircle, FaGift, FaNewspaper
-} from 'react-icons/fa';
-import { SiRazorpay, SiPaytm, SiPhonepe } from 'react-icons/si';
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
+import {
+  FaInstagram,
+  FaFacebook,
+  FaTwitter,
+  FaPinterest,
+  FaYoutube,
+  FaEnvelope,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaCcVisa,
+  FaCcMastercard,
+  FaCcPaypal,
+  FaCcAmex,
+  FaApple,
+  FaGooglePay,
+  FaAmazonPay,
+  FaArrowUp,
+  FaHeart,
+  FaLeaf,
+  FaShoppingBag,
+  FaGem,
+  FaTags,
+  FaBlog,
+  FaEye,
+  FaTruck,
+  FaStar,
+  FaUserCircle,
+  FaLock,
+  FaQuestionCircle,
+  FaInfoCircle,
+  FaGift,
+  FaNewspaper,
+} from "react-icons/fa";
+import { SiRazorpay, SiPaytm, SiPhonepe } from "react-icons/si";
 
 const Footer = () => {
   const { isDarkMode } = useTheme();
   const location = useLocation();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+
+  // Brand Color Palette matching your packaging
+  const brandColors = {
+    primary: "#f5346b",
+    gold: "#f7d794",
+    goldDark: "#d4af37",
+    bronze: "#c77d42",
+    earthDark: "#3e2723",
+    earthLight: "#6d4c41",
+    cream: "#fcf8f5",
+  };
+
+  // Get logo filter based on theme
+  const getLogoFilter = () => {
+    if (isDarkMode) {
+      return "brightness(0) invert(1)"; // White logo for dark theme
+    } else {
+      return "brightness(0) invert(0)"; // Dark logo for light theme
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   }, [location.pathname]);
 
@@ -36,12 +80,12 @@ const Footer = () => {
       setShowBackToTop(window.scrollY > 300);
     };
 
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll);
-    
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -49,37 +93,37 @@ const Footer = () => {
     e.preventDefault();
     if (email) {
       setNewsletterSubscribed(true);
-      setEmail('');
+      setEmail("");
       setTimeout(() => setNewsletterSubscribed(false), 3000);
     }
   };
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleLinkClick = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   };
 
   const getGridColumns = () => {
-    if (windowWidth <= 480) return '1fr';
-    if (windowWidth <= 768) return 'repeat(2, 1fr)';
-    if (windowWidth <= 1024) return 'repeat(4, 1fr)';
-    return 'repeat(5, 1fr)';
+    if (windowWidth <= 480) return "1fr";
+    if (windowWidth <= 768) return "repeat(2, 1fr)";
+    if (windowWidth <= 1024) return "repeat(4, 1fr)";
+    return "repeat(5, 1fr)";
   };
 
   const getHeadingSize = () => {
-    if (windowWidth <= 480) return '1rem';
-    return '1.1rem';
+    if (windowWidth <= 480) return "1rem";
+    return "1.1rem";
   };
 
   const getTextSize = () => {
-    if (windowWidth <= 480) return '0.85rem';
-    return '0.9rem';
+    if (windowWidth <= 480) return "0.85rem";
+    return "0.9rem";
   };
 
   const additionalLinks = [
@@ -101,7 +145,11 @@ const Footer = () => {
 
   const resourceLinks = [
     { name: "Blog", link: "/blog", icon: <FaBlog /> },
-    { name: "Beauty Tips", link: "/blog?category=beauty-tips", icon: <FaNewspaper /> },
+    {
+      name: "Beauty Tips",
+      link: "/blog?category=beauty-tips",
+      icon: <FaNewspaper />,
+    },
     { name: "Tutorials", link: "/blog?category=tutorials", icon: <FaEye /> },
     { name: "Customer Reviews", link: "/testimonials", icon: <FaStar /> },
     { name: "Affiliate Program", link: "/affiliate", icon: <FaHeart /> },
@@ -110,323 +158,319 @@ const Footer = () => {
 
   const themeStyles = {
     footer: {
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-      padding: windowWidth <= 480 ? '2rem 0 0.5rem 0' : '3rem 0 1rem 0',
-      marginTop: '3rem',
-      borderTop: isDarkMode ? '1px solid #333' : '1px solid #e0e0e0',
-      transition: 'all 0.3s ease',
-      position: 'relative'
+      backgroundColor: isDarkMode ? "#0f0f0f" : "#fcf8f5", // Changed to Pure Black / Cream
+      padding: windowWidth <= 480 ? "2rem 0 0.5rem 0" : "3rem 0 1rem 0",
+      marginTop: "3rem",
+      borderTop: isDarkMode
+        ? "1px solid rgba(255,255,255,0.05)"
+        : `1px solid rgba(62, 39, 35, 0.05)`,
+      transition: "all 0.3s ease",
+      position: "relative",
+      boxShadow: isDarkMode
+        ? "0 -8px 30px rgba(0,0,0,0.3)"
+        : "0 -8px 30px rgba(62, 39, 35, 0.04)",
     },
     container: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: windowWidth <= 480 ? '0 0.75rem' : '0 1rem'
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: windowWidth <= 480 ? "0 0.75rem" : "0 1rem",
     },
     grid: {
-      display: 'grid',
+      display: "grid",
       gridTemplateColumns: getGridColumns(),
-      gap: windowWidth <= 480 ? '1.5rem' : '2rem',
-      marginBottom: '2rem'
+      gap: windowWidth <= 480 ? "1.5rem" : "2.5rem",
+      marginBottom: "2rem",
     },
     section: {
-      display: 'flex',
-      flexDirection: 'column'
+      display: "flex",
+      flexDirection: "column",
     },
     heading: {
       fontSize: getHeadingSize(),
-      fontWeight: '700',
-      marginBottom: '1rem',
-      color: isDarkMode ? '#e88ca6' : '#333',
-      position: 'relative',
-      paddingBottom: '0.5rem',
-      borderBottom: `2px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`
+      fontWeight: "700",
+      marginBottom: "1rem",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      position: "relative",
+      paddingBottom: "0.5rem",
+      borderBottom: `2px solid ${isDarkMode ? "rgba(212, 175, 55, 0.2)" : "rgba(62, 39, 35, 0.08)"}`,
+      letterSpacing: "0.5px",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
     },
     text: {
-      color: isDarkMode ? '#cccccc' : '#666',
-      lineHeight: '1.6',
+      color: isDarkMode ? "#a0a0a0" : brandColors.earthLight, // Changed textSecondary
+      lineHeight: "1.8",
       fontSize: getTextSize(),
-      marginBottom: '1rem'
+      marginBottom: "1rem",
     },
     list: {
-      listStyle: 'none',
+      listStyle: "none",
       padding: 0,
-      margin: 0
+      margin: 0,
     },
     listItem: {
-      marginBottom: '0.5rem'
+      marginBottom: "0.6rem",
     },
     link: {
-      color: isDarkMode ? '#cccccc' : '#666',
-      textDecoration: 'none',
+      color: isDarkMode ? "#d1d1d1" : brandColors.earthLight,
+      textDecoration: "none",
       fontSize: getTextSize(),
-      lineHeight: '2',
-      transition: 'all 0.3s ease',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      cursor: 'pointer',
-      ':hover': {
-        color: isDarkMode ? '#e88ca6' : '#e88ca6',
-        transform: windowWidth <= 768 ? 'none' : 'translateX(5px)'
-      }
+      lineHeight: "1.8",
+      transition: "all 0.3s ease",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      cursor: "pointer",
+      fontWeight: "400",
+      ":hover": {
+        color: isDarkMode ? brandColors.gold : brandColors.bronze,
+        transform: windowWidth <= 768 ? "none" : "translateX(5px)",
+      },
     },
     contactInfo: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.75rem',
-      marginTop: '0.5rem'
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.75rem",
+      marginTop: "0.5rem",
     },
     contactItem: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      color: isDarkMode ? '#cccccc' : '#666',
-      fontSize: getTextSize()
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.75rem",
+      color: isDarkMode ? "#d1d1d1" : brandColors.earthLight,
+      fontSize: getTextSize(),
+      lineHeight: "1.6",
     },
     contactIcon: {
-      color: '#e88ca6',
-      fontSize: windowWidth <= 480 ? '1rem' : '1.1rem',
-      minWidth: '20px'
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      fontSize: windowWidth <= 480 ? "1rem" : "1.1rem",
+      minWidth: "20px",
+      marginTop: "0.1rem",
     },
     socialLinks: {
-      display: 'flex',
-      gap: windowWidth <= 480 ? '0.75rem' : '1rem',
-      flexWrap: 'wrap',
-      marginTop: '0.5rem'
+      display: "flex",
+      gap: windowWidth <= 480 ? "0.75rem" : "1rem",
+      flexWrap: "wrap",
+      marginTop: "0.5rem",
     },
     socialLink: {
-      color: isDarkMode ? '#cccccc' : '#666',
-      fontSize: windowWidth <= 480 ? '1.2rem' : '1.3rem',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: windowWidth <= 480 ? '32px' : '36px',
-      height: windowWidth <= 480 ? '32px' : '36px',
-      borderRadius: '50%',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f0f0f0',
-      textDecoration: 'none',
-      ':hover': {
-        color: '#ffffff',
-        backgroundColor: '#e88ca6',
-        transform: windowWidth <= 768 ? 'none' : 'translateY(-3px)'
-      }
+      color: isDarkMode ? "#d1d1d1" : brandColors.earthLight,
+      fontSize: windowWidth <= 480 ? "1.2rem" : "1.3rem",
+      transition: "all 0.3s ease",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: windowWidth <= 480 ? "36px" : "42px",
+      height: windowWidth <= 480 ? "36px" : "42px",
+      borderRadius: "50%",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.05)"
+        : "rgba(62, 39, 35, 0.04)",
+      textDecoration: "none",
+      ":hover": {
+        color: "#ffffff",
+        backgroundColor: isDarkMode ? brandColors.gold : brandColors.primary,
+        transform: windowWidth <= 768 ? "none" : "translateY(-4px)",
+      },
     },
     newsletterSection: {
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      padding: windowWidth <= 480 ? '1.5rem' : '2rem',
-      borderRadius: '1rem',
-      marginBottom: '2rem',
-      textAlign: 'center'
+      backgroundColor: isDarkMode ? "#1a1a1a" : brandColors.cream, // Changed Surface
+      padding: windowWidth <= 480 ? "1.5rem" : "2.5rem",
+      borderRadius: "16px",
+      marginBottom: "2.5rem",
+      textAlign: "center",
+      border: isDarkMode
+        ? "1px solid rgba(255,255,255,0.05)"
+        : "1px solid rgba(62, 39, 35, 0.04)",
+      position: "relative",
+      overflow: "hidden",
     },
     newsletterTitle: {
-      fontSize: windowWidth <= 480 ? '1.1rem' : '1.2rem',
-      fontWeight: '600',
-      marginBottom: '0.5rem',
-      color: isDarkMode ? '#e88ca6' : '#333'
+      fontSize: windowWidth <= 480 ? "1.1rem" : "1.3rem",
+      fontWeight: "600",
+      marginBottom: "0.5rem",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      letterSpacing: "0.5px",
     },
     newsletterText: {
       fontSize: getTextSize(),
-      color: isDarkMode ? '#cccccc' : '#666',
-      marginBottom: '1rem'
+      color: isDarkMode ? "#a0a0a0" : brandColors.earthLight, // Changed TextSecondary
+      marginBottom: "1.25rem",
     },
     newsletterForm: {
-      display: 'flex',
-      gap: '0.5rem',
-      maxWidth: '500px',
-      margin: '0 auto',
-      flexDirection: windowWidth <= 480 ? 'column' : 'row'
+      display: "flex",
+      gap: "0.75rem",
+      maxWidth: "500px",
+      margin: "0 auto",
+      flexDirection: windowWidth <= 480 ? "column" : "row",
     },
     newsletterInput: {
       flex: 1,
-      padding: windowWidth <= 480 ? '0.75rem' : '0.6rem 1rem',
-      backgroundColor: isDarkMode ? '#404040' : '#ffffff',
-      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-      borderRadius: windowWidth <= 480 ? '2rem' : '2rem',
-      color: isDarkMode ? '#ffffff' : '#333',
+      padding: windowWidth <= 480 ? "0.9rem 1.25rem" : "0.8rem 1.25rem",
+      backgroundColor: isDarkMode ? "#0f0f0f" : "#ffffff", // Changed pure black
+      border: `1px solid ${isDarkMode ? "#333333" : "#d1c7c0"}`,
+      borderRadius: "30px",
+      color: isDarkMode ? "#ffffff" : brandColors.earthDark,
       fontSize: getTextSize(),
-      outline: 'none',
-      ':focus': {
-        borderColor: '#e88ca6'
-      }
+      outline: "none",
+      transition: "all 0.3s ease",
+      ":focus": {
+        borderColor: brandColors.gold,
+        boxShadow: `0 0 0 3px ${isDarkMode ? "rgba(212, 175, 55, 0.15)" : "rgba(212, 175, 55, 0.1)"}`,
+      },
     },
     newsletterButton: {
-      padding: windowWidth <= 480 ? '0.75rem' : '0.6rem 1.5rem',
-      backgroundColor: '#e88ca6',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: windowWidth <= 480 ? '2rem' : '2rem',
+      padding: windowWidth <= 480 ? "0.9rem 1.5rem" : "0.8rem 2rem",
+      background: isDarkMode
+        ? "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)"
+        : "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)",
+      color: isDarkMode ? brandColors.earthDark : "#ffffff",
+      border: "none",
+      borderRadius: "30px",
       fontSize: getTextSize(),
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      whiteSpace: 'nowrap',
-      ':hover': {
-        backgroundColor: '#d47a94',
-        transform: windowWidth <= 768 ? 'none' : 'translateY(-2px)'
-      }
+      fontWeight: "600",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      whiteSpace: "nowrap",
+      boxShadow: isDarkMode
+        ? "0 4px 12px rgba(245, 52, 107, 0.25)"
+        : "0 4px 12px rgba(245, 52, 107, 0.15)",
+      ":hover": {
+        transform: windowWidth <= 768 ? "none" : "translateY(-2px)",
+        boxShadow: "0 6px 20px rgba(245, 52, 107, 0.35)",
+      },
     },
     newsletterSuccess: {
-      marginTop: '0.5rem',
-      padding: '0.5rem',
-      backgroundColor: '#4caf50',
-      color: '#ffffff',
-      borderRadius: '2rem',
+      marginTop: "0.75rem",
+      padding: "0.6rem",
+      backgroundColor: isDarkMode ? "#1a3a1a" : "#e8f5e9",
+      color: isDarkMode ? "#a5d6a7" : "#2e7d32",
+      borderRadius: "30px",
       fontSize: getTextSize(),
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem'
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+      border: `1px solid ${isDarkMode ? "#2a5a2a" : "#c8e6c9"}`,
     },
     paymentSection: {
-      marginTop: '1.5rem',
-      padding: '1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '1rem',
-      textAlign: 'center'
+      marginTop: "1.5rem",
+      padding: "1rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.03)"
+        : "rgba(62, 39, 35, 0.03)",
+      borderRadius: "12px",
+      textAlign: "center",
     },
     paymentTitle: {
-      fontSize: windowWidth <= 480 ? '0.85rem' : '0.9rem',
-      fontWeight: '600',
-      marginBottom: '0.75rem',
-      color: isDarkMode ? '#cccccc' : '#666'
+      fontSize: windowWidth <= 480 ? "0.8rem" : "0.85rem",
+      fontWeight: "600",
+      marginBottom: "0.75rem",
+      color: isDarkMode ? "#a0a0a0" : brandColors.earthLight, // Changed TextSecondary
     },
     paymentIcons: {
-      display: 'flex',
-      gap: windowWidth <= 480 ? '0.5rem' : '0.75rem',
-      justifyContent: 'center',
-      flexWrap: 'wrap'
+      display: "flex",
+      gap: windowWidth <= 480 ? "0.5rem" : "0.75rem",
+      justifyContent: "center",
+      flexWrap: "wrap",
     },
     paymentIcon: {
-      fontSize: windowWidth <= 480 ? '1.2rem' : '1.5rem',
-      color: isDarkMode ? '#666' : '#999',
-      transition: 'color 0.3s ease',
-      ':hover': {
-        color: '#e88ca6'
-      }
-    },
-    trustBadges: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: windowWidth <= 480 ? '1rem' : '2rem',
-      flexWrap: 'wrap',
-      marginTop: '1rem',
-      padding: '1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '1rem'
-    },
-    trustBadge: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      fontSize: getTextSize(),
-      color: isDarkMode ? '#cccccc' : '#666'
-    },
-    trustBadgeIcon: {
-      color: '#e88ca6',
-      fontSize: '1rem'
+      fontSize: windowWidth <= 480 ? "1.2rem" : "1.5rem",
+      color: isDarkMode ? "#333333" : "#bcaaa4",
+      transition: "color 0.3s ease",
+      ":hover": {
+        color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      },
     },
     footerBottom: {
-      display: 'flex',
-      flexDirection: windowWidth <= 768 ? 'column' : 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1rem',
-      padding: '1.5rem 0',
-      borderTop: `1px solid ${isDarkMode ? '#333' : '#e0e0e0'}`,
-      marginTop: '2rem'
+      display: "flex",
+      flexDirection: windowWidth <= 768 ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "1rem",
+      padding: "1.5rem 0 0.5rem 0",
+      borderTop: `1px solid ${isDarkMode ? "rgba(255,255,255,0.05)" : "rgba(62, 39, 35, 0.06)"}`,
+      marginTop: "2rem",
     },
     copyright: {
-      color: isDarkMode ? '#999' : '#999',
-      fontSize: windowWidth <= 480 ? '0.8rem' : '0.85rem',
-      textAlign: windowWidth <= 768 ? 'center' : 'left'
+      color: isDarkMode ? "#a0a0a0" : "#bcaaa4", // Changed TextSecondary
+      fontSize: windowWidth <= 480 ? "0.75rem" : "0.85rem",
+      textAlign: windowWidth <= 768 ? "center" : "left",
     },
     footerLinks: {
-      display: 'flex',
-      gap: '1.5rem',
-      flexWrap: 'wrap',
-      justifyContent: 'center'
+      display: "flex",
+      gap: "1.5rem",
+      flexWrap: "wrap",
+      justifyContent: "center",
     },
     footerLink: {
-      color: isDarkMode ? '#999' : '#999',
-      textDecoration: 'none',
-      fontSize: windowWidth <= 480 ? '0.8rem' : '0.85rem',
-      transition: 'color 0.3s ease',
-      cursor: 'pointer',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.3rem',
-      ':hover': {
-        color: '#e88ca6'
-      }
+      color: isDarkMode ? "#a0a0a0" : "#bcaaa4", // Changed TextSecondary
+      textDecoration: "none",
+      fontSize: windowWidth <= 480 ? "0.75rem" : "0.85rem",
+      transition: "color 0.3s ease",
+      cursor: "pointer",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.3rem",
+      ":hover": {
+        color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      },
     },
     backToTop: {
-      position: 'fixed',
-      bottom: '2rem',
-      right: '2rem',
-      width: windowWidth <= 480 ? '40px' : '50px',
-      height: windowWidth <= 480 ? '40px' : '50px',
-      borderRadius: '50%',
-      backgroundColor: '#e88ca6',
-      color: '#ffffff',
-      display: showBackToTop ? 'flex' : 'none',
-      alignItems: 'center',
-      justifyContent: 'center',
-      cursor: 'pointer',
-      border: 'none',
-      fontSize: windowWidth <= 480 ? '1.2rem' : '1.5rem',
-      boxShadow: '0 4px 12px rgba(232,140,166,0.3)',
-      transition: 'all 0.3s ease',
+      position: "fixed",
+      bottom: "2rem",
+      right: "2rem",
+      width: windowWidth <= 480 ? "44px" : "50px",
+      height: windowWidth <= 480 ? "44px" : "50px",
+      borderRadius: "50%",
+      background: isDarkMode
+        ? "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)"
+        : "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)",
+      color: isDarkMode ? brandColors.earthDark : "#ffffff",
+      display: showBackToTop ? "flex" : "none",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      border: "none",
+      fontSize: windowWidth <= 480 ? "1.2rem" : "1.4rem",
+      boxShadow: "0 6px 20px rgba(245, 52, 107, 0.3)",
+      transition: "all 0.3s ease",
       zIndex: 100,
-      ':hover': {
-        backgroundColor: '#d47a94',
-        transform: 'scale(1.1)'
-      }
+      ":hover": {
+        transform: "scale(1.1)",
+        boxShadow: "0 8px 25px rgba(245, 52, 107, 0.4)",
+      },
     },
     badge: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.3rem',
-      padding: '0.2rem 0.5rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f0f0f0',
-      borderRadius: '1rem',
-      fontSize: '0.7rem',
-      color: isDarkMode ? '#cccccc' : '#666',
-      marginTop: '0.5rem',
-      width: 'fit-content'
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      padding: "0.3rem 0.8rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.05)"
+        : "rgba(62, 39, 35, 0.04)",
+      borderRadius: "20px",
+      fontSize: "0.75rem",
+      color: isDarkMode ? "#a0a0a0" : brandColors.earthLight, // Changed TextSecondary
+      marginTop: "0.5rem",
+      width: "fit-content",
     },
-    backlinksSection: {
-      marginTop: '1rem',
-      paddingTop: '1rem',
-      borderTop: `1px solid ${isDarkMode ? '#333' : '#e0e0e0'}`,
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: '0.75rem'
-    },
-    backlink: {
-      color: isDarkMode ? '#999' : '#999',
-      textDecoration: 'none',
-      fontSize: '0.75rem',
-      transition: 'color 0.3s ease',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.25rem',
-      ':hover': {
-        color: '#e88ca6'
-      }
-    }
   };
 
   return (
     <footer style={themeStyles.footer}>
       <div style={themeStyles.container}>
         <div style={themeStyles.newsletterSection}>
-          <h3 style={themeStyles.newsletterTitle}>Subscribe to Our Newsletter</h3>
+          <h3 style={themeStyles.newsletterTitle}>Join the ASudha Family</h3>
           <p style={themeStyles.newsletterText}>
-            Get 10% off your first order and receive beauty tips & exclusive offers
+            Get 10% off your first order and receive natural beauty tips &
+            exclusive offers
           </p>
-          <form style={themeStyles.newsletterForm} onSubmit={handleNewsletterSubmit}>
+          <form
+            style={themeStyles.newsletterForm}
+            onSubmit={handleNewsletterSubmit}
+          >
             <input
               type="email"
               placeholder="Your email address"
@@ -441,43 +485,46 @@ const Footer = () => {
           </form>
           {newsletterSubscribed && (
             <div style={themeStyles.newsletterSuccess}>
-              <FaHeart /> Thanks for subscribing!
+              <FaHeart /> Welcome to the family! Thanks for subscribing.
             </div>
           )}
         </div>
 
-        <div style={themeStyles.trustBadges}>
-          <div style={themeStyles.trustBadge}>
-            <FaTruck style={themeStyles.trustBadgeIcon} />
-            <span>Free Shipping on ₹500+</span>
-          </div>
-          <div style={themeStyles.trustBadge}>
-            <FaShieldAlt style={themeStyles.trustBadgeIcon} />
-            <span>100% Authentic Products</span>
-          </div>
-          <div style={themeStyles.trustBadge}>
-            <FaLeaf style={themeStyles.trustBadgeIcon} />
-            <span>Cruelty Free</span>
-          </div>
-          <div style={themeStyles.trustBadge}>
-            <FaHeart style={themeStyles.trustBadgeIcon} />
-            <span>30-Day Easy Returns</span>
-          </div>
-          <div style={themeStyles.trustBadge}>
-            <FaLock style={themeStyles.trustBadgeIcon} />
-            <span>Secure Payments</span>
-          </div>
-        </div>
-
         <div style={themeStyles.grid}>
           <div style={themeStyles.section}>
-            <h3 style={themeStyles.heading}>ASudha Beauty</h3>
+            <h3 style={themeStyles.heading}>
+              <Link
+                to="/"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  textDecoration: "none",
+                }}
+              >
+                <img
+                  src="/assets/images/Logo.png"
+                  alt="ASudha Beauty"
+                  style={{
+                    height: "48px",
+                    width: "auto",
+                    maxWidth: "160px",
+                    filter: getLogoFilter(), // Dynamic filter based on theme
+                    objectFit: "contain",
+                    transition: "all 0.3s ease",
+                  }}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = "none";
+                  }}
+                />
+              </Link>
+            </h3>
             <p style={themeStyles.text}>
-              Clean beauty for everyone. Empowering you to feel confident, 
-              express yourself, and embrace who you are.
+              Pure. Natural. You. Empowering you with the goodness of Ayurveda
+              to feel confident and embrace your natural radiance.
             </p>
             <div style={themeStyles.badge}>
-              <FaLeaf /> Cruelty Free & Vegan
+              <FaLeaf /> 100% Natural & Ayurvedic
             </div>
             <div style={themeStyles.badge}>
               <FaHeart /> Proudly Made in India
@@ -485,7 +532,10 @@ const Footer = () => {
             <div style={themeStyles.contactInfo}>
               <div style={themeStyles.contactItem}>
                 <FaMapMarkerAlt style={themeStyles.contactIcon} />
-                <span>Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf, Gorakhpur - 273001</span>
+                <span>
+                  Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf, Gorakhpur -
+                  273001
+                </span>
               </div>
               <div style={themeStyles.contactItem}>
                 <FaPhone style={themeStyles.contactIcon} />
@@ -502,35 +552,50 @@ const Footer = () => {
             <h3 style={themeStyles.heading}>Shop</h3>
             <ul style={themeStyles.list}>
               <li style={themeStyles.listItem}>
-                <Link to="/shop" style={themeStyles.link} onClick={handleLinkClick}>
+                <Link
+                  to="/shop"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
                   <FaShoppingBag /> Shop All
                 </Link>
               </li>
               {additionalLinks.map((link, index) => (
                 <li key={index} style={themeStyles.listItem}>
-                  <Link to={link.link} style={themeStyles.link} onClick={handleLinkClick}>
+                  <Link
+                    to={link.link}
+                    style={themeStyles.link}
+                    onClick={handleLinkClick}
+                  >
                     {link.icon} {link.name}
                   </Link>
                 </li>
               ))}
               <li style={themeStyles.listItem}>
-                <Link to="/shop?category=Skincare" style={themeStyles.link} onClick={handleLinkClick}>
-                  <FaLeaf /> Skincare
+                <Link
+                  to="/shop?category=Skincare"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
+                  <FaLeaf /> Herbal Skincare
                 </Link>
               </li>
               <li style={themeStyles.listItem}>
-                <Link to="/shop?category=Face" style={themeStyles.link} onClick={handleLinkClick}>
-                  <FaTags /> Face Makeup
+                <Link
+                  to="/shop?category=Face"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
+                  <FaTags /> Face Powders
                 </Link>
               </li>
               <li style={themeStyles.listItem}>
-                <Link to="/shop?category=Lips" style={themeStyles.link} onClick={handleLinkClick}>
-                  <FaTags /> Lipsticks
-                </Link>
-              </li>
-              <li style={themeStyles.listItem}>
-                <Link to="/shop?category=Eyes" style={themeStyles.link} onClick={handleLinkClick}>
-                  <FaTags /> Eye Makeup
+                <Link
+                  to="/shop?category=Hair"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
+                  <FaTags /> Hair Care
                 </Link>
               </li>
             </ul>
@@ -540,27 +605,47 @@ const Footer = () => {
             <h3 style={themeStyles.heading}>Quick Links</h3>
             <ul style={themeStyles.list}>
               <li style={themeStyles.listItem}>
-                <Link to="/about" style={themeStyles.link} onClick={handleLinkClick}>
+                <Link
+                  to="/about"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
                   About Us
                 </Link>
               </li>
               <li style={themeStyles.listItem}>
-                <Link to="/blog" style={themeStyles.link} onClick={handleLinkClick}>
+                <Link
+                  to="/blog"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
                   <FaBlog /> Blog
                 </Link>
               </li>
               <li style={themeStyles.listItem}>
-                <Link to="/contact" style={themeStyles.link} onClick={handleLinkClick}>
+                <Link
+                  to="/contact"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
                   Contact Us
                 </Link>
               </li>
               <li style={themeStyles.listItem}>
-                <Link to="/wishlist" style={themeStyles.link} onClick={handleLinkClick}>
+                <Link
+                  to="/wishlist"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
                   <FaHeart /> Wishlist
                 </Link>
               </li>
               <li style={themeStyles.listItem}>
-                <Link to="/track-order" style={themeStyles.link} onClick={handleLinkClick}>
+                <Link
+                  to="/track-order"
+                  style={themeStyles.link}
+                  onClick={handleLinkClick}
+                >
                   <FaEye /> Track Order
                 </Link>
               </li>
@@ -572,7 +657,11 @@ const Footer = () => {
             <ul style={themeStyles.list}>
               {helpLinks.map((link, index) => (
                 <li key={index} style={themeStyles.listItem}>
-                  <Link to={link.link} style={themeStyles.link} onClick={handleLinkClick}>
+                  <Link
+                    to={link.link}
+                    style={themeStyles.link}
+                    onClick={handleLinkClick}
+                  >
                     {link.icon} {link.name}
                   </Link>
                 </li>
@@ -585,55 +674,61 @@ const Footer = () => {
             <ul style={themeStyles.list}>
               {resourceLinks.map((link, index) => (
                 <li key={index} style={themeStyles.listItem}>
-                  <Link to={link.link} style={themeStyles.link} onClick={handleLinkClick}>
+                  <Link
+                    to={link.link}
+                    style={themeStyles.link}
+                    onClick={handleLinkClick}
+                  >
                     {link.icon} {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
 
-            <h3 style={{...themeStyles.heading, marginTop: '1rem'}}>Connect With Us</h3>
+            <h3 style={{ ...themeStyles.heading, marginTop: "1.5rem" }}>
+              Connect With Us
+            </h3>
             <div style={themeStyles.socialLinks}>
-              <a 
-                href="https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={themeStyles.socialLink}
                 aria-label="Instagram"
               >
                 <FaInstagram />
               </a>
-              <a 
-                href="https://www.facebook.com/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://www.facebook.com/"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={themeStyles.socialLink}
                 aria-label="Facebook"
               >
                 <FaFacebook />
               </a>
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={themeStyles.socialLink}
                 aria-label="Twitter"
               >
                 <FaTwitter />
               </a>
-              <a 
-                href="https://pinterest.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://pinterest.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={themeStyles.socialLink}
                 aria-label="Pinterest"
               >
                 <FaPinterest />
               </a>
-              <a 
-                href="https://youtube.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={themeStyles.socialLink}
                 aria-label="YouTube"
               >
@@ -642,7 +737,9 @@ const Footer = () => {
             </div>
 
             <div style={themeStyles.paymentSection}>
-              <h4 style={themeStyles.paymentTitle}>Secure Payments</h4>
+              <h4 style={themeStyles.paymentTitle}>
+                Trusted & Secure Payments
+              </h4>
               <div style={themeStyles.paymentIcons}>
                 <FaCcVisa style={themeStyles.paymentIcon} />
                 <FaCcMastercard style={themeStyles.paymentIcon} />
@@ -661,65 +758,45 @@ const Footer = () => {
 
         <div style={themeStyles.footerBottom}>
           <div style={themeStyles.copyright}>
-            <p>&copy; {new Date().getFullYear()} ASudha Beauty. All rights reserved.</p>
+            <p>
+              &copy; {new Date().getFullYear()} ASudha Beauty. All rights
+              reserved.
+            </p>
           </div>
           <div style={themeStyles.footerLinks}>
-            <Link to="/privacy" style={themeStyles.footerLink} onClick={handleLinkClick}>
+            <Link
+              to="/privacy"
+              style={themeStyles.footerLink}
+              onClick={handleLinkClick}
+            >
               Privacy Policy
             </Link>
-            <Link to="/terms" style={themeStyles.footerLink} onClick={handleLinkClick}>
+            <Link
+              to="/terms"
+              style={themeStyles.footerLink}
+              onClick={handleLinkClick}
+            >
               Terms of Service
             </Link>
-            <Link to="/shipping" style={themeStyles.footerLink} onClick={handleLinkClick}>
+            <Link
+              to="/shipping"
+              style={themeStyles.footerLink}
+              onClick={handleLinkClick}
+            >
               Shipping Policy
             </Link>
-            <Link to="/returns" style={themeStyles.footerLink} onClick={handleLinkClick}>
+            <Link
+              to="/returns"
+              style={themeStyles.footerLink}
+              onClick={handleLinkClick}
+            >
               Returns
             </Link>
-            <Link to="/sitemap" style={themeStyles.footerLink} onClick={handleLinkClick}>
-              Sitemap
-            </Link>
           </div>
-        </div>
-
-        <div style={themeStyles.backlinksSection}>
-          <Link to="/shop" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaShoppingBag /> Shop
-          </Link>
-          <Link to="/about" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaInfoCircle /> About
-          </Link>
-          <Link to="/blog" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaBlog /> Blog
-          </Link>
-          <Link to="/contact" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaEnvelope /> Contact
-          </Link>
-          <Link to="/faqs" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaQuestionCircle /> FAQs
-          </Link>
-          <Link to="/privacy" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaLock /> Privacy
-          </Link>
-          <Link to="/terms" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaCreditCard /> Terms
-          </Link>
-          <Link to="/wishlist" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaHeart /> Wishlist
-          </Link>
-          <Link to="/track-order" style={themeStyles.backlink} onClick={handleLinkClick}>
-            <FaTruck /> Track Order
-          </Link>
-          <a href="https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6" target="_blank" rel="noopener noreferrer" style={themeStyles.backlink}>
-            <FaInstagram /> Instagram
-          </a>
-          <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" style={themeStyles.backlink}>
-            <FaFacebook /> Facebook
-          </a>
         </div>
       </div>
 
-      <button 
+      <button
         style={themeStyles.backToTop}
         onClick={scrollToTop}
         aria-label="Back to top"

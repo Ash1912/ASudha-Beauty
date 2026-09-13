@@ -1,18 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { useCart } from '../context/CartContext';
-import { useWishlist } from '../context/WishlistContext';
-import { products } from '../data/products';
-import ImageGallery from '../components/ImageGallery';
-import ProductTabs from '../components/ProductTabs';
-import ShadeCatalog from '../components/ShadeCatalog';
-import { 
-  FaShoppingCart, FaHeart, FaRegHeart, FaShare, FaStar,
-  FaCheckCircle, FaTruck, FaShieldAlt, FaUndo, FaArrowLeft 
-} from 'react-icons/fa';
-import { usePixelTracking } from '../context/PixelContext';
-import SEO from '../components/SEO';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
+import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { products } from "../data/products";
+import ImageGallery from "../components/ImageGallery";
+import ProductTabs from "../components/ProductTabs";
+import ShadeCatalog from "../components/ShadeCatalog";
+import {
+  FaShoppingCart,
+  FaHeart,
+  FaRegHeart,
+  FaShare,
+  FaStar,
+  FaCheckCircle,
+  FaTruck,
+  FaShieldAlt,
+  FaUndo,
+  FaArrowLeft,
+  FaLeaf,
+  FaSpa,
+  FaBoxOpen,
+  FaCopy,
+} from "react-icons/fa";
+import { usePixelTracking } from "../context/PixelContext";
+import SEO from "../components/SEO";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -20,460 +32,694 @@ const ProductDetail = () => {
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  
-  const product = products.find(p => p.id === parseInt(id));
-  const inWishlist = isInWishlist(product?.id);
 
-  const [selectedShade, setSelectedShade] = useState('');
+  const product = products.find((p) => p.id === parseInt(id));
+
+  // ASudha Beauty Brand Palette
+  const brandColors = {
+    primary: "#f5346b",
+    gold: "#f7d794",
+    goldDark: "#d4af37",
+    bronze: "#c77d42",
+    black: "#0f0f0f",
+    darkSlate: "#1a1a1a",
+    earthLight: "#6d4c41",
+    cream: "#fcf8f5",
+    green: "#4caf50",
+  };
+
+  // Theme tokens
+  const T = {
+    bg: isDarkMode ? brandColors.black : brandColors.cream,
+    card: isDarkMode ? brandColors.darkSlate : "#ffffff",
+    cardAlt: isDarkMode ? "#222222" : "#f9f4f0",
+    border: isDarkMode ? "rgba(212, 175, 55, 0.12)" : "rgba(62, 39, 35, 0.06)",
+    borderSoft: isDarkMode
+      ? "rgba(255, 255, 255, 0.06)"
+      : "rgba(62, 39, 35, 0.04)",
+    divider: isDarkMode
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(62, 39, 35, 0.06)",
+    text: isDarkMode ? "#f5f0eb" : "#3e2723",
+    textMuted: isDarkMode ? "#c9b8b0" : brandColors.earthLight,
+    textDim: isDarkMode ? "#8d7d76" : "#8d7d76",
+    gold: brandColors.gold,
+    green: brandColors.green,
+    danger: isDarkMode ? "#ff8a80" : "#c62828",
+    star: "#ffc107",
+    starEmpty: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "#e0e0e0",
+    shadow: isDarkMode
+      ? "0 10px 30px rgba(0, 0, 0, 0.55)"
+      : "0 10px 30px rgba(62, 39, 35, 0.06)",
+    shadowLift: isDarkMode
+      ? "0 20px 40px rgba(0, 0, 0, 0.65)"
+      : "0 20px 40px rgba(62, 39, 35, 0.1)",
+  };
+
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  // ✅ Initialize the selected shade from the product (fixes wishlist bug)
+  const [selectedShade, setSelectedShade] = useState(() => {
+    if (!product?.shades || !Array.isArray(product.shades)) return "";
+    return product.shades.length > 0 ? product.shades[0] : "";
+  });
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [copied, setCopied] = useState(false);
   const trackEvent = usePixelTracking();
 
-  // Track when product page is viewed
+  const inWishlist = product ? isInWishlist(product.id, selectedShade) : false;
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     if (product) {
       trackEvent.viewContent(product);
-      // Scroll to top when product changes
       window.scrollTo(0, 0);
     }
   }, [product, trackEvent]);
 
-  // Helper functions for styles
-  const getNotFoundStyles = (isDarkMode) => ({
-    textAlign: 'center',
-    padding: '4rem 1rem',
-    backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-    color: isDarkMode ? '#ffffff' : '#333333'
-  });
+  const isMobile = windowWidth <= 480;
+  const isNarrow = windowWidth <= 768;
 
-  const getBackButtonStyles = () => ({
-    padding: '0.75rem 2rem',
-    backgroundColor: '#e88ca6',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    marginTop: '1rem',
-    transition: 'all 0.3s ease',
-    ':hover': {
-      backgroundColor: '#d47a94',
-      transform: 'translateY(-2px)'
-    }
-  });
-
-  if (!product) {
-    return (
-      <div style={getNotFoundStyles(isDarkMode)}>
-        <h2>Product Not Found</h2>
-        <button onClick={() => navigate('/shop')} style={getBackButtonStyles()}>
-          Back to Shop
-        </button>
-      </div>
-    );
-  }
-
-  // Prepare images array
-  const productImages = product.images || [product.image];
-  
-  // Handle shade selection
-  const handleShadeSelect = (shade) => {
-    setSelectedShade(shade);
-  };
+  const handleShadeSelect = (shade) => setSelectedShade(shade);
 
   const handleAddToCart = () => {
-    addToCart(product, selectedShade || (Array.isArray(product.shades) ? product.shades[0] : '') || '', quantity);
+    if (!product?.inStock) return;
+    addToCart(product, selectedShade || "", quantity);
     trackEvent.addToCart(product, quantity);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 3000);
   };
 
-  const handleQuantityChange = (delta) => {
-    setQuantity(prev => Math.max(1, prev + delta));
+  const handleQuantityChange = (delta) =>
+    setQuantity((prev) => Math.max(1, prev + delta));
+
+  const handleWishlistToggle = () => {
+    if (!product) return;
+    toggleWishlist(product, selectedShade);
   };
 
   const handleShare = async () => {
+    if (!product) return;
+    const shareData = {
+      title: product.name,
+      text: product.description,
+      url: window.location.href,
+    };
+
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: product.name,
-          text: product.description,
-          url: window.location.href
-        });
+        await navigator.share(shareData);
       } catch (error) {
-        console.log('Error sharing:', error);
+        // user cancelled
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch {
+        // fallback for older browsers
+        const el = document.createElement("textarea");
+        el.value = window.location.href;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
     }
   };
 
-  // Calculate discount
-  const discount = product.mrp && product.mrp > product.price 
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100) 
-    : 0;
+  const discount =
+    product?.mrp && product.mrp > product.price
+      ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+      : 0;
 
   const themeStyles = {
+    // ✅ Removed overflowX: "hidden" — page scrolls naturally via <body>.
+    // Horizontal overflow is prevented globally in the <style> block below.
     container: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: '2rem 1rem',
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      minHeight: '100vh'
+      maxWidth: "1280px",
+      margin: "0 auto",
+      padding: isMobile
+        ? "1.25rem 0.75rem 3rem"
+        : isNarrow
+          ? "1.5rem 1rem 3rem"
+          : "2rem 1rem 4rem",
+      backgroundColor: T.bg,
+      color: T.text,
+      minHeight: "100vh",
+      position: "relative",
+      transition: "background-color 0.3s ease, color 0.3s ease",
+      boxSizing: "border-box",
+      width: "100%",
     },
-    
-    // Back Button
+
+    // Absolute clipped blobs
+    bgBlob1: {
+      position: "absolute",
+      top: "-120px",
+      left: "-120px",
+      width: "400px",
+      height: "400px",
+      maxWidth: "50vw",
+      maxHeight: "50vw",
+      borderRadius: "50%",
+      background: "linear-gradient(135deg, #f5346b, #f7d794)",
+      opacity: isDarkMode ? 0.1 : 0.07,
+      filter: "blur(100px)",
+      zIndex: 0,
+      pointerEvents: "none",
+      clipPath: "circle(50% at 50% 50%)",
+    },
+    bgBlob2: {
+      position: "absolute",
+      bottom: "-120px",
+      right: "-120px",
+      width: "400px",
+      height: "400px",
+      maxWidth: "50vw",
+      maxHeight: "50vw",
+      borderRadius: "50%",
+      background: "linear-gradient(135deg, #4caf50, #f7d794)",
+      opacity: isDarkMode ? 0.1 : 0.07,
+      filter: "blur(100px)",
+      zIndex: 0,
+      pointerEvents: "none",
+      clipPath: "circle(50% at 50% 50%)",
+    },
+
+    // Back button
     backButton: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      marginBottom: '1.5rem',
-      padding: '0.5rem 1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      border: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
-      borderRadius: '2rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      textDecoration: 'none',
-      fontSize: '0.95rem',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      width: 'fit-content',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
+      position: "relative",
+      zIndex: 2,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      marginBottom: isNarrow ? "1.25rem" : "2rem",
+      padding: "0.55rem 1.25rem",
+      backgroundColor: T.card,
+      backdropFilter: "blur(10px)",
+      border: `1px solid ${T.border}`,
+      borderRadius: "50px",
+      color: T.text,
+      cursor: "pointer",
+      fontSize: "0.9rem",
+      fontWeight: "500",
+      transition: "all 0.3s ease",
+      fontFamily: "inherit",
     },
 
+    // Grid
     productGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '3rem',
-      marginBottom: '2rem'
+      position: "relative",
+      zIndex: 2,
+      display: "grid",
+      gridTemplateColumns: isNarrow
+        ? "minmax(0, 1fr)"
+        : "minmax(0, 1fr) minmax(0, 1fr)",
+      gap: isMobile ? "1.5rem" : "2.5rem",
+      marginBottom: "2rem",
+      width: "100%",
+      boxSizing: "border-box",
     },
-    
+
+    // Info card
     info: {
-      display: 'flex',
-      flexDirection: 'column'
+      display: "flex",
+      flexDirection: "column",
+      backgroundColor: T.card,
+      borderRadius: "24px",
+      padding: isMobile ? "1.5rem 1.25rem" : "2.25rem",
+      boxShadow: T.shadow,
+      border: `1px solid ${T.border}`,
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      boxSizing: "border-box",
+      width: "100%",
+      minWidth: 0,
     },
-    
+
+    // Header
     header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1rem'
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: "1rem",
+      gap: "0.75rem",
     },
-    
     category: {
-      fontSize: '0.9rem',
-      color: '#e88ca6',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
+      fontSize: "0.82rem",
+      color: isDarkMode ? T.gold : brandColors.bronze,
+      textTransform: "uppercase",
+      letterSpacing: "2px",
+      fontWeight: "700",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
     },
-    
     wishlistButton: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.5rem',
-      cursor: 'pointer',
-      color: inWishlist ? '#e88ca6' : (isDarkMode ? '#ffffff' : '#666666'),
-      transition: 'all 0.3s ease',
-      ':hover': {
-        transform: 'scale(1.1)',
-        color: '#e88ca6'
-      }
+      background: "none",
+      border: "none",
+      fontSize: "1.5rem",
+      cursor: "pointer",
+      padding: "0.25rem",
+      borderRadius: "50%",
+      transition: "all 0.3s ease",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
     },
-    
     name: {
-      fontSize: '2rem',
-      marginBottom: '0.5rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      fontWeight: '700'
+      fontSize: isMobile ? "1.6rem" : isNarrow ? "2rem" : "2.35rem",
+      marginBottom: "0.5rem",
+      color: T.text,
+      fontWeight: "800",
+      lineHeight: "1.2",
     },
-    
     itemNo: {
-      fontSize: '0.9rem',
-      color: isDarkMode ? '#cccccc' : '#666666',
-      marginBottom: '1rem'
+      fontSize: "0.85rem",
+      color: T.textMuted,
+      marginBottom: "1rem",
     },
-    
-    rating: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      marginBottom: '1rem'
+
+    // Rating row
+    ratingRow: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.75rem",
+      marginBottom: "1rem",
+      flexWrap: "wrap",
     },
-    
-    stars: {
-      display: 'flex',
-      gap: '0.2rem',
-      color: '#ffc107'
+    ratingStars: {
+      display: "flex",
+      gap: "0.15rem",
+      color: T.star,
     },
-    
-    reviews: {
-      color: isDarkMode ? '#cccccc' : '#666666',
-      fontSize: '0.9rem'
+    ratingText: {
+      fontSize: "0.88rem",
+      color: T.textMuted,
     },
-    
+
+    // Price
     priceContainer: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      marginBottom: '1.5rem',
-      flexWrap: 'wrap'
+      display: "flex",
+      alignItems: "baseline",
+      gap: "1rem",
+      marginBottom: "1rem",
+      flexWrap: "wrap",
     },
-    
     price: {
-      fontSize: '2rem',
-      fontWeight: 'bold',
-      color: '#e88ca6'
+      fontSize: isMobile ? "1.75rem" : "2.25rem",
+      fontWeight: "900",
+      background: isDarkMode
+        ? "linear-gradient(135deg, #f7d794, #f5346b)"
+        : "linear-gradient(135deg, #d4af37, #f5346b)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+      lineHeight: "1.1",
     },
-    
     mrp: {
-      fontSize: '1.2rem',
-      color: isDarkMode ? '#999999' : '#999999',
-      textDecoration: 'line-through'
+      fontSize: "1.1rem",
+      color: T.textDim,
+      textDecoration: "line-through",
+      opacity: 0.8,
     },
-    
     discount: {
-      fontSize: '1.1rem',
-      color: '#4caf50',
-      fontWeight: '600'
+      fontSize: "1rem",
+      color: brandColors.green,
+      fontWeight: "700",
     },
-    
+
+    // Stock
     stock: {
-      display: 'inline-block',
-      padding: '0.25rem 1rem',
-      borderRadius: '2rem',
-      fontSize: '0.9rem',
-      fontWeight: '600',
-      marginBottom: '1.5rem',
-      backgroundColor: product.inStock ? '#4caf50' : '#ff4444',
-      color: '#ffffff'
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.4rem 1rem",
+      borderRadius: "50px",
+      fontSize: "0.82rem",
+      fontWeight: "700",
+      marginBottom: "1.25rem",
+      letterSpacing: "0.5px",
+      width: "fit-content",
+      backgroundColor: product?.inStock
+        ? "rgba(76, 175, 80, 0.12)"
+        : "rgba(198, 40, 40, 0.12)",
+      color: product?.inStock ? brandColors.green : T.danger,
+      border: product?.inStock
+        ? "1px solid rgba(76, 175, 80, 0.3)"
+        : "1px solid rgba(198, 40, 40, 0.3)",
     },
-    
-    shadeSection: {
-      marginBottom: '2rem'
-    },
-    
+
+    // Shades
     shadeLabel: {
-      display: 'block',
-      fontSize: '1rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      marginBottom: '0.5rem',
-      fontWeight: '600'
+      display: "block",
+      fontSize: "0.95rem",
+      color: T.text,
+      marginBottom: "0.5rem",
+      fontWeight: "600",
     },
-    
     shadeOptions: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '0.5rem'
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.5rem",
+      marginBottom: "1.5rem",
     },
-    
     shadeButton: {
-      padding: '0.5rem 1rem',
-      border: `1px solid ${isDarkMode ? '#404040' : '#ddd'}`,
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      transition: 'all 0.3s'
+      padding: "0.5rem 1.15rem",
+      border: `1px solid ${T.border}`,
+      background: "transparent",
+      color: T.text,
+      borderRadius: "50px",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      fontSize: "0.88rem",
+      fontFamily: "inherit",
+      fontWeight: "600",
     },
-    
     shadeButtonSelected: {
-      borderColor: '#e88ca6',
-      backgroundColor: isDarkMode ? '#404040' : '#f8f8f8',
-      color: '#e88ca6'
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      border: "1px solid transparent",
+      fontWeight: "700",
+      boxShadow: "0 4px 15px rgba(245, 52, 107, 0.3)",
     },
-    
-    quantitySection: {
-      marginBottom: '2rem'
-    },
-    
-    quantityLabel: {
-      display: 'block',
-      fontSize: '1rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      marginBottom: '0.5rem',
-      fontWeight: '600'
-    },
-    
+
+    // Quantity
     quantityControl: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem'
+      display: "flex",
+      alignItems: "center",
+      gap: "0.85rem",
+      marginBottom: "1.75rem",
+      backgroundColor: isDarkMode ? brandColors.black : "#fcf8f5",
+      padding: "0.4rem",
+      borderRadius: "50px",
+      border: `1px solid ${T.border}`,
+      width: "fit-content",
     },
-    
     quantityButton: {
-      width: '40px',
-      height: '40px',
-      border: `1px solid ${isDarkMode ? '#404040' : '#ddd'}`,
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      borderRadius: '4px',
-      fontSize: '1.2rem',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
+      width: "38px",
+      height: "38px",
+      border: "none",
+      cursor: "pointer",
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      borderRadius: "50%",
+      fontSize: "1rem",
+      transition: "all 0.3s ease",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontWeight: "700",
+      fontFamily: "inherit",
+      flexShrink: 0,
     },
-    
     quantityValue: {
-      fontSize: '1.2rem',
-      minWidth: '40px',
-      textAlign: 'center',
-      color: isDarkMode ? '#ffffff' : '#333333'
+      fontSize: "1.15rem",
+      minWidth: "30px",
+      textAlign: "center",
+      fontWeight: "700",
+      color: T.text,
     },
-    
+
+    // Action buttons
     actionButtons: {
-      display: 'flex',
-      gap: '1rem',
-      marginBottom: '1rem'
+      display: "flex",
+      gap: "0.75rem",
+      marginBottom: "1.5rem",
+      flexWrap: "wrap",
     },
-    
     addToCartButton: {
-      flex: 2,
-      padding: '1rem',
-      backgroundColor: '#e88ca6',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '4px',
-      fontSize: '1.1rem',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#d47a94',
-        transform: 'translateY(-2px)'
-      }
+      flex: "2 1 200px",
+      padding: "1rem",
+      border: "none",
+      borderRadius: "50px",
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      fontSize: "1rem",
+      fontWeight: "700",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.6rem",
+      boxShadow: "0 8px 24px rgba(245, 52, 107, 0.3)",
+      transition: "all 0.3s ease",
+      fontFamily: "inherit",
+      whiteSpace: "nowrap",
     },
-    
     shareButton: {
-      flex: 1,
-      padding: '1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      border: `1px solid ${isDarkMode ? '#404040' : '#ddd'}`,
-      borderRadius: '4px',
-      fontSize: '1.1rem',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
+      flex: "1 1 120px",
+      padding: "1rem",
+      backgroundColor: "transparent",
+      color: T.text,
+      border: `1px solid ${T.border}`,
+      borderRadius: "50px",
+      fontSize: "1rem",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+      transition: "all 0.3s ease",
+      fontFamily: "inherit",
+      fontWeight: "600",
     },
 
-    // Success Message
-    successMessage: {
-      marginTop: '1rem',
-      padding: '0.75rem',
-      backgroundColor: '#4caf50',
-      color: '#ffffff',
-      borderRadius: '4px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem',
-      animation: 'slideIn 0.3s ease'
+    // Toast
+    toast: {
+      position: "fixed",
+      top: "5rem",
+      right: isMobile ? "1rem" : "2rem",
+      left: isMobile ? "1rem" : "auto",
+      zIndex: 9999,
+      padding: "0.9rem 1.25rem",
+      backgroundColor: isDarkMode ? "#1a3a1a" : "#e8f5e9",
+      color: isDarkMode ? "#a5d6a7" : "#2e7d32",
+      borderRadius: "16px",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.6rem",
+      fontSize: "0.92rem",
+      fontWeight: "600",
+      border: isDarkMode
+        ? "1px solid rgba(76, 175, 80, 0.3)"
+        : "1px solid rgba(76, 175, 80, 0.25)",
+      boxShadow: T.shadowLift,
+      animation: "slideInRight 0.4s ease",
+      maxWidth: isMobile ? "calc(100% - 2rem)" : "360px",
+      boxSizing: "border-box",
     },
-    
+
+    // Info blocks
     keyFeatures: {
-      marginTop: '2rem',
-      padding: '1.5rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '8px'
+      marginTop: "1.25rem",
+      padding: isMobile ? "1.15rem" : "1.35rem",
+      borderRadius: "16px",
+      backgroundColor: isDarkMode
+        ? "rgba(255, 255, 255, 0.03)"
+        : "rgba(62, 39, 35, 0.03)",
+      border: `1px solid ${T.borderSoft}`,
+      boxSizing: "border-box",
     },
-    
     featureTitle: {
-      fontSize: '1.1rem',
-      fontWeight: '600',
-      marginBottom: '1rem',
-      color: isDarkMode ? '#ffffff' : '#333333'
+      fontSize: "1.05rem",
+      fontWeight: "700",
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      color: T.text,
     },
-    
     featureList: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-      gap: '0.5rem'
+      display: "grid",
+      gridTemplateColumns: isMobile
+        ? "1fr"
+        : "repeat(auto-fit, minmax(180px, 1fr))",
+      gap: "0.6rem",
     },
-    
     featureItem: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      fontSize: "0.88rem",
+      color: T.textMuted,
+      lineHeight: "1.5",
     },
 
-    // Delivery Info
     deliveryInfo: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '1rem',
-      marginTop: '2rem',
-      padding: '1.5rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '8px'
+      display: "grid",
+      gridTemplateColumns: isMobile
+        ? "1fr"
+        : isNarrow
+          ? "repeat(2, minmax(0, 1fr))"
+          : "repeat(3, minmax(0, 1fr))",
+      gap: "0.85rem",
+      marginTop: "1.25rem",
+      padding: isMobile ? "1.15rem" : "1.35rem",
+      borderRadius: "16px",
+      backgroundColor: isDarkMode
+        ? "rgba(255, 255, 255, 0.03)"
+        : "rgba(62, 39, 35, 0.03)",
+      border: `1px solid ${T.borderSoft}`,
+      boxSizing: "border-box",
     },
-    
     deliveryItem: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      color: isDarkMode ? '#cccccc' : '#666666',
-      fontSize: '0.9rem'
+      display: "flex",
+      alignItems: "center",
+      gap: "0.6rem",
+      fontSize: "0.85rem",
+      color: T.textMuted,
+      lineHeight: "1.5",
     },
-    
-    deliveryIcon: {
-      fontSize: '1.5rem',
-      color: '#e88ca6'
-    }
+
+    // Not-found state
+    notFound: {
+      textAlign: "center",
+      paddingTop: isMobile ? "4rem" : "6rem",
+      paddingBottom: "4rem",
+      position: "relative",
+      zIndex: 2,
+    },
+    notFoundIcon: {
+      fontSize: "4rem",
+      color: brandColors.primary,
+      marginBottom: "1rem",
+    },
+    notFoundTitle: {
+      fontSize: isMobile ? "1.5rem" : "2rem",
+      fontWeight: "800",
+      marginBottom: "1rem",
+      color: T.text,
+    },
+    notFoundText: {
+      marginBottom: "2rem",
+      color: T.textMuted,
+      lineHeight: "1.6",
+    },
   };
+
+  // ─── NOT FOUND ─────────────────────────────────────────────────────
+  if (!product) {
+    return (
+      <div style={themeStyles.container}>
+        <SEO
+          title="Product Not Found | ASudha Beauty"
+          description="The product you're looking for doesn't exist. Browse our 100% natural Ayurvedic collection."
+          url={`/product/${id}`}
+        />
+        <div style={themeStyles.bgBlob1}></div>
+        <div style={themeStyles.bgBlob2}></div>
+
+        <div style={themeStyles.notFound}>
+          <FaBoxOpen style={themeStyles.notFoundIcon} />
+          <h2 style={themeStyles.notFoundTitle}>Product Not Found</h2>
+          <p style={themeStyles.notFoundText}>
+            The Ayurvedic product you're looking for doesn't exist.
+          </p>
+          <button
+            onClick={() => navigate("/shop")}
+            style={themeStyles.addToCartButton}
+          >
+            Browse All Products
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const productImages = product.images || [product.image];
 
   return (
     <div style={themeStyles.container}>
-      {/* Enhanced SEO with product schema */}
-      <SEO 
-        title={product.name}
+      <SEO
+        title={`${product.name} | ASudha Beauty`}
         description={product.description}
-        keywords={[
-          product.category,
-          product.type,
-          product.name,
-          'cosmetics',
-          'makeup',
-          'beauty products',
-          ...(product.benefits || [])
-        ]}
-        image={product.image}
-        url={`/product/${product.id}`}
         type="product"
         product={product}
       />
-      
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(-1)} 
+
+      <style>{`
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ✅ Prevent horizontal scroll globally — page uses body scroll only */
+        html, body {
+          overflow-x: hidden;
+          max-width: 100%;
+        }
+
+        .pd-back-btn:hover {
+          transform: translateX(-4px);
+          background: linear-gradient(135deg, #f7d794, #f5346b) !important;
+          color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
+          border-color: transparent !important;
+        }
+        .pd-shade-btn:hover {
+          border-color: ${brandColors.primary} !important;
+          color: ${brandColors.primary} !important;
+        }
+        .pd-qty-btn:hover {
+          transform: scale(1.08);
+          box-shadow: 0 4px 15px rgba(245, 52, 107, 0.4);
+        }
+        .pd-add-cart-btn:hover:not(:disabled) {
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 15px 40px rgba(245, 52, 107, 0.4);
+        }
+        .pd-add-cart-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+        .pd-share-btn:hover {
+          background: rgba(245, 52, 107, 0.1);
+          border-color: ${brandColors.primary} !important;
+          color: ${brandColors.primary} !important;
+        }
+        .pd-wishlist-btn:hover {
+          transform: scale(1.15);
+        }
+      `}</style>
+
+      <div style={themeStyles.bgBlob1}></div>
+      <div style={themeStyles.bgBlob2}></div>
+
+      {/* Success toast */}
+      {addedToCart && (
+        <div style={themeStyles.toast}>
+          <FaCheckCircle /> Added to cart successfully!
+        </div>
+      )}
+
+      {/* Copy toast */}
+      {copied && (
+        <div style={themeStyles.toast}>
+          <FaCopy /> Link copied to clipboard!
+        </div>
+      )}
+
+      <button
+        onClick={() => navigate(-1)}
         style={themeStyles.backButton}
+        className="pd-back-btn"
+        aria-label="Go back"
       >
         <FaArrowLeft /> Back
       </button>
 
       <div style={themeStyles.productGrid}>
-        {/* Left Column - Image Gallery */}
+        {/* Image Gallery */}
         <ImageGallery
           images={productImages}
           video={product.video}
@@ -481,136 +727,165 @@ const ProductDetail = () => {
           productName={product.name}
         />
 
-        {/* Right Column - Product Info */}
+        {/* Info */}
         <div style={themeStyles.info}>
           <div style={themeStyles.header}>
             <span style={themeStyles.category}>
-              {product.category} {product.subCategory && `/ ${product.subCategory}`}
+              <FaLeaf style={{ fontSize: "0.75rem" }} /> {product.category}
             </span>
             <button
-              style={themeStyles.wishlistButton}
-              onClick={() => toggleWishlist(product)}
-              aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+              style={{
+                ...themeStyles.wishlistButton,
+                color: inWishlist
+                  ? brandColors.primary
+                  : isDarkMode
+                    ? T.textDim
+                    : "#b0a29a",
+              }}
+              className="pd-wishlist-btn"
+              onClick={handleWishlistToggle}
+              aria-label={
+                inWishlist ? "Remove from wishlist" : "Add to wishlist"
+              }
             >
               {inWishlist ? <FaHeart /> : <FaRegHeart />}
             </button>
           </div>
 
           <h1 style={themeStyles.name}>{product.name}</h1>
-          
           {product.itemNo && (
             <p style={themeStyles.itemNo}>Item No: {product.itemNo}</p>
           )}
 
           {product.rating && (
-            <div style={themeStyles.rating}>
-              <div style={themeStyles.stars}>
+            <div style={themeStyles.ratingRow}>
+              <div style={themeStyles.ratingStars}>
                 {[...Array(5)].map((_, i) => (
                   <FaStar
                     key={i}
-                    color={i < Math.floor(product.rating) ? '#ffc107' : '#e0e0e0'}
+                    size={14}
+                    color={
+                      i < Math.floor(product.rating) ? T.star : T.starEmpty
+                    }
                   />
                 ))}
               </div>
-              <span style={themeStyles.reviews}>
+              <span style={themeStyles.ratingText}>
                 {product.rating} ({product.reviews || 0} reviews)
               </span>
             </div>
           )}
 
           <div style={themeStyles.priceContainer}>
-            <span style={themeStyles.price}>₹{product.price.toFixed(2)}</span>
+            <span style={themeStyles.price}>
+              ₹{Number(product.price).toFixed(2)}
+            </span>
             {product.mrp && product.mrp > product.price && (
               <>
-                <span style={themeStyles.mrp}>₹{product.mrp.toFixed(2)}</span>
-                <span style={themeStyles.discount}>{discount}% off</span>
+                <span style={themeStyles.mrp}>
+                  ₹{Number(product.mrp).toFixed(2)}
+                </span>
+                <span style={themeStyles.discount}>{discount}% OFF</span>
               </>
             )}
           </div>
 
           <div style={themeStyles.stock}>
-            {product.inStock ? 'In Stock' : 'Out of Stock'}
+            <FaSpa /> {product.inStock ? "In Stock" : "Out of Stock"}
           </div>
 
-          {/* Shade Selection */}
-          {product.shades && (
-            <div style={themeStyles.shadeSection}>
-              <label style={themeStyles.shadeLabel}>
-                Select Shade: {selectedShade || (Array.isArray(product.shades) ? product.shades[0] : 'Standard')}
-              </label>
-              <div style={themeStyles.shadeOptions}>
-                {Array.isArray(product.shades) ? (
-                  product.shades.map(shade => (
+          {/* Shades */}
+          {product.shades &&
+            Array.isArray(product.shades) &&
+            product.shades.length > 0 && (
+              <div style={{ marginBottom: "0.5rem" }}>
+                <label style={themeStyles.shadeLabel}>Select Variant:</label>
+                <div style={themeStyles.shadeOptions}>
+                  {product.shades.map((shade) => (
                     <button
                       key={shade}
                       style={{
                         ...themeStyles.shadeButton,
-                        ...(selectedShade === shade || (!selectedShade && shade === product.shades[0])
+                        ...(selectedShade === shade
                           ? themeStyles.shadeButtonSelected
-                          : {})
+                          : {}),
                       }}
+                      className="pd-shade-btn"
                       onClick={() => setSelectedShade(shade)}
+                      aria-pressed={selectedShade === shade}
                     >
                       {shade}
                     </button>
-                  ))
-                ) : (
-                  <span style={themeStyles.itemNo}>
-                    {product.shades} Shades Available
-                  </span>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Quantity */}
-          <div style={themeStyles.quantitySection}>
-            <label style={themeStyles.quantityLabel}>Quantity:</label>
+          <div>
+            <label style={themeStyles.shadeLabel}>Quantity:</label>
             <div style={themeStyles.quantityControl}>
               <button
                 style={themeStyles.quantityButton}
+                className="pd-qty-btn"
                 onClick={() => handleQuantityChange(-1)}
                 disabled={quantity <= 1}
+                aria-label="Decrease quantity"
               >
-                -
+                −
               </button>
               <span style={themeStyles.quantityValue}>{quantity}</span>
               <button
                 style={themeStyles.quantityButton}
+                className="pd-qty-btn"
                 onClick={() => handleQuantityChange(1)}
+                aria-label="Increase quantity"
               >
                 +
               </button>
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Buttons */}
           <div style={themeStyles.actionButtons}>
-            <button style={themeStyles.addToCartButton} onClick={handleAddToCart}>
-              <FaShoppingCart />
-              Add to Cart
+            <button
+              style={themeStyles.addToCartButton}
+              className="pd-add-cart-btn"
+              onClick={handleAddToCart}
+              disabled={!product.inStock}
+            >
+              <FaShoppingCart />{" "}
+              {product.inStock ? "Add to Cart" : "Out of Stock"}
             </button>
-            <button style={themeStyles.shareButton} onClick={handleShare}>
-              <FaShare />
-              Share
+            <button
+              style={themeStyles.shareButton}
+              className="pd-share-btn"
+              onClick={handleShare}
+              aria-label="Share product"
+            >
+              <FaShare /> Share
             </button>
           </div>
 
-          {/* Success Message */}
-          {addedToCart && (
-            <div style={themeStyles.successMessage}>
-              <FaCheckCircle /> Added to cart successfully!
-            </div>
-          )}
-
-          {/* Key Features */}
-          {product.benefits && (
+          {/* Benefits */}
+          {product.benefits && product.benefits.length > 0 && (
             <div style={themeStyles.keyFeatures}>
-              <h4 style={themeStyles.featureTitle}>Key Features</h4>
+              <h4 style={themeStyles.featureTitle}>
+                <FaLeaf style={{ color: brandColors.green }} /> Ayurvedic
+                Benefits
+              </h4>
               <div style={themeStyles.featureList}>
                 {product.benefits.map((benefit, index) => (
                   <div key={index} style={themeStyles.featureItem}>
-                    <span style={{ color: '#e88ca6' }}>✓</span>
+                    <span
+                      style={{
+                        color: brandColors.green,
+                        fontWeight: "bold",
+                        flexShrink: 0,
+                      }}
+                    >
+                      ✓
+                    </span>{" "}
                     {benefit}
                   </div>
                 ))}
@@ -618,25 +893,26 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {/* Delivery Information */}
+          {/* Delivery */}
           <div style={themeStyles.deliveryInfo}>
             <div style={themeStyles.deliveryItem}>
-              <FaTruck style={themeStyles.deliveryIcon} />
-              <span>Free shipping on orders above ₹500</span>
+              <FaTruck style={{ color: brandColors.primary, flexShrink: 0 }} />{" "}
+              Free shipping on orders above ₹500
             </div>
             <div style={themeStyles.deliveryItem}>
-              <FaShieldAlt style={themeStyles.deliveryIcon} />
-              <span>100% authentic products</span>
+              <FaShieldAlt
+                style={{ color: brandColors.primary, flexShrink: 0 }}
+              />{" "}
+              100% Natural & Authentic
             </div>
             <div style={themeStyles.deliveryItem}>
-              <FaUndo style={themeStyles.deliveryIcon} />
-              <span>30-day return policy</span>
+              <FaUndo style={{ color: brandColors.primary, flexShrink: 0 }} />{" "}
+              30-day easy returns
             </div>
           </div>
         </div>
       </div>
 
-      {/* Shade Catalog (if available) */}
       {product.catalog && (
         <ShadeCatalog
           catalog={product.catalog}
@@ -644,8 +920,6 @@ const ProductDetail = () => {
           selectedShade={selectedShade}
         />
       )}
-
-      {/* Product Tabs */}
       <ProductTabs product={product} />
     </div>
   );

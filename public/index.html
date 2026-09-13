@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var isDark = stored ? stored === "dark" : prefersDark;
+          var cls = isDark ? "dark-mode" : "light-mode";
+          document.documentElement.classList.add(cls);
+          if (document.body) document.body.classList.add(cls);
+          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/Logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />

@@ -1,107 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { 
-  FaArrowLeft, FaUser, FaClock, FaComment, 
-  FaHeart, FaShare, FaFacebook, FaTwitter, 
-  FaPinterest, FaEnvelope, FaUserCircle
-} from 'react-icons/fa';
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+} from "react";
+import { Link, useParams } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
+import {
+  FaArrowLeft,
+  FaUser,
+  FaClock,
+  FaComment,
+  FaHeart,
+  FaShare,
+  FaFacebook,
+  FaTwitter,
+  FaPinterest,
+  FaEnvelope,
+  FaUserCircle,
+  FaTags,
+  FaEye,
+  FaCheckCircle,
+  FaLeaf,
+  FaQuoteLeft,
+} from "react-icons/fa";
+
+// ─── Brand palette (module-scope: stable references) ───
+const brandColors = {
+  primary: "#f5346b",
+  primaryDark: "#cf2a57",
+  gold: "#f7d794",
+  goldDark: "#d4af37",
+  bronze: "#c77d42",
+  black: "#0f0f0f",
+  darkSlate: "#1a1a1a",
+  earthDark: "#3e2723",
+  earthLight: "#6d4c41",
+  cream: "#fcf8f5",
+  green: "#4caf50",
+};
+
+const DARK_SHADOW = "0 10px 30px rgba(0, 0, 0, 0.55)";
+const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
+const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
+const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
 const BlogPost = () => {
   const { id } = useParams();
   const { isDarkMode } = useTheme();
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1440
+  );
   const [liked, setLiked] = useState(false);
-  const [comment, setComment] = useState('');
-  const [avatarErrors, setAvatarErrors] = useState({});
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Sample blog post data (in real app, fetch based on id)
-  const post = {
-    id: 1,
-    title: "10 Tips for Flawless Foundation Application",
-    excerpt: "Master the art of foundation application with these professional tips and tricks for a seamless, natural-looking finish.",
-    content: `
-      <p>Applying foundation might seem straightforward, but achieving that flawless, airbrushed look requires technique and the right products. Whether you're a makeup beginner or a seasoned pro, these tips will help you elevate your foundation game.</p>
-      
-      <h2>1. Start with Clean, Hydrated Skin</h2>
-      <p>The key to flawless foundation application begins with skincare. Always start with a clean, moisturized face. Use a gentle cleanser followed by a hydrating moisturizer suitable for your skin type. Allow the moisturizer to absorb for at least 5 minutes before applying any makeup.</p>
-      
-      <h2>2. Use a Primer</h2>
-      <p>Primer creates a smooth canvas for your foundation and helps it last longer. Choose a primer based on your skin concerns: mattifying for oily skin, hydrating for dry skin, or illuminating for dull skin.</p>
-      
-      <h2>3. Choose the Right Foundation Formula</h2>
-      <p>Different foundations work best for different skin types and desired coverage levels. Liquid foundations are versatile and work for most skin types. Cream foundations offer more coverage, while powder foundations are great for oily skin and quick application.</p>
-      
-      <h2>4. Find Your Perfect Shade</h2>
-      <p>Testing foundation on your jawline in natural light is crucial. The right shade should disappear into your skin. Consider getting samples to test at home before committing to a full-size product.</p>
-      
-      <h2>5. Use the Right Tools</h2>
-      <p>The tool you use can dramatically affect the finish. Beauty sponges create a natural, dewy finish. Brushes offer more coverage and a polished look. Your fingers can work well too, as the warmth helps blend the product seamlessly.</p>
-      
-      <h2>6. Apply in Thin Layers</h2>
-      <p>Start with a small amount and build coverage where needed. Applying too much foundation at once can look cakey and unnatural. Remember, you can always add more, but it's hard to take away excess product.</p>
-      
-      <h2>7. Blend, Blend, Blend</h2>
-      <p>Whether using a sponge, brush, or fingers, blend thoroughly, especially around the jawline, hairline, and ears. Make sure there are no harsh lines between your face and neck.</p>
-      
-      <h2>8. Don't Forget Your Neck and Ears</h2>
-      <p>For a seamless look, blend foundation down your neck and over your ears. This ensures no visible line where your makeup ends.</p>
-      
-      <h2>9. Set with Powder</h2>
-      <p>If you have oily skin or want your makeup to last all day, set your foundation with a translucent powder. Focus on the T-zone (forehead, nose, chin) where you tend to get oiliest.</p>
-      
-      <h2>10. Finishing Spray is Your Friend</h2>
-      <p>A setting spray not only helps your makeup last longer but also melds all the layers of product together for a natural, skin-like finish. Hold the bottle 8-10 inches away and mist evenly over your face.</p>
-      
-      <p>With these tips, you'll be well on your way to foundation perfection. Remember, practice makes perfect, and the most important thing is that you feel confident and beautiful in your skin!</p>
-    `,
-    image: "/assets/images/blog/foundation-tips.png",
-    category: "Makeup Tips",
-    tags: ["Foundation", "Makeup Tips", "Beginner"],
-    author: "Sarah Johnson",
-    authorAvatar: "/assets/images/team/sarah.jpg",
-    authorBio: "Sarah is a professional makeup artist with over 10 years of experience in the beauty industry. She specializes in bridal and editorial makeup and loves sharing her expertise with others.",
-    date: "March 15, 2026",
-    readTime: "5 min read",
-    views: 1245,
-    comments: 23,
-    likes: 89
-  };
-
-  // Sample comments data
-  const comments = [
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState([
     {
       id: 1,
-      name: "Michael Chen",
-      avatar: "/assets/images/team/michael.jpg",
+      name: "Priya Sharma",
+      avatar: "/assets/images/team/priya.jpg",
       date: "March 16, 2026",
-      text: "This article was so helpful! I've been struggling with foundation application for years. The tip about using thin layers made a huge difference."
+      text: "I've been using ASudha's Multani Mitti for 3 weeks now, and the difference in my skin is incredible! My oily T-zone is finally under control. Thank you for this detailed guide!",
+      verified: true,
     },
     {
       id: 2,
-      name: "Maria Garcia",
-      avatar: "/assets/images/team/sarah.jpg",
+      name: "Rahul Verma",
+      avatar: "/assets/images/team/michael.jpg",
       date: "March 15, 2026",
-      text: "I never knew about setting spray! Just tried it and my makeup lasted all day. Thank you so much for these tips."
+      text: "I never knew Ubtan had so many benefits! I tried the honey and milk mix and my skin feels so soft and glowing. Cannot wait to try more ASudha products.",
+      verified: false,
     },
     {
       id: 3,
-      name: "Priya Sharma",
-      avatar: "/assets/images/team/priya.jpg",
+      name: "Ananya Gupta",
+      avatar: "/assets/images/team/sarah.jpg",
       date: "March 14, 2026",
-      text: "The primer tip is gold! I switched to a hydrating primer and my foundation looks so much smoother now."
-    }
-  ];
+      text: "Love the Ayurvedic approach! I appreciate that ASudha is 100% chemical-free. This blog post made it so easy to understand how to use the products properly.",
+      verified: true,
+    },
+  ]);
+  const [avatarErrors, setAvatarErrors] = useState({});
+  const [isCommentPosted, setIsCommentPosted] = useState(false);
+
+  // ─── Theme tokens ───
+  const dark = {
+    bg: brandColors.black,
+    bgAlt: "#141414",
+    card: brandColors.darkSlate,
+    cardAlt: "#222222",
+    border: "rgba(212, 175, 55, 0.14)",
+    borderSoft: "rgba(255, 255, 255, 0.06)",
+    divider: "rgba(255, 255, 255, 0.08)",
+    text: "#f5f0eb",
+    textMuted: "#c9b8b0",
+    textDim: "#8d7d76",
+    gold: brandColors.gold,
+    green: brandColors.green,
+    accent: brandColors.primary,
+    shadow: DARK_SHADOW,
+    shadowLift: DARK_SHADOW_LIFT,
+  };
+
+  const light = {
+    bg: brandColors.cream,
+    bgAlt: "#ffffff",
+    card: "#ffffff",
+    cardAlt: "#f9f4f0",
+    border: "rgba(62, 39, 35, 0.08)",
+    borderSoft: "rgba(62, 39, 35, 0.04)",
+    divider: "rgba(62, 39, 35, 0.06)",
+    text: "#3e2723",
+    textMuted: brandColors.earthLight,
+    textDim: "#8d7d76",
+    gold: brandColors.goldDark,
+    green: brandColors.green,
+    accent: brandColors.primary,
+    shadow: LIGHT_SHADOW,
+    shadowLift: LIGHT_SHADOW_LIFT,
+  };
+
+  const T = isDarkMode ? dark : light;
+
+  const isMobile = windowWidth <= 480;
+  const isNarrow = windowWidth <= 768;
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const post = {
+    id: 1,
+    title: "Multani Mitti & Ubtan: The Ancient Ayurvedic Duo for Glowing Skin",
+    excerpt:
+      "Discover the timeless Ayurvedic benefits of 100% natural Multani Mitti and Ubtan. Learn how this powerful herbal duo can deep-cleanse, exfoliate, and reveal your natural radiance.",
+    content: `
+      <p>In the world of modern skincare, we often look for complex solutions. But sometimes, the most powerful remedies are the ones that have been passed down through generations. Enter <strong>Multani Mitti (Fuller's Earth)</strong> and <strong>Ubtan</strong>—two ancient Ayurvedic formulations that have been trusted for centuries to reveal glowing, healthy skin.</p>
+
+      <div class="highlight-box">
+        <p><strong>✨ Did You Know?</strong> Multani Mitti has been used in India for over 2,000 years, while Ubtan is a 5,000-year-old beauty ritual!</p>
+      </div>
+
+      <h2>What is Multani Mitti?</h2>
+      <p>Multani Mitti, also known as Fuller's Earth, is a calcium bentonite clay that has been used in India and the Middle East for over 2,000 years. It is celebrated for its incredible ability to absorb excess oil, remove impurities, and gently exfoliate dead skin cells. At <strong>ASudha Beauty</strong>, our Multani Mitti is 100% natural, chemical-free, and sourced directly from the earth to ensure you get the purest experience.</p>
+
+      <div class="benefits-grid">
+        <div class="benefit-item">🧴 Deep Cleansing</div>
+        <div class="benefit-item">💧 Oil Control</div>
+        <div class="benefit-item">✨ Skin Glow</div>
+        <div class="benefit-item">🌿 Natural Purity</div>
+      </div>
+
+      <h2>What is Ubtan?</h2>
+      <p>Ubtan is a traditional Ayurvedic herbal paste made from a blend of natural ingredients like turmeric, sandalwood, gram flour, and various herbs. It has been a staple in Indian households for over 5,000 years. Ubtan is not just a face pack; it is a holistic beauty ritual that nourishes the skin, improves texture, and imparts a natural, golden glow.</p>
+
+      <h2>Why These Two Are a Match Made in Ayurveda</h2>
+      <p>Together, Multani Mitti and Ubtan form the perfect skincare duo. Multani Mitti acts as a deep-cleansing agent that draws out impurities and excess oil. Ubtan, on the other hand, nourishes and revitalizes the skin with its blend of herbs and spices. When used together, they provide a complete skincare routine:</p>
+      <ul>
+        <li><strong>Deep Cleansing:</strong> Multani Mitti removes dirt, oil, and blackheads from deep within the pores.</li>
+        <li><strong>Exfoliation:</strong> Ubtan gently scrubs away dead skin cells, revealing fresh, new skin.</li>
+        <li><strong>Nourishment:</strong> The herbs in Ubtan deliver essential nutrients to the skin, leaving it soft and supple.</li>
+        <li><strong>Natural Glow:</strong> Together, they restore the skin's natural radiance, giving you a healthy, youthful appearance.</li>
+      </ul>
+
+      <h2>How to Use Them in Your Routine</h2>
+      <p>At ASudha Beauty, we believe in simplicity and purity. Here's how you can incorporate our 100% natural Multani Mitti and Ubtan powders into your weekly skincare ritual:</p>
+      <ol>
+        <li><strong>Step 1:</strong> Mix 2 tablespoons of Multani Mitti powder with rose water or plain water to form a smooth paste. Apply evenly on your face and neck. Leave it on for 10-15 minutes until it dries. Rinse with lukewarm water. <em>This deep-cleanses your pores.</em></li>
+        <li><strong>Step 2:</strong> Take 2 tablespoons of Ubtan powder. Add milk, curd, or honey to form a paste. Apply over your damp face. Leave for 10 minutes. Gently scrub in circular motions while washing off. <em>This exfoliates and nourishes.</em></li>
+        <li><strong>Step 3:</strong> Finish with a light moisturizer to lock in hydration.</li>
+      </ol>
+      <p>Use this routine 2-3 times a week for the best results. Your skin will thank you!</p>
+
+      <div class="tip-box">
+        <p><strong>🌿 ASudha Tip:</strong> For an extra glow, add a pinch of turmeric to your Ubtan paste. Turmeric has natural anti-inflammatory properties that brighten the skin.</p>
+      </div>
+
+      <h2>The ASudha Promise</h2>
+      <p>At ASudha Beauty, we take pride in crafting products that are <strong>100% natural, paraben-free, chemical-free, and cruelty-free</strong>. Our Multani Mitti and Ubtan powders are made with the purest ingredients, ensuring that you receive only the goodness of nature. <em>Pure. Natural. You.</em></p>
+    `,
+    image: "/assets/images/blog/multani-ubtan-guide.png",
+    category: "Skincare",
+    tags: [
+      "Multani Mitti",
+      "Ubtan",
+      "Ayurveda",
+      "Natural Skincare",
+      "Chemical Free",
+    ],
+    author: "Ashram Mishra",
+    authorAvatar: "/assets/images/founders/ashram.jpeg",
+    authorBio:
+      "Ashram Mishra is the founder of ASudha Beauty, driven by a passion for Ayurvedic wellness and a mission to bring 100% natural, chemical-free beauty products to every home. He believes that true beauty comes from the earth.",
+    date: "March 15, 2026",
+    readTime: "5 min read",
+    views: 1245,
+    likes: 89,
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -112,442 +207,898 @@ const BlogPost = () => {
       navigator.share({
         title: post.title,
         text: post.excerpt,
-        url: window.location.href
+        url: window.location.href,
       });
     }
   };
 
   const handleAvatarError = (commentId) => {
-    setAvatarErrors(prev => ({ ...prev, [commentId]: true }));
+    setAvatarErrors((prev) => ({ ...prev, [commentId]: true }));
   };
+
+  const handleCommentSubmit = (e) => {
+    e.preventDefault();
+    if (comment.trim()) {
+      const newComment = {
+        id: comments.length + 1,
+        name: "You",
+        avatar: "",
+        date: new Date().toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        }),
+        text: comment.trim(),
+        verified: false,
+      };
+      setComments([newComment, ...comments]);
+      setComment("");
+      setIsCommentPosted(true);
+      setTimeout(() => setIsCommentPosted(false), 3000);
+    }
+  };
+
+  const renderContent = () => ({ __html: post.content });
+
+  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ✅ The effect intentionally only re-runs when isDarkMode changes.
+  //    T.text / T.textMuted / T.border etc. are derived directly from
+  //    isDarkMode, so re-running on isDarkMode covers all of them.
+  useLayoutEffect(() => {
+    document
+      .querySelectorAll('style[data-blogpost-styles="true"]')
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+
+    const style = document.createElement("style");
+    style.setAttribute("data-blogpost-styles", "true");
+    style.textContent = `
+      /* ─── Article typography ─── */
+      .post-content {
+        font-size: 1.08rem;
+        line-height: 1.9;
+        color: ${T.textMuted};
+      }
+      .post-content > p:first-of-type::first-letter {
+        font-size: 3.4rem;
+        font-weight: 900;
+        float: left;
+        line-height: 0.9;
+        padding: 0.4rem 0.75rem 0.1rem 0;
+        margin: 0.15rem 0.35rem 0 0;
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary};
+        font-family: Georgia, serif;
+      }
+      .post-content h2 {
+        font-size: 1.55rem;
+        margin: 2.75rem 0 1.15rem;
+        color: ${T.text};
+        font-weight: 800;
+        padding-left: 1.15rem;
+        border-left: 4px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        letter-spacing: -0.3px;
+        line-height: 1.3;
+      }
+      .post-content h3 {
+        font-size: 1.28rem;
+        margin: 2rem 0 0.75rem;
+        color: ${T.text};
+        font-weight: 700;
+        letter-spacing: -0.2px;
+      }
+      .post-content p { margin-bottom: 1.5rem; }
+      .post-content ul, .post-content ol {
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+      }
+      .post-content li { margin-bottom: 0.6rem; }
+      .post-content li::marker {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary};
+        font-weight: 700;
+      }
+      .post-content strong { color: ${T.text}; font-weight: 700; }
+      .post-content em { font-style: italic; opacity: 0.95; }
+
+      .post-content .highlight-box {
+        background: ${
+          isDarkMode
+            ? "linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(245, 52, 107, 0.06) 100%)"
+            : "linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(245, 52, 107, 0.05) 100%)"
+        };
+        border: 1px solid ${
+          isDarkMode
+            ? "rgba(212, 175, 55, 0.28)"
+            : "rgba(212, 175, 55, 0.2)"
+        };
+        border-radius: 18px;
+        padding: 1.5rem 1.75rem;
+        margin: 2rem 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .post-content .highlight-box::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, ${brandColors.gold}, ${brandColors.primary});
+      }
+      .post-content .highlight-box p { margin: 0; font-size: 1rem; }
+
+      .post-content .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.85rem;
+        margin: 2rem 0;
+      }
+      .post-content .benefit-item {
+        background: ${
+          isDarkMode
+            ? "linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(245, 52, 107, 0.04))"
+            : "linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(245, 52, 107, 0.04))"
+        };
+        padding: 1rem 0.75rem;
+        border-radius: 14px;
+        text-align: center;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: ${T.text};
+        border: 1px solid ${
+          isDarkMode
+            ? "rgba(212, 175, 55, 0.16)"
+            : "rgba(212, 175, 55, 0.12)"
+        };
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+      }
+      .post-content .benefit-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px ${
+          isDarkMode ? "rgba(245, 52, 107, 0.2)" : "rgba(245, 52, 107, 0.12)"
+        };
+      }
+
+      .post-content .tip-box {
+        background: ${
+          isDarkMode
+            ? "linear-gradient(135deg, rgba(76, 175, 80, 0.12), rgba(139, 195, 74, 0.06))"
+            : "linear-gradient(135deg, rgba(76, 175, 80, 0.09), rgba(139, 195, 74, 0.04))"
+        };
+        border: 1px solid ${
+          isDarkMode
+            ? "rgba(76, 175, 80, 0.28)"
+            : "rgba(76, 175, 80, 0.18)"
+        };
+        border-radius: 18px;
+        padding: 1.5rem 1.75rem;
+        margin: 2rem 0;
+        border-left: 4px solid ${brandColors.green};
+        position: relative;
+      }
+      .post-content .tip-box p { margin: 0; font-size: 1rem; }
+
+      /* ─── Hover interactions ─── */
+      .back-btn {
+        transition: all 0.3s ease;
+      }
+      .back-btn:hover {
+        background-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        color: ${
+          isDarkMode ? brandColors.black : "#ffffff"
+        } !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        transform: translateX(-4px);
+      }
+
+      .tag {
+        transition: all 0.25s ease;
+      }
+      .tag:hover {
+        background-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        color: ${
+          isDarkMode ? brandColors.black : "#ffffff"
+        } !important;
+        transform: translateY(-2px);
+      }
+
+      .action-btn {
+        transition: all 0.25s ease;
+      }
+      .action-btn:hover {
+        background-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        color: ${
+          isDarkMode ? brandColors.black : "#ffffff"
+        } !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        transform: translateY(-2px);
+      }
+
+      .share-btn {
+        transition: all 0.25s ease;
+      }
+      .share-btn:hover {
+        background-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        color: ${
+          isDarkMode ? brandColors.black : "#ffffff"
+        } !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        transform: translateY(-3px);
+      }
+
+      .comment-btn {
+        transition: all 0.3s ease;
+      }
+      .comment-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(245, 52, 107, 0.5);
+      }
+
+      .comment-input {
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      }
+      .comment-input:focus {
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.bronze
+        } !important;
+        box-shadow: 0 0 0 4px ${
+          isDarkMode
+            ? "rgba(212, 175, 55, 0.18)"
+            : "rgba(199, 125, 66, 0.1)"
+        };
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document
+        .querySelectorAll('style[data-blogpost-styles="true"]')
+        .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+    };
+    // ✅ T (and T.text, T.textMuted, etc.) is derived from isDarkMode —
+    //    re-running on theme change is sufficient. ESLint flags this as a
+    //    false positive because it can't see through the derived object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDarkMode]);
 
   const themeStyles = {
     container: {
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      minHeight: '100vh',
-      transition: 'all 0.3s ease'
+      backgroundColor: T.bg,
+      color: T.text,
+      minHeight: "100%",
+      transition: "background-color 0.3s ease, color 0.3s ease",
+      boxSizing: "border-box",
+      width: "100%",
     },
 
-    // Hero Section
+    // ─── Hero ───
     hero: {
-      position: 'relative',
-      height: windowWidth <= 768 ? '300px' : '400px',
-      overflow: 'hidden'
+      position: "relative",
+      width: "100%",
+      backgroundColor: isDarkMode ? brandColors.black : "#1a1a1a",
+      lineHeight: 0,
+      overflow: "hidden",
+    },
+    heroOrb: {
+      position: "absolute",
+      top: "10%",
+      right: "-100px",
+      width: "340px",
+      height: "340px",
+      borderRadius: "50%",
+      background:
+        "radial-gradient(circle at 50% 50%, rgba(245, 52, 107, 0.4) 0%, transparent 70%)",
+      filter: "blur(80px)",
+      pointerEvents: "none",
+      zIndex: 1,
     },
     heroImage: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover'
+      width: "100%",
+      height: "auto",
+      maxHeight: isNarrow ? "340px" : "580px",
+      objectFit: "contain",
+      objectPosition: "center",
+      display: "block",
+      margin: "0 auto",
+      position: "relative",
+      zIndex: 0,
     },
-    heroOverlay: {
-      position: 'absolute',
-      top: 0,
+    heroBottomFade: {
+      position: "absolute",
+      bottom: 0,
       left: 0,
       right: 0,
-      bottom: 0,
-      background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7))',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      color: '#ffffff',
-      padding: '2rem'
-    },
-    heroTitle: {
-      fontSize: windowWidth <= 480 ? '1.8rem' : windowWidth <= 768 ? '2.2rem' : '3rem',
-      fontWeight: '700',
-      maxWidth: '800px',
-      margin: '0 auto'
+      height: "110px",
+      background: `linear-gradient(to top, ${T.bg} 0%, transparent 100%)`,
+      pointerEvents: "none",
+      zIndex: 2,
     },
 
-    // Back Button
     backButton: {
-      position: 'absolute',
-      top: '1rem',
-      left: '1rem',
+      position: "absolute",
+      top: isMobile ? "1rem" : "1.5rem",
+      left: isMobile ? "1rem" : "1.5rem",
       zIndex: 10,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 1rem',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      color: '#ffffff',
-      textDecoration: 'none',
-      borderRadius: '2rem',
-      backdropFilter: 'blur(5px)',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: 'rgba(232,140,166,0.8)'
-      }
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: isMobile ? "0.5rem 1.1rem" : "0.6rem 1.5rem",
+      backgroundColor: "rgba(15,15,15,0.7)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      color: "#ffffff",
+      textDecoration: "none",
+      borderRadius: "50px",
+      border: "1px solid rgba(255,255,255,0.25)",
+      fontWeight: "600",
+      fontSize: isMobile ? "0.82rem" : "0.9rem",
     },
 
-    // Main Content
+    // ─── Main content ───
     mainContent: {
-      maxWidth: '800px',
-      margin: '0 auto',
-      padding: '3rem 2rem'
+      maxWidth: "820px",
+      margin: "0 auto",
+      padding: isNarrow ? "2rem 1.25rem" : "3.5rem 2rem",
     },
 
-    // Post Meta
+    // Category badge above title
+    categoryBadgeWrap: {
+      display: "flex",
+      justifyContent: "center",
+      marginBottom: "1.25rem",
+      marginTop: isNarrow ? "0.5rem" : "1rem",
+    },
+    categoryBadge: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.45rem",
+      padding: "0.4rem 1.1rem",
+      background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      borderRadius: "50px",
+      fontSize: "0.72rem",
+      fontWeight: "800",
+      letterSpacing: "1px",
+      textTransform: "uppercase",
+      boxShadow: "0 8px 22px rgba(245, 52, 107, 0.3)",
+    },
+
+    // Post title
+    postTitle: {
+      fontSize: isMobile ? "1.65rem" : isNarrow ? "2rem" : "2.5rem",
+      fontWeight: "900",
+      lineHeight: "1.2",
+      letterSpacing: "-0.5px",
+      color: T.text,
+      marginBottom: "1.5rem",
+      textAlign: "center",
+    },
+    // Decorative underline
+    titleUnderline: {
+      width: "80px",
+      height: "4px",
+      margin: "0 auto 2rem",
+      borderRadius: "4px",
+      background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
+    },
+
+    // Meta row (below title)
     postMeta: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '1.5rem',
-      marginBottom: '2rem',
-      fontSize: '0.95rem',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: isNarrow ? "1rem" : "1.75rem",
+      marginBottom: "2.5rem",
+      fontSize: "0.85rem",
+      color: T.textMuted,
     },
     metaItem: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem'
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontWeight: "600",
     },
+    metaIcon: {
+      fontSize: "0.75rem",
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+    },
+
+    // Author card
     authorInfo: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      marginBottom: '2rem',
-      padding: '1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '1rem'
+      display: "flex",
+      alignItems: "center",
+      gap: "1.25rem",
+      marginBottom: "3rem",
+      padding: "1.5rem 1.75rem",
+      backgroundColor: T.card,
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      flexWrap: isMobile ? "wrap" : "nowrap",
+      position: "relative",
+      overflow: "hidden",
+    },
+    authorAccent: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      bottom: 0,
+      width: "4px",
+      background: `linear-gradient(180deg, ${brandColors.gold}, ${brandColors.primary})`,
     },
     authorAvatar: {
-      width: '50px',
-      height: '50px',
-      borderRadius: '50%',
-      objectFit: 'cover'
+      width: "64px",
+      height: "64px",
+      borderRadius: "50%",
+      objectFit: "cover",
+      border: `2px solid ${isDarkMode ? brandColors.gold : brandColors.bronze}`,
+      flexShrink: 0,
+      padding: "2px",
+      background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
+    },
+    authorAvatarInner: {
+      width: "100%",
+      height: "100%",
+      borderRadius: "50%",
+      objectFit: "cover",
+      display: "block",
     },
     authorAvatarFallback: {
-      width: '50px',
-      height: '50px',
-      borderRadius: '50%',
-      backgroundColor: isDarkMode ? '#404040' : '#e0e0e0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '1.5rem',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      width: "64px",
+      height: "64px",
+      borderRadius: "50%",
+      backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f0eb",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "1.8rem",
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      border: `2px solid ${isDarkMode ? brandColors.gold : brandColors.bronze}`,
+      flexShrink: 0,
     },
     authorDetails: {
-      flex: 1
+      flex: 1,
+      minWidth: 0,
     },
     authorName: {
-      fontSize: '1rem',
-      fontWeight: '600',
-      marginBottom: '0.25rem',
-      color: isDarkMode ? '#ffffff' : '#333333'
+      fontSize: "1.05rem",
+      fontWeight: "800",
+      marginBottom: "0.35rem",
+      color: T.text,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      flexWrap: "wrap",
+    },
+    authorVerified: {
+      fontSize: "0.62rem",
+      color: brandColors.green,
+      backgroundColor: isDarkMode
+        ? "rgba(76, 175, 80, 0.18)"
+        : "rgba(76, 175, 80, 0.1)",
+      padding: "0.15rem 0.55rem",
+      borderRadius: "50px",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.25rem",
+      fontWeight: "700",
+      letterSpacing: "0.3px",
+    },
+    authorBio: {
+      color: T.textMuted,
+      fontSize: "0.88rem",
+      lineHeight: "1.6",
     },
 
-    // Post Content
+    // Post body
     postContent: {
-      fontSize: '1.1rem',
-      lineHeight: '1.8',
-      color: isDarkMode ? '#cccccc' : '#666666',
-      marginBottom: '3rem',
-      '& h2': {
-        fontSize: '1.5rem',
-        margin: '2rem 0 1rem',
-        color: isDarkMode ? '#e88ca6' : '#333333'
-      },
-      '& p': {
-        marginBottom: '1.5rem'
-      }
+      marginBottom: "3rem",
     },
 
-    // Tags Section
+    // Quote pull (divider)
+    pullQuote: {
+      margin: "2.5rem 0",
+      padding: "1.5rem 0 1.5rem 1.75rem",
+      borderLeft: `4px solid ${
+        isDarkMode ? brandColors.gold : brandColors.primary
+      }`,
+      fontSize: "1.15rem",
+      fontStyle: "italic",
+      color: T.text,
+      lineHeight: "1.7",
+      fontWeight: "500",
+      position: "relative",
+    },
+    pullQuoteIcon: {
+      position: "absolute",
+      top: "0.5rem",
+      left: "-0.35rem",
+      fontSize: "1.4rem",
+      color: isDarkMode ? brandColors.gold : brandColors.primary,
+      opacity: 0.4,
+      backgroundColor: T.bg,
+      padding: "0 0.35rem",
+    },
+
+    // Tags
     tagsSection: {
-      marginBottom: '2rem',
-      padding: '1rem 0',
-      borderTop: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
-      borderBottom: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`
+      marginBottom: "2.5rem",
+      padding: "1.5rem 0",
+      borderTop: `1px solid ${T.divider}`,
+      borderBottom: `1px solid ${T.divider}`,
     },
     tagsTitle: {
-      fontSize: '1rem',
-      fontWeight: '600',
-      marginBottom: '1rem',
-      color: isDarkMode ? '#ffffff' : '#333333'
+      fontSize: "0.85rem",
+      fontWeight: "800",
+      marginBottom: "1rem",
+      color: T.text,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
     },
     tagsContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '0.5rem'
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.5rem",
     },
     tag: {
-      padding: '0.3rem 1rem',
-      backgroundColor: isDarkMode ? '#404040' : '#f0f0f0',
-      color: isDarkMode ? '#cccccc' : '#666666',
-      borderRadius: '2rem',
-      fontSize: '0.9rem',
-      textDecoration: 'none',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff'
-      }
+      padding: "0.4rem 1rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.05)"
+        : "rgba(62, 39, 35, 0.05)",
+      color: T.textMuted,
+      borderRadius: "50px",
+      fontSize: "0.8rem",
+      fontWeight: "700",
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
     },
 
-    // Share and Actions
+    // Actions
     actionsSection: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '3rem',
-      flexWrap: 'wrap',
-      gap: '1rem'
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "3rem",
+      flexWrap: "wrap",
+      gap: "1rem",
     },
     actionButtons: {
-      display: 'flex',
-      gap: '1rem'
+      display: "flex",
+      gap: "0.75rem",
     },
     actionButton: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      border: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
-      borderRadius: '2rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.55rem 1.35rem",
+      backgroundColor: T.card,
+      border: `1px solid ${T.border}`,
+      borderRadius: "50px",
+      color: T.text,
+      cursor: "pointer",
+      fontSize: "0.88rem",
+      fontWeight: "700",
+      fontFamily: "inherit",
     },
     activeActionButton: {
-      backgroundColor: '#e88ca6',
-      color: '#ffffff',
-      borderColor: '#e88ca6'
+      backgroundColor: isDarkMode ? brandColors.gold : brandColors.primary,
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      borderColor: isDarkMode ? brandColors.gold : brandColors.primary,
     },
     shareButtons: {
-      display: 'flex',
-      gap: '0.5rem'
+      display: "flex",
+      gap: "0.5rem",
     },
     shareButton: {
-      width: '36px',
-      height: '36px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      border: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
-      borderRadius: '50%',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
+      width: "40px",
+      height: "40px",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.card,
+      border: `1px solid ${T.border}`,
+      borderRadius: "50%",
+      color: T.text,
+      cursor: "pointer",
+      textDecoration: "none",
+      fontSize: "0.85rem",
     },
 
-    // Comments Section
+    // Comments
     commentsSection: {
-      marginBottom: '3rem'
+      marginBottom: "3rem",
+      paddingTop: "2.5rem",
+      borderTop: `2px solid ${T.divider}`,
+    },
+    commentsHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "1.75rem",
+      flexWrap: "wrap",
+      gap: "0.5rem",
     },
     commentsTitle: {
-      fontSize: '1.5rem',
-      fontWeight: '700',
-      marginBottom: '2rem',
-      color: isDarkMode ? '#e88ca6' : '#333333'
+      fontSize: "1.4rem",
+      fontWeight: "900",
+      color: T.text,
+      margin: 0,
+      letterSpacing: "-0.3px",
+    },
+    commentsCount: {
+      fontSize: "0.85rem",
+      color: T.textMuted,
+      fontWeight: "600",
+      padding: "0.35rem 0.85rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.05)"
+        : "rgba(62, 39, 35, 0.04)",
+      borderRadius: "50px",
     },
     commentForm: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem',
-      marginBottom: '2rem'
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.85rem",
+      marginBottom: "2rem",
+      padding: "1.75rem",
+      backgroundColor: T.card,
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
     },
     commentInput: {
-      padding: '1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      border: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
-      borderRadius: '1rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      fontSize: '0.95rem',
-      resize: 'vertical',
-      minHeight: '100px',
-      outline: 'none',
-      ':focus': {
-        borderColor: '#e88ca6'
-      }
+      padding: "1rem 1.15rem",
+      backgroundColor: isDarkMode ? brandColors.black : brandColors.cream,
+      border: `1px solid ${T.border}`,
+      borderRadius: "14px",
+      color: T.text,
+      fontSize: "0.95rem",
+      resize: "vertical",
+      minHeight: "110px",
+      outline: "none",
+      fontFamily: "inherit",
+      boxSizing: "border-box",
+      width: "100%",
     },
     commentButton: {
-      alignSelf: 'flex-end',
-      padding: '0.75rem 1.5rem',
-      backgroundColor: '#e88ca6',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '2rem',
-      fontSize: '1rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#d47a94',
-        transform: 'translateY(-2px)'
-      }
+      alignSelf: "flex-end",
+      padding: "0.7rem 2rem",
+      background: `linear-gradient(135deg, ${brandColors.gold} 0%, ${brandColors.primary} 100%)`,
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      border: "none",
+      borderRadius: "50px",
+      fontSize: "0.92rem",
+      fontWeight: "800",
+      cursor: "pointer",
+      boxShadow: "0 10px 26px rgba(245, 52, 107, 0.3)",
+      fontFamily: "inherit",
+      letterSpacing: "0.2px",
+    },
+    commentSuccess: {
+      marginTop: "0.5rem",
+      padding: "0.65rem 1rem",
+      backgroundColor: isDarkMode ? "rgba(76,175,80,0.15)" : "#e8f5e9",
+      color: isDarkMode ? "#a5d6a7" : "#2e7d32",
+      borderRadius: "12px",
+      fontSize: "0.85rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      fontWeight: "700",
     },
     commentList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.5rem'
+      display: "flex",
+      flexDirection: "column",
+      gap: "1rem",
     },
     comment: {
-      padding: '1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '1rem'
+      padding: "1.35rem",
+      backgroundColor: T.card,
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      borderRadius: "18px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      transition: "transform 0.25s ease, box-shadow 0.25s ease",
     },
     commentHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      marginBottom: '0.75rem'
+      display: "flex",
+      alignItems: "center",
+      gap: "0.85rem",
+      marginBottom: "0.6rem",
     },
     commentAvatar: {
-      width: '40px',
-      height: '40px',
-      borderRadius: '50%',
-      objectFit: 'cover'
+      width: "42px",
+      height: "42px",
+      borderRadius: "50%",
+      objectFit: "cover",
+      border: `1px solid ${T.borderSoft}`,
+      flexShrink: 0,
     },
     commentAvatarFallback: {
-      width: '40px',
-      height: '40px',
-      borderRadius: '50%',
-      backgroundColor: isDarkMode ? '#404040' : '#e0e0e0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '1.2rem',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      width: "42px",
+      height: "42px",
+      borderRadius: "50%",
+      backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f0eb",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "1.2rem",
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
     },
     commentInfo: {
-      flex: 1
+      flex: 1,
+      minWidth: 0,
     },
     commentName: {
-      fontSize: '1rem',
-      fontWeight: '600',
-      marginBottom: '0.25rem',
-      color: isDarkMode ? '#ffffff' : '#333333'
+      fontSize: "0.95rem",
+      fontWeight: "800",
+      marginBottom: "0.1rem",
+      color: T.text,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      flexWrap: "wrap",
+    },
+    commentVerified: {
+      fontSize: "0.58rem",
+      color: brandColors.green,
+      backgroundColor: isDarkMode
+        ? "rgba(76, 175, 80, 0.18)"
+        : "rgba(76, 175, 80, 0.1)",
+      padding: "0.1rem 0.45rem",
+      borderRadius: "50px",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.2rem",
+      fontWeight: "700",
     },
     commentDate: {
-      fontSize: '0.85rem',
-      color: isDarkMode ? '#999' : '#999'
+      fontSize: "0.75rem",
+      color: T.textMuted,
+      fontWeight: "600",
     },
     commentText: {
-      fontSize: '0.95rem',
-      lineHeight: '1.6',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      fontSize: "0.92rem",
+      lineHeight: "1.7",
+      color: T.textMuted,
+      margin: 0,
     },
-
-    // Related Posts
-    relatedSection: {
-      marginTop: '3rem',
-      paddingTop: '3rem',
-      borderTop: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`
-    },
-    relatedTitle: {
-      fontSize: '1.5rem',
-      fontWeight: '700',
-      marginBottom: '2rem',
-      color: isDarkMode ? '#e88ca6' : '#333333'
-    },
-    relatedGrid: {
-      display: 'grid',
-      gridTemplateColumns: windowWidth <= 480 ? '1fr' : windowWidth <= 768 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-      gap: '1.5rem'
-    },
-    relatedCard: {
-      textDecoration: 'none',
-      color: 'inherit'
-    },
-    relatedImage: {
-      width: '100%',
-      height: '150px',
-      objectFit: 'cover',
-      borderRadius: '1rem',
-      marginBottom: '1rem'
-    },
-    relatedPostTitle: {
-      fontSize: '1rem',
-      fontWeight: '600',
-      marginBottom: '0.5rem',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      ':hover': {
-        color: '#e88ca6'
-      }
-    },
-    relatedPostMeta: {
-      fontSize: '0.85rem',
-      color: isDarkMode ? '#999' : '#999'
-    }
   };
 
   return (
     <div style={themeStyles.container}>
-      {/* Hero Section */}
+      {/* Hero — image only with orbs + fade */}
       <section style={themeStyles.hero}>
+        <div style={themeStyles.heroOrb} />
         <img
           src={post.image}
           alt={post.title}
           style={themeStyles.heroImage}
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = "https://via.placeholder.com/1200x400/f8f8f8/e88ca6?text=" + post.title;
+            e.target.src =
+              "https://via.placeholder.com/1200x600/fcf8f5/3e2723?text=" +
+              encodeURIComponent(post.title);
           }}
         />
-        <div style={themeStyles.heroOverlay}>
-          <h1 style={themeStyles.heroTitle}>{post.title}</h1>
-        </div>
-        <Link to="/blog" style={themeStyles.backButton}>
+        <div style={themeStyles.heroBottomFade} />
+        <Link to="/blog" style={themeStyles.backButton} className="back-btn">
           <FaArrowLeft /> Back to Blog
         </Link>
       </section>
 
       {/* Main Content */}
       <div style={themeStyles.mainContent}>
-        {/* Post Meta */}
-        <div style={themeStyles.postMeta}>
-          <span style={themeStyles.metaItem}><FaUser /> {post.author}</span>
-          <span style={themeStyles.metaItem}><FaClock /> {post.readTime}</span>
-          <span style={themeStyles.metaItem}><FaComment /> {post.comments} comments</span>
+        {/* Category badge */}
+        <div style={themeStyles.categoryBadgeWrap}>
+          <span style={themeStyles.categoryBadge}>
+            <FaLeaf style={{ fontSize: "0.65rem" }} />
+            {post.category}
+          </span>
         </div>
 
-        {/* Author Info */}
+        {/* Post title */}
+        <h1 style={themeStyles.postTitle}>{post.title}</h1>
+        <div style={themeStyles.titleUnderline} />
+
+        {/* Meta */}
+        <div style={themeStyles.postMeta}>
+          <span style={themeStyles.metaItem}>
+            <FaUser style={themeStyles.metaIcon} /> {post.author}
+          </span>
+          <span style={themeStyles.metaItem}>
+            <FaClock style={themeStyles.metaIcon} /> {post.readTime}
+          </span>
+          <span style={themeStyles.metaItem}>
+            <FaComment style={themeStyles.metaIcon} /> {comments.length} comments
+          </span>
+          <span style={themeStyles.metaItem}>
+            <FaEye style={themeStyles.metaIcon} /> {post.views} views
+          </span>
+        </div>
+
+        {/* Author card */}
         <div style={themeStyles.authorInfo}>
-          <img
-            src={post.authorAvatar}
-            alt={post.author}
-            style={themeStyles.authorAvatar}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "https://via.placeholder.com/50x50/f8f8f8/e88ca6?text=" + post.author.charAt(0);
-            }}
-          />
+          <div style={themeStyles.authorAccent} />
+          {post.authorAvatar ? (
+            <div style={themeStyles.authorAvatar}>
+              <img
+                src={post.authorAvatar}
+                alt={post.author}
+                style={themeStyles.authorAvatarInner}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src =
+                    "https://via.placeholder.com/64x64/fcf8f5/3e2723?text=" +
+                    post.author.charAt(0);
+                }}
+              />
+            </div>
+          ) : (
+            <div style={themeStyles.authorAvatarFallback}>
+              <FaUserCircle />
+            </div>
+          )}
           <div style={themeStyles.authorDetails}>
-            <div style={themeStyles.authorName}>{post.author}</div>
-            <div style={{ color: isDarkMode ? '#999' : '#999', fontSize: '0.9rem' }}>{post.authorBio}</div>
+            <div style={themeStyles.authorName}>
+              {post.author}
+              <span style={themeStyles.authorVerified}>
+                <FaCheckCircle style={{ fontSize: "0.5rem" }} /> Verified
+              </span>
+            </div>
+            <div style={themeStyles.authorBio}>{post.authorBio}</div>
           </div>
         </div>
 
-        {/* Post Content */}
+        {/* Post content */}
         <div
           style={themeStyles.postContent}
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          className="post-content"
+          dangerouslySetInnerHTML={renderContent()}
         />
+
+        {/* Pull quote */}
+        <div style={themeStyles.pullQuote}>
+          <FaQuoteLeft style={themeStyles.pullQuoteIcon} />
+          Pure. Natural. You. — The ASudha promise, woven into every grain of
+          our powders.
+        </div>
 
         {/* Tags */}
         <div style={themeStyles.tagsSection}>
-          <h4 style={themeStyles.tagsTitle}>Tags:</h4>
+          <h4 style={themeStyles.tagsTitle}>
+            <FaTags style={{ fontSize: "0.8rem" }} /> Explore More Ayurvedic Topics
+          </h4>
           <div style={themeStyles.tagsContainer}>
-            {post.tags.map(tag => (
+            {post.tags.map((tag) => (
               <Link
                 key={tag}
                 to={`/blog?tag=${tag}`}
                 style={themeStyles.tag}
+                className="tag"
               >
                 #{tag}
               </Link>
@@ -561,78 +1112,118 @@ const BlogPost = () => {
             <button
               style={{
                 ...themeStyles.actionButton,
-                ...(liked && themeStyles.activeActionButton)
+                ...(liked && themeStyles.activeActionButton),
               }}
+              className="action-btn"
               onClick={() => setLiked(!liked)}
             >
-              <FaHeart /> {liked ? 'Liked' : 'Like'} ({post.likes + (liked ? 1 : 0)})
+              <FaHeart /> {liked ? "Liked" : "Like"} (
+              {post.likes + (liked ? 1 : 0)})
             </button>
           </div>
           <div style={themeStyles.shareButtons}>
-            <button style={themeStyles.shareButton} onClick={handleShare}>
+            <button
+              style={themeStyles.shareButton}
+              className="share-btn"
+              onClick={handleShare}
+              aria-label="Share"
+            >
               <FaShare />
             </button>
             <a
-              href={`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`}
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                typeof window !== "undefined" ? window.location.href : ""
+              )}`}
               target="_blank"
               rel="noopener noreferrer"
               style={themeStyles.shareButton}
+              className="share-btn"
+              aria-label="Share on Facebook"
             >
               <FaFacebook />
             </a>
             <a
-              href={`https://twitter.com/intent/tweet?url=${window.location.href}&text=${post.title}`}
+              href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                typeof window !== "undefined" ? window.location.href : ""
+              )}&text=${encodeURIComponent(post.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               style={themeStyles.shareButton}
+              className="share-btn"
+              aria-label="Share on Twitter"
             >
               <FaTwitter />
             </a>
             <a
-              href={`https://pinterest.com/pin/create/button/?url=${window.location.href}&media=${post.image}&description=${post.title}`}
+              href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(
+                typeof window !== "undefined" ? window.location.href : ""
+              )}&media=${encodeURIComponent(
+                post.image
+              )}&description=${encodeURIComponent(post.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               style={themeStyles.shareButton}
+              className="share-btn"
+              aria-label="Share on Pinterest"
             >
               <FaPinterest />
             </a>
             <a
-              href={`mailto:?subject=${post.title}&body=${window.location.href}`}
+              href={`mailto:?subject=${encodeURIComponent(
+                post.title
+              )}&body=${encodeURIComponent(
+                typeof window !== "undefined" ? window.location.href : ""
+              )}`}
               style={themeStyles.shareButton}
+              className="share-btn"
+              aria-label="Share via Email"
             >
               <FaEnvelope />
             </a>
           </div>
         </div>
 
-        {/* Comments Section */}
+        {/* Comments */}
         <div style={themeStyles.commentsSection}>
-          <h3 style={themeStyles.commentsTitle}>Comments ({comments.length})</h3>
-          
-          {/* Comment Form */}
-          <form style={themeStyles.commentForm} onSubmit={(e) => e.preventDefault()}>
+          <div style={themeStyles.commentsHeader}>
+            <h3 style={themeStyles.commentsTitle}>Join the Conversation</h3>
+            <span style={themeStyles.commentsCount}>
+              {comments.length} comments
+            </span>
+          </div>
+
+          <form style={themeStyles.commentForm} onSubmit={handleCommentSubmit}>
             <textarea
-              placeholder="Leave a comment..."
+              placeholder="Share your Ayurvedic skincare experience..."
               style={themeStyles.commentInput}
+              className="comment-input"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
-            <button type="submit" style={themeStyles.commentButton}>
+            <button
+              type="submit"
+              style={themeStyles.commentButton}
+              className="comment-btn"
+            >
               Post Comment
             </button>
+            {isCommentPosted && (
+              <div style={themeStyles.commentSuccess}>
+                <FaCheckCircle /> Your comment has been posted!
+              </div>
+            )}
           </form>
 
-          {/* Comments List */}
           <div style={themeStyles.commentList}>
-            {comments.map((comment) => (
-              <div key={comment.id} style={themeStyles.comment}>
+            {comments.map((c) => (
+              <div key={c.id} style={themeStyles.comment}>
                 <div style={themeStyles.commentHeader}>
-                  {!avatarErrors[comment.id] ? (
+                  {!avatarErrors[c.id] && c.avatar ? (
                     <img
-                      src={comment.avatar}
-                      alt={comment.name}
+                      src={c.avatar}
+                      alt={c.name}
                       style={themeStyles.commentAvatar}
-                      onError={() => handleAvatarError(comment.id)}
+                      onError={() => handleAvatarError(c.id)}
                     />
                   ) : (
                     <div style={themeStyles.commentAvatarFallback}>
@@ -640,35 +1231,23 @@ const BlogPost = () => {
                     </div>
                   )}
                   <div style={themeStyles.commentInfo}>
-                    <div style={themeStyles.commentName}>{comment.name}</div>
-                    <div style={themeStyles.commentDate}>{comment.date}</div>
+                    <div style={themeStyles.commentName}>
+                      {c.name}
+                      {c.verified && (
+                        <span style={themeStyles.commentVerified}>
+                          <FaCheckCircle style={{ fontSize: "0.4rem" }} />{" "}
+                          Verified
+                        </span>
+                      )}
+                    </div>
+                    <div style={themeStyles.commentDate}>{c.date}</div>
                   </div>
                 </div>
-                <p style={themeStyles.commentText}>{comment.text}</p>
+                <p style={themeStyles.commentText}>{c.text}</p>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Related Posts */}
-        {/* <div style={themeStyles.relatedSection}>
-          <h3 style={themeStyles.relatedTitle}>Related Posts</h3>
-          <div style={themeStyles.relatedGrid}>
-            {[1, 2, 3].map((_, i) => (
-              <Link key={i} to={`/blog/${i + 2}`} style={themeStyles.relatedCard}>
-                <img
-                  src={`https://via.placeholder.com/300x150/f8f8f8/e88ca6?text=Post+${i+2}`}
-                  alt={`Post ${i + 2}`}
-                  style={themeStyles.relatedImage}
-                />
-                <h4 style={themeStyles.relatedPostTitle}>Related Blog Post Title {i + 2}</h4>
-                <div style={themeStyles.relatedPostMeta}>
-                  <FaClock /> 5 min read
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div> */}
       </div>
     </div>
   );

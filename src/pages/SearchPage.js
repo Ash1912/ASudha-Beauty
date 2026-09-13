@@ -1,47 +1,67 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { useCart } from '../context/CartContext';
-import SEO from '../components/SEO';
-import ProductCard from '../components/ProductCard';
-import { products } from '../data/products';
-import { 
-  FaSearch, FaFilter, FaChevronLeft, FaChevronRight 
-} from 'react-icons/fa';
-import { usePixelTracking } from '../context/PixelContext';
+import React, { useState, useEffect, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
+import { useCart } from "../context/CartContext";
+import SEO from "../components/SEO";
+import ProductCard from "../components/ProductCard";
+import { products } from "../data/products";
+import {
+  FaSearch,
+  FaChevronLeft,
+  FaChevronRight,
+  FaLeaf,
+  FaSlidersH,
+  FaTimes,
+  FaInfoCircle,
+} from "react-icons/fa";
+import { usePixelTracking } from "../context/PixelContext";
+
+// Move herbalKeywords outside component to prevent recreation
+const herbalKeywords = [
+  "multani mitti", "fullers earth", "ubtan", "shikakai", "reetha", "amla",
+  "herbal", "ayurvedic", "natural", "organic", "herbal mix", "face pack",
+  "clay mask", "oil control", "deep cleansing", "glowing skin",
+  "hair care", "skin care", "ayurveda", "traditional", "pure natural",
+];
 
 const SearchPage = () => {
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
   const [searchParams] = useSearchParams();
-  const query = searchParams.get('q') || '';
+  const query = searchParams.get("q") || "";
   const trackEvent = usePixelTracking();
-  
+
   const [searchResults, setSearchResults] = useState([]);
   const [filteredResults, setFilteredResults] = useState([]);
-  const [sortBy, setSortBy] = useState('relevance');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState("relevance");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
   const [showFilters, setShowFilters] = useState(false);
   const [searchTracked, setSearchTracked] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const itemsPerPage = 12;
 
-  // Track search event when query changes
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     if (query && !searchTracked && filteredResults.length > 0) {
       trackEvent.search(query, filteredResults.length);
       setSearchTracked(true);
     }
-  }, [query, filteredResults.length, trackEvent, searchTracked]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, filteredResults.length, searchTracked]);
 
-  // Scroll to top when query changes
   useEffect(() => {
     window.scrollTo(0, 0);
     setCurrentPage(1);
   }, [query]);
 
-  // Search function with SEO optimization
+  // Main search logic
   useEffect(() => {
     if (!query) {
       setSearchResults([]);
@@ -49,395 +69,611 @@ const SearchPage = () => {
       return;
     }
 
-    const lowercaseQuery = query.toLowerCase();
-    
-    const results = products.filter(product => {
-      // Weighted search for better SEO
+    const lowercaseQuery = query.toLowerCase().trim();
+
+    const results = products.filter((product) => {
       let score = 0;
-      
-      // Exact name match (highest score)
+
       if (product.name.toLowerCase() === lowercaseQuery) score += 100;
-      // Name starts with query
-      else if (product.name.toLowerCase().startsWith(lowercaseQuery)) score += 50;
-      // Name includes query
+      else if (product.name.toLowerCase().startsWith(lowercaseQuery))
+        score += 50;
       else if (product.name.toLowerCase().includes(lowercaseQuery)) score += 30;
-      
-      // Category match
-      if (product.category.toLowerCase().includes(lowercaseQuery)) score += 20;
-      
-      // Description match
-      if (product.description.toLowerCase().includes(lowercaseQuery)) score += 15;
-      
-      // Ingredients match
-      if (product.ingredients.toLowerCase().includes(lowercaseQuery)) score += 10;
-      
-      // Benefits match
-      if (product.benefits?.some(b => b.toLowerCase().includes(lowercaseQuery))) score += 10;
-      
-      // Shades match - with type checking
-      if (Array.isArray(product.shades)) {
-        if (product.shades.some(s => s.toLowerCase().includes(lowercaseQuery))) score += 5;
-      } else if (typeof product.shades === 'number') {
-        const shadeNumberMatch = 
-          `${product.shades} shades`.toLowerCase().includes(lowercaseQuery) ||
-          `${product.shades} colors`.toLowerCase().includes(lowercaseQuery);
-        if (shadeNumberMatch) score += 5;
-      }
-      
-      // SEO keywords
-      const seoKeywords = [
-        'makeup', 'cosmetics', 'beauty', 'skincare', 'organic', 'vegan',
-        'cruelty free', 'natural', 'clean beauty', 'foundation', 'lipstick',
-        'mascara', 'serum', 'cleanser', 'moisturizer', 'highlighter',
-        'eyeliner', 'kajal', 'sindoor', 'nail paint', 'compact'
-      ];
-      
-      if (seoKeywords.some(k => k.includes(lowercaseQuery))) score += 8;
-      
+
+      if (product.category?.toLowerCase().includes(lowercaseQuery)) score += 20;
+      if (product.description?.toLowerCase().includes(lowercaseQuery))
+        score += 15;
+      if (product.ingredients?.toLowerCase().includes(lowercaseQuery))
+        score += 10;
+      if (
+        product.benefits?.some((b) =>
+          b.toLowerCase().includes(lowercaseQuery)
+        )
+      )
+        score += 10;
+
+      if (
+        herbalKeywords.some(
+          (k) => k.includes(lowercaseQuery) || lowercaseQuery.includes(k)
+        )
+      )
+        score += 25;
+
       return score > 0;
     });
 
-    // Sort by score
     results.sort((a, b) => {
       const getScore = (product) => {
         let score = 0;
         if (product.name.toLowerCase() === lowercaseQuery) score += 100;
         if (product.name.toLowerCase().startsWith(lowercaseQuery)) score += 50;
         if (product.name.toLowerCase().includes(lowercaseQuery)) score += 30;
+        if (product.category === "Skincare") score += 20;
         return score;
       };
-      
       return getScore(b) - getScore(a);
     });
 
     setSearchResults(results);
     setSearchTracked(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  // Apply filters and sorting
+  // Filter + sort
   useEffect(() => {
     let filtered = [...searchResults];
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(
+        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
 
-    // Filter by price
-    filtered = filtered.filter(p => p.price >= priceRange.min && p.price <= priceRange.max);
+    filtered = filtered.filter(
+      (p) => p.price >= priceRange.min && p.price <= priceRange.max
+    );
 
-    // Sort
     switch (sortBy) {
-      case 'price-low':
+      case "price-low":
         filtered.sort((a, b) => a.price - b.price);
         break;
-      case 'price-high':
+      case "price-high":
         filtered.sort((a, b) => b.price - a.price);
         break;
-      case 'name':
+      case "name":
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case 'rating':
+      case "rating":
         filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       default:
-        // Keep relevance sort
         break;
     }
 
     setFilteredResults(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, [searchResults, selectedCategory, priceRange, sortBy]);
 
-  // Pagination
+  // ----- Suggestions (new) -----
+  // Show up to 6 product name suggestions + matching herbal keywords
+  const suggestions = useMemo(() => {
+    if (!query || query.trim().length < 1) return { products: [], keywords: [] };
+    const q = query.toLowerCase().trim();
+
+    const productSuggestions = products
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q) ||
+          p.ingredients?.toLowerCase().includes(q)
+      )
+      .slice(0, 6)
+      .map((p) => ({ id: p.id, label: p.name }));
+
+    const keywordSuggestions = herbalKeywords
+      .filter((k) => k.includes(q) || q.includes(k))
+      .slice(0, 6)
+      .map((k) => ({ label: k }));
+
+    return { products: productSuggestions, keywords: keywordSuggestions };
+  }, [query]);
+
   const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
   const paginatedResults = filteredResults.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  const categories = ['all', 'Face', 'Lips', 'Eyes', 'Skincare', 'Sindoor', 'Nails'];
+  const categories = [
+    "all", "Face", "Lips", "Eyes", "Skincare", "Sindoor", "Nails",
+  ];
 
   const clearFilters = () => {
-    setSelectedCategory('all');
+    setSelectedCategory("all");
     setPriceRange({ min: 0, max: 1000 });
-    setSortBy('relevance');
+    setSortBy("relevance");
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleAddToCart = (product) => {
+    addToCart(
+      product,
+      Array.isArray(product.shades) ? product.shades[0] : "",
+      1
+    );
   };
 
   const themeStyles = {
     container: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: '2rem 1rem',
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      minHeight: '100vh'
+      maxWidth: "1280px",
+      margin: "0 auto",
+      padding: windowWidth <= 480 ? "1.5rem 1rem" : "2.5rem 1rem",
+      backgroundColor: isDarkMode ? "#0f0f0f" : "#fcf8f5",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      minHeight: "100vh",
+      position: "relative",
+      // overflow: hidden removed -> prevents navbar scroll trap
+      transition: "all 0.3s ease",
     },
 
-    // Header
+    // Blobs now absolute (were fixed) so they stay inside the page
+    bgBlob1: {
+      position: "absolute",
+      top: "-150px",
+      right: "-150px",
+      width: "400px",
+      height: "400px",
+      borderRadius: "50%",
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      opacity: 0.08,
+      filter: "blur(100px)",
+      zIndex: 0,
+      pointerEvents: "none",
+    },
+    bgBlob2: {
+      position: "absolute",
+      bottom: "-150px",
+      left: "-150px",
+      width: "300px",
+      height: "300px",
+      borderRadius: "50%",
+      background: "linear-gradient(135deg, #4caf50, #f7d794)",
+      opacity: 0.08,
+      filter: "blur(100px)",
+      zIndex: 0,
+      pointerEvents: "none",
+    },
+
+    // --- Suggestions (new) ---
+    suggestionsBox: {
+      position: "relative",
+      zIndex: 1,
+      marginBottom: "1.5rem",
+      padding: "1rem 1.25rem",
+      borderRadius: "16px",
+      background: isDarkMode
+        ? "rgba(26, 26, 26, 0.85)"
+        : "rgba(255,255,255,0.9)",
+      backdropFilter: "blur(10px)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
+    },
+    suggestionsTitle: {
+      fontSize: "0.9rem",
+      fontWeight: "700",
+      color: isDarkMode ? "#a0a0a0" : "#6d4c41",
+      marginBottom: "0.5rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+    },
+    suggestionChips: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.5rem",
+    },
+    suggestionChip: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      padding: "0.4rem 0.9rem",
+      borderRadius: "50px",
+      fontSize: "0.85rem",
+      fontWeight: "500",
+      textDecoration: "none",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      background: isDarkMode
+        ? "rgba(255,255,255,0.08)"
+        : "rgba(245, 52, 107, 0.08)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(245,52,107,0.2)"
+      }`,
+      transition: "all 0.2s ease",
+    },
+
     header: {
-      marginBottom: '2rem'
+      position: "relative",
+      zIndex: 1,
+      marginBottom: "2rem",
+      display: "flex",
+      flexDirection: windowWidth <= 768 ? "column" : "row",
+      alignItems: windowWidth <= 768 ? "flex-start" : "center",
+      justifyContent: "space-between",
+      gap: "1rem",
     },
     title: {
-      fontSize: '2rem',
-      marginBottom: '0.5rem',
-      color: isDarkMode ? '#f5346b' : '#333333',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      flexWrap: 'wrap'
-    },
-    query: {
-      color: isDarkMode ? '#ffffff' : '#333333',
-      fontWeight: '600'
+      fontSize: windowWidth <= 480 ? "1.5rem" : "2.2rem",
+      fontWeight: "900",
+      color: isDarkMode ? "#f7d794" : "#c77d42",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.75rem",
+      margin: 0,
     },
     resultsCount: {
-      color: isDarkMode ? '#cccccc' : '#666666',
-      marginBottom: '1rem'
+      color: isDarkMode ? "#a0a0a0" : "#6d4c41",
+      margin: "0.5rem 0 0",
+      fontSize: "0.95rem",
+    },
+    query: {
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      fontWeight: "700",
+    },
+    activeFiltersAndSort: {
+      display: "flex",
+      alignItems: "center",
+      gap: "1rem",
+      flexWrap: "wrap",
     },
 
-    // Filter Bar
-    filterBar: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '2rem',
-      flexWrap: 'wrap',
-      gap: '1rem'
-    },
     filterButton: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 1rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      border: `1px solid ${isDarkMode ? '#404040' : '#ddd'}`,
-      borderRadius: '4px',
-      cursor: 'pointer',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
-    },
-    filterSelect: {
-      padding: '0.5rem',
-      backgroundColor: isDarkMode ? '#404040' : '#ffffff',
-      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-      borderRadius: '4px',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      minWidth: '200px'
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.75rem 1.5rem",
+      background: isDarkMode
+        ? "rgba(255,255,255,0.08)"
+        : "rgba(255,255,255,0.8)",
+      backdropFilter: "blur(10px)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
+      borderRadius: "50px",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      cursor: "pointer",
+      fontSize: "0.95rem",
+      fontWeight: "600",
+      transition: "all 0.3s ease",
     },
 
-    // Filter Section
+    filterSelect: {
+      padding: "0.75rem 1.25rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.08)"
+        : "rgba(255,255,255,0.8)",
+      backdropFilter: "blur(10px)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
+      borderRadius: "50px",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      fontSize: "0.95rem",
+      cursor: "pointer",
+      outline: "none",
+      transition: "all 0.3s ease",
+    },
+
     filterSection: {
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      padding: '1.5rem',
-      borderRadius: '8px',
-      marginBottom: '2rem',
-      display: showFilters ? 'block' : 'none'
+      position: "relative",
+      zIndex: 1,
+      maxHeight: showFilters ? "500px" : "0",
+      opacity: showFilters ? 1 : 0,
+      overflow: "hidden",
+      transition: "max-height 0.5s ease, opacity 0.5s ease",
+      marginBottom: showFilters ? "2rem" : "0",
+      backgroundColor: isDarkMode
+        ? "rgba(26, 26, 26, 0.85)"
+        : "rgba(255,255,255,0.9)",
+      backdropFilter: "blur(20px)",
+      borderRadius: "20px",
+      padding: showFilters ? "2rem" : "0 2rem",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.8)"
+      }`,
+      boxShadow: isDarkMode
+        ? "0 20px 60px rgba(0,0,0,0.8)"
+        : "0 20px 60px rgba(62,39,35,0.08)",
     },
     filterGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '1.5rem'
+      display: "grid",
+      gridTemplateColumns: windowWidth <= 768 ? "1fr" : "repeat(3, 1fr)",
+      gap: "1.5rem",
     },
     filterLabel: {
-      display: 'block',
-      marginBottom: '0.5rem',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      display: "block",
+      marginBottom: "0.5rem",
+      fontWeight: "600",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
     },
-    filterSelectInline: { // Renamed to avoid duplicate key
-      width: '100%',
-      padding: '0.5rem',
-      backgroundColor: isDarkMode ? '#404040' : '#ffffff',
-      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-      borderRadius: '4px',
-      color: isDarkMode ? '#ffffff' : '#333333'
+    filterSelectInline: {
+      width: "100%",
+      padding: "0.75rem",
+      backgroundColor: isDarkMode ? "#0f0f0f" : "#fcf8f5",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
+      borderRadius: "12px",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      fontSize: "0.95rem",
+      outline: "none",
+      transition: "all 0.3s ease",
     },
     priceInput: {
-      width: '100%',
-      padding: '0.5rem',
-      backgroundColor: isDarkMode ? '#404040' : '#ffffff',
-      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-      borderRadius: '4px',
-      color: isDarkMode ? '#ffffff' : '#333333'
+      width: "100%",
+      padding: "0.75rem",
+      backgroundColor: isDarkMode ? "#0f0f0f" : "#fcf8f5",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
+      borderRadius: "12px",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      fontSize: "0.95rem",
+      outline: "none",
     },
 
-    // Active Filters
     activeFilters: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '0.5rem',
-      marginBottom: '1.5rem'
+      position: "relative",
+      zIndex: 1,
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.75rem",
+      alignItems: "center",
+      marginBottom: "2rem",
     },
     filterChip: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.25rem 1rem',
-      backgroundColor: isDarkMode ? '#404040' : '#f0f0f0',
-      borderRadius: '2rem',
-      fontSize: '0.9rem',
-      color: isDarkMode ? '#cccccc' : '#666666'
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.5rem 1.25rem",
+      background: isDarkMode
+        ? "rgba(255,255,255,0.08)"
+        : "rgba(255,255,255,0.8)",
+      backdropFilter: "blur(10px)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
+      borderRadius: "50px",
+      fontSize: "0.9rem",
+      color: isDarkMode ? "#ffffff" : "#3e2723",
+      fontWeight: "500",
     },
     clearChip: {
-      cursor: 'pointer',
-      color: '#f5346b',
-      ':hover': {
-        color: '#ff4d7a'
-      }
+      cursor: "pointer",
+      color: "#f5346b",
+      fontSize: "1rem",
+      transition: "transform 0.3s",
     },
     clearAllButton: {
-      background: 'none',
-      border: 'none',
-      color: '#f5346b',
-      fontSize: '0.9rem',
-      cursor: 'pointer',
-      textDecoration: 'underline',
-      ':hover': {
-        color: '#ff4d7a'
-      }
+      background: "none",
+      border: "none",
+      color: "#f5346b",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      cursor: "pointer",
+      textDecoration: "underline",
+      marginLeft: "0.5rem",
     },
 
-    // Products Grid
     productsGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-      gap: '2rem',
-      marginBottom: '2rem'
+      position: "relative",
+      zIndex: 1,
+      display: "grid",
+      gridTemplateColumns:
+        windowWidth <= 480
+          ? "1fr"
+          : windowWidth <= 768
+          ? "repeat(2, 1fr)"
+          : windowWidth <= 1024
+          ? "repeat(3, 1fr)"
+          : "repeat(4, 1fr)",
+      gap: "1.5rem",
+      marginBottom: "2rem",
+      alignItems: "stretch",
     },
 
-    // No Results
     noResults: {
-      textAlign: 'center',
-      padding: '4rem 2rem',
-      backgroundColor: isDarkMode ? '#2d2d2d' : '#f8f8f8',
-      borderRadius: '12px'
+      position: "relative",
+      zIndex: 1,
+      textAlign: "center",
+      padding: "4rem 2rem",
+      background: isDarkMode
+        ? "rgba(26, 26, 26, 0.8)"
+        : "rgba(255,255,255,0.8)",
+      backdropFilter: "blur(10px)",
+      borderRadius: "20px",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(62,39,35,0.1)"
+      }`,
     },
     noResultsIcon: {
-      fontSize: '4rem',
-      color: isDarkMode ? '#f5346b' : '#f5346b',
-      marginBottom: '1rem'
+      fontSize: "4rem",
+      color: "#f5346b",
+      marginBottom: "1rem",
     },
 
-    // Pagination
     pagination: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: '0.5rem',
-      marginTop: '2rem',
-      flexWrap: 'wrap'
+      position: "relative",
+      zIndex: 1,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: "0.5rem",
+      flexWrap: "wrap",
+      backgroundColor: isDarkMode
+        ? "rgba(26, 26, 26, 0.85)"
+        : "rgba(255,255,255,0.9)",
+      backdropFilter: "blur(10px)",
+      padding: "1rem 1.5rem",
+      borderRadius: "50px",
+      width: "fit-content",
+      margin: "2rem auto 0",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
     },
     pageButton: {
-      minWidth: '40px',
-      height: '40px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: isDarkMode ? '#404040' : '#f8f8f8',
-      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-      borderRadius: '4px',
-      cursor: 'pointer',
-      color: isDarkMode ? '#ffffff' : '#333333',
-      transition: 'all 0.3s ease',
-      ':hover': {
-        backgroundColor: '#e88ca6',
-        color: '#ffffff',
-        borderColor: '#e88ca6'
-      }
+      minWidth: "40px",
+      height: "40px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "transparent",
+      border: "none",
+      borderRadius: "50%",
+      cursor: "pointer",
+      color: isDarkMode ? "#a0a0a0" : "#6d4c41",
+      fontSize: "0.95rem",
+      transition: "all 0.3s ease",
     },
     activePage: {
-      backgroundColor: '#e88ca6',
-      color: '#ffffff',
-      borderColor: '#e88ca6'
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      color: isDarkMode ? "#0f0f0f" : "#ffffff",
+      fontWeight: "800",
+      boxShadow: "0 4px 15px rgba(245,52,107,0.4)",
     },
-    pageDots: {
-      color: isDarkMode ? '#cccccc' : '#666666'
-    }
+    pageDots: { color: isDarkMode ? "#a0a0a0" : "#6d4c41" },
   };
 
   if (!query) {
     return (
       <div style={themeStyles.container}>
-        <SEO 
-          title="Search Products"
-          description="Search for your favorite cosmetics, makeup, and beauty products at ASudha Beauty."
-          keywords="search cosmetics, find makeup, beauty products search"
-          url="/search"
-          type="website"
+        <div style={themeStyles.bgBlob1}></div>
+        <div style={themeStyles.bgBlob2}></div>
+        <SEO
+          title="Search Natural Skincare | ASudha Beauty"
+          description="Search for natural skincare, herbal powders, and Ayurvedic beauty products."
         />
-        
+
         <div style={themeStyles.noResults}>
-          <FaSearch style={themeStyles.noResultsIcon} />
-          <h2>Enter a search term</h2>
-          <p>Search for products, categories, or ingredients</p>
+          <FaLeaf style={themeStyles.noResultsIcon} />
+          <h2>Discover Natural Skincare</h2>
+          <p style={{ color: isDarkMode ? "#a0a0a0" : "#6d4c41" }}>
+            Search for Multani Mitti, Ubtan, Shikakai, and more herbal products
+          </p>
+
+          {/* Popular keyword chips when no query */}
+          <div
+            style={{
+              ...themeStyles.suggestionChips,
+              justifyContent: "center",
+              marginTop: "1.5rem",
+            }}
+          >
+            {herbalKeywords.slice(0, 8).map((k) => (
+              <Link
+                key={k}
+                to={`/search?q=${encodeURIComponent(k)}`}
+                style={themeStyles.suggestionChip}
+              >
+                <FaLeaf style={{ fontSize: "0.75em" }} />
+                {k}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  const handleAddToCart = (product) => {
-    addToCart(product, Array.isArray(product.shades) ? product.shades[0] : '', 1);
-  };
-
   return (
     <div style={themeStyles.container}>
-      <SEO 
-        title={`Search results for "${query}"`}
-        description={`Found ${filteredResults.length} products matching "${query}" at ASudha Beauty. Shop lipsticks, foundations, eyeliners and more.`}
-        keywords={`${query}, ${query} cosmetics, ${query} makeup, beauty products, cosmetics search`}
-        url={`/search?q=${encodeURIComponent(query)}`}
-        type="website"
+      <div style={themeStyles.bgBlob1}></div>
+      <div style={themeStyles.bgBlob2}></div>
+
+      <SEO
+        title={`Search results for "${query}" | ASudha Beauty`}
+        description={`Found ${filteredResults.length} natural and herbal products matching "${query}".`}
       />
-      
+
       <div style={themeStyles.header}>
-        <h1 style={themeStyles.title}>
-          <FaSearch /> Search Results
-        </h1>
-        <p style={themeStyles.resultsCount}>
-          Found <span style={themeStyles.query}>{filteredResults.length}</span> result{filteredResults.length !== 1 ? 's' : ''} for "{query}"
-        </p>
+        <div>
+          <h1 style={themeStyles.title}>
+            <FaSearch style={{ fontSize: "0.8em" }} /> Search Results
+          </h1>
+          <p style={themeStyles.resultsCount}>
+            Found{" "}
+            <span style={themeStyles.query}>{filteredResults.length}</span>{" "}
+            natural product{filteredResults.length !== 1 ? "s" : ""} for "
+            {query}"
+          </p>
+        </div>
+
+        <div style={themeStyles.activeFiltersAndSort}>
+          <button
+            style={themeStyles.filterButton}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <FaSlidersH /> {showFilters ? "Hide Filters" : "Filters"}
+          </button>
+          <select
+            style={themeStyles.filterSelect}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="relevance">Relevance</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="name">Name</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
       </div>
 
-      <div style={themeStyles.filterBar}>
-        <button 
-          style={themeStyles.filterButton}
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <FaFilter /> {showFilters ? 'Hide Filters' : 'Show Filters'}
-        </button>
-        <select 
-          style={themeStyles.filterSelect}
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="relevance">Sort by: Relevance</option>
-          <option value="price-low">Sort by: Price (Low to High)</option>
-          <option value="price-high">Sort by: Price (High to Low)</option>
-          <option value="name">Sort by: Name</option>
-          <option value="rating">Sort by: Top Rated</option>
-        </select>
-      </div>
+      {/* Suggestions for the current query (only when we have some) */}
+      {(suggestions.products.length > 0 ||
+        suggestions.keywords.length > 0) && (
+        <div style={themeStyles.suggestionsBox}>
+          <div style={themeStyles.suggestionsTitle}>
+            <FaInfoCircle /> Suggestions for "{query}"
+          </div>
+          <div style={themeStyles.suggestionChips}>
+            {suggestions.products.map((s) => (
+              <Link
+                key={`p-${s.id}`}
+                to={`/search?q=${encodeURIComponent(s.label)}`}
+                style={themeStyles.suggestionChip}
+              >
+                <FaSearch style={{ fontSize: "0.75em" }} />
+                {s.label}
+              </Link>
+            ))}
+            {suggestions.keywords.map((k) => (
+              <Link
+                key={`k-${k.label}`}
+                to={`/search?q=${encodeURIComponent(k.label)}`}
+                style={themeStyles.suggestionChip}
+              >
+                <FaLeaf style={{ fontSize: "0.75em" }} />
+                {k.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
+      {/* Sliding Filters */}
       <div style={themeStyles.filterSection}>
         <div style={themeStyles.filterGrid}>
           <div>
             <label style={themeStyles.filterLabel}>Category</label>
-            <select 
-              style={themeStyles.filterSelectInline} // Using renamed style
+            <select
+              style={themeStyles.filterSelectInline}
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
-              {categories.map(cat => (
+              {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </option>
@@ -450,7 +686,9 @@ const SearchPage = () => {
               type="number"
               style={themeStyles.priceInput}
               value={priceRange.min}
-              onChange={(e) => setPriceRange({ ...priceRange, min: Number(e.target.value) })}
+              onChange={(e) =>
+                setPriceRange({ ...priceRange, min: Number(e.target.value) })
+              }
               min="0"
               max={priceRange.max}
             />
@@ -461,7 +699,9 @@ const SearchPage = () => {
               type="number"
               style={themeStyles.priceInput}
               value={priceRange.max}
-              onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
+              onChange={(e) =>
+                setPriceRange({ ...priceRange, max: Number(e.target.value) })
+              }
               min={priceRange.min}
               max="1000"
             />
@@ -469,59 +709,81 @@ const SearchPage = () => {
         </div>
       </div>
 
-      {/* Active Filters */}
-      {(selectedCategory !== 'all' || priceRange.min > 0 || priceRange.max < 1000) && (
+      {/* Active Chips */}
+      {(selectedCategory !== "all" ||
+        priceRange.min > 0 ||
+        priceRange.max < 1000) && (
         <div style={themeStyles.activeFilters}>
-          {selectedCategory !== 'all' && (
+          {selectedCategory !== "all" && (
             <span style={themeStyles.filterChip}>
               Category: {selectedCategory}
-              <span 
+              <span
                 style={themeStyles.clearChip}
-                onClick={() => setSelectedCategory('all')}
+                onClick={() => setSelectedCategory("all")}
               >
-                ×
+                <FaTimes />
               </span>
             </span>
           )}
           {(priceRange.min > 0 || priceRange.max < 1000) && (
             <span style={themeStyles.filterChip}>
               Price: ₹{priceRange.min} - ₹{priceRange.max}
-              <span 
+              <span
                 style={themeStyles.clearChip}
                 onClick={() => setPriceRange({ min: 0, max: 1000 })}
               >
-                ×
+                <FaTimes />
               </span>
             </span>
           )}
-          <button 
-            style={themeStyles.clearAllButton}
-            onClick={clearFilters}
-          >
+          <button style={themeStyles.clearAllButton} onClick={clearFilters}>
             Clear All
           </button>
         </div>
       )}
 
+      {/* Product Grid */}
       {filteredResults.length === 0 ? (
         <div style={themeStyles.noResults}>
-          <FaSearch style={themeStyles.noResultsIcon} />
-          <h2>No products found</h2>
-          <p>Try adjusting your search or filters</p>
+          <FaInfoCircle style={themeStyles.noResultsIcon} />
+          <h2>No natural products found</h2>
+          <p style={{ color: isDarkMode ? "#a0a0a0" : "#6d4c41" }}>
+            Try searching for Multani Mitti, Ubtan, or other herbal products
+          </p>
+          <div
+            style={{
+              ...themeStyles.suggestionChips,
+              justifyContent: "center",
+              marginTop: "1.5rem",
+            }}
+          >
+            {herbalKeywords.slice(0, 8).map((k) => (
+              <Link
+                key={k}
+                to={`/search?q=${encodeURIComponent(k)}`}
+                style={themeStyles.suggestionChip}
+              >
+                <FaLeaf style={{ fontSize: "0.75em" }} />
+                {k}
+              </Link>
+            ))}
+          </div>
         </div>
       ) : (
         <>
           <div style={themeStyles.productsGrid}>
-            {paginatedResults.map(product => (
-              <ProductCard 
-                key={product.id} 
+            {paginatedResults.map((product) => (
+              <ProductCard
+                key={product.id}
                 product={product}
                 onAddToCart={handleAddToCart}
+                showBadge={product.category === "Skincare"}
+                badgeText={product.category === "Skincare" ? "🌿 Natural" : ""}
               />
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* Premium Floating Pagination */}
           {totalPages > 1 && (
             <div style={themeStyles.pagination}>
               <button
@@ -531,10 +793,9 @@ const SearchPage = () => {
               >
                 <FaChevronLeft />
               </button>
-              
+
               {[...Array(totalPages)].map((_, i) => {
                 const page = i + 1;
-                // Show first page, last page, and pages around current page
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -545,7 +806,7 @@ const SearchPage = () => {
                       key={page}
                       style={{
                         ...themeStyles.pageButton,
-                        ...(currentPage === page ? themeStyles.activePage : {})
+                        ...(currentPage === page ? themeStyles.activePage : {}),
                       }}
                       onClick={() => handlePageChange(page)}
                     >
@@ -556,11 +817,15 @@ const SearchPage = () => {
                   page === currentPage - 2 ||
                   page === currentPage + 2
                 ) {
-                  return <span key={page} style={themeStyles.pageDots}>...</span>;
+                  return (
+                    <span key={page} style={themeStyles.pageDots}>
+                      ...
+                    </span>
+                  );
                 }
                 return null;
               })}
-              
+
               <button
                 style={themeStyles.pageButton}
                 onClick={() => handlePageChange(currentPage + 1)}

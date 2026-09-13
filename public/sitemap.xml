@@ -1,62 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.asudhabeauty.com/</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>1</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/shop</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/shop</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/about</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/about</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/contact</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/contact</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/blog</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/blog</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/wishlist</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/wishlist</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/login</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/login</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/signup</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/signup</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/profile</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/profile</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://www.asudhabeauty.com/search</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>/search</loc>
+    <lastmod>2026-09-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
