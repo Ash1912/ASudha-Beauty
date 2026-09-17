@@ -29,7 +29,7 @@ const Navbar = () => {
   const location = useLocation();
 
   const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1440
+    typeof window !== "undefined" ? window.innerWidth : 1440,
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -125,12 +125,17 @@ const Navbar = () => {
       gold: "#f7d794",
       pink: "#f5346b",
       pinkDark: "#cf2a57",
+
+      espresso: "#2F1B24",
+      burgundy: "#6B253C",
+      burgundyDark: "#4A1728",
+
       black: "#0f0f0f",
       darkSlate: "#1a1a1a",
       cream: "#fcf8f5",
       earthDark: "#3e2723",
     }),
-    []
+    [],
   );
 
   const navLinks = useMemo(
@@ -140,7 +145,7 @@ const Navbar = () => {
       { to: "/blog", label: "Blog" },
       { to: "/contact", label: "Contact" },
     ],
-    []
+    [],
   );
 
   const isActive = (path) =>
@@ -151,7 +156,7 @@ const Navbar = () => {
     if (isSmallMobile) return "30px";
     if (isTablet) return "36px";
     if (isMobile) return "40px";
-    return "46px";
+    return "54px";
   };
 
   const getNavbarPadding = () =>
@@ -180,8 +185,8 @@ const Navbar = () => {
           ? "0 4px 30px rgba(0,0,0,0.6)"
           : "0 2px 20px rgba(0,0,0,0.4)"
         : isScrolled
-        ? "0 4px 30px rgba(245, 52, 107, 0.25)"
-        : "0 2px 20px rgba(245, 52, 107, 0.12)",
+          ? "0 4px 30px rgba(245, 52, 107, 0.25)"
+          : "0 2px 20px rgba(245, 52, 107, 0.12)",
       position: "sticky",
       top: 0,
       zIndex: 1200,
@@ -199,11 +204,7 @@ const Navbar = () => {
     navContainer: {
       maxWidth: "1400px",
       margin: "0 auto",
-      padding: isSmallMobile
-        ? "0 0.5rem"
-        : isTablet
-        ? "0 0.75rem"
-        : "0 1.5rem",
+      padding: isSmallMobile ? "0 0.5rem" : isTablet ? "0 0.75rem" : "0 1.5rem",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
@@ -218,10 +219,10 @@ const Navbar = () => {
       maxWidth: isSmallMobile
         ? "80px"
         : isTablet
-        ? "105px"
-        : isMobile
-        ? "135px"
-        : "175px",
+          ? "105px"
+          : isMobile
+            ? "140px"
+            : "190px",
       display: "block",
       filter: getLogoFilter(),
       transition: "filter 0.3s ease, height 0.3s ease",
@@ -244,27 +245,41 @@ const Navbar = () => {
       flexShrink: 1,
     },
     link: (active) => ({
-      color: isDarkMode ? "#ffffff" : "#111111",
+      color: isDarkMode
+        ? "#fff"
+        : active
+          ? brandColors.burgundyDark
+          : brandColors.espresso,
+
       textDecoration: "none",
-      fontSize: "0.88rem",
-      padding: "0.45rem 0.9rem",
-      borderRadius: "50px",
-      transition: "all 0.3s ease",
-      fontWeight: active ? "700" : "500",
+
+      fontSize: "0.95rem",
+
+      fontWeight: active ? "700" : "600",
+
       letterSpacing: "0.3px",
+
+      padding: "0.55rem 1rem",
+
+      borderRadius: "999px",
+
+      transition: "all .25s ease",
+
       whiteSpace: "nowrap",
+
       backgroundColor: active
         ? isDarkMode
-          ? "rgba(255,255,255,0.18)"
-          : "rgba(0,0,0,0.14)"
+          ? "rgba(255,255,255,.15)"
+          : "rgba(255,255,255,.22)"
         : "transparent",
-      position: "relative",
-      display: "inline-flex",
+
+      display: "flex",
       alignItems: "center",
-      fontFamily: "inherit",
+
+      position: "relative",
     }),
     cartLink: {
-      color: isDarkMode ? "#ffffff" : "#111111",
+      color: isDarkMode ? "#ffffff" : brandColors.espresso,
       textDecoration: "none",
       fontSize: isSmallMobile ? "0.9rem" : isTablet ? "1rem" : "1.05rem",
       position: "relative",
@@ -308,7 +323,7 @@ const Navbar = () => {
       justifyContent: "center",
       background: isDarkMode
         ? "rgba(255,255,255,0.08)"
-        : "rgba(0,0,0,0.08)",
+        : "rgba(255,255,255,0.22)",
       fontSize: isSmallMobile ? "0.9rem" : "1rem",
       cursor: "pointer",
       color: isDarkMode ? "#ffffff" : "#111111",
@@ -335,7 +350,7 @@ const Navbar = () => {
     },
     desktopSearchWrapper: {
       flex: 1,
-      maxWidth: "420px",
+      maxWidth: "500px",
       margin: "0 1rem",
       minWidth: "150px",
     },
@@ -487,9 +502,9 @@ const Navbar = () => {
         transition: transform 0.3s ease;
       }
       .nav-link-item:hover {
-        background-color: ${isDarkMode
-          ? "rgba(255, 255, 255, 0.14)"
-          : "rgba(0, 0, 0, 0.12)"} !important;
+        background-color: ${
+          isDarkMode ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"
+        } !important;
         transform: translateY(2px);   /* ✅ press DOWN on hover */
       }
       .nav-link-item:hover::after,
@@ -497,9 +512,9 @@ const Navbar = () => {
         transform: translateX(-50%) scaleX(1);
       }
       .nav-link-item.nav-link-active {
-        background-color: ${isDarkMode
-          ? "rgba(255, 255, 255, 0.18)"
-          : "rgba(0, 0, 0, 0.14)"} !important;
+        background-color: ${
+          isDarkMode ? "rgba(255, 255, 255, 0.18)" : "rgba(0, 0, 0, 0.14)"
+        } !important;
       }
 
       /* ─── Icon buttons: press DOWN on hover ─── */
@@ -508,9 +523,9 @@ const Navbar = () => {
           transform 0.25s ease;
       }
       .nav-icon-btn:hover {
-        background-color: ${isDarkMode
-          ? "rgba(255, 255, 255, 0.22)"
-          : "rgba(0, 0, 0, 0.16)"} !important;
+        background-color: ${
+          isDarkMode ? "rgba(255, 255, 255, 0.22)" : "rgba(0, 0, 0, 0.16)"
+        } !important;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         transform: translateY(3px) scale(0.98);   /* ✅ press DOWN */
       }
@@ -559,16 +574,16 @@ const Navbar = () => {
       }
       .theme-toggle-wrapper button {
         color: ${isDarkMode ? "#ffffff" : "#111111"} !important;
-        background-color: ${isDarkMode
-          ? "rgba(255, 255, 255, 0.08)"
-          : "rgba(0, 0, 0, 0.08)"} !important;
+        background-color: ${
+          isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"
+        } !important;
         transition: background-color 0.25s ease, transform 0.25s ease,
           box-shadow 0.25s ease;
       }
       .theme-toggle-wrapper button:hover {
-        background-color: ${isDarkMode
-          ? "rgba(255, 255, 255, 0.2)"
-          : "rgba(0, 0, 0, 0.16)"} !important;
+        background-color: ${
+          isDarkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.16)"
+        } !important;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         transform: translateY(3px) scale(0.98);   /* ✅ press DOWN */
       }

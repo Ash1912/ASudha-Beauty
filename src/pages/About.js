@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import SEO from "../components/SEO";
 import {
   FaLeaf,
   FaShieldAlt,
@@ -14,10 +15,30 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 
+// ─── Brand palette (module-scope: stable references) ───
+const brandColors = {
+  primary: "#f5346b",
+  primaryDark: "#cf2a57",
+  gold: "#f7d794",
+  goldDark: "#d4af37",
+  bronze: "#c77d42",
+  black: "#0f0f0f",
+  darkSlate: "#1a1a1a",
+  earthDark: "#3e2723",
+  earthLight: "#6d4c41",
+  cream: "#fcf8f5",
+  green: "#4caf50",
+};
+
+const DARK_SHADOW = "0 10px 30px rgba(0, 0, 0, 0.55)";
+const DARK_SHADOW_LIFT = "0 24px 50px rgba(0, 0, 0, 0.7)";
+const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
+const LIGHT_SHADOW_LIFT = "0 24px 50px rgba(62, 39, 35, 0.12)";
+
 const About = () => {
   const { isDarkMode } = useTheme();
   const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1440
+    typeof window !== "undefined" ? window.innerWidth : 1440,
   );
   const [isVisible, setIsVisible] = useState({
     story: false,
@@ -52,7 +73,7 @@ const About = () => {
 
     const observer = new IntersectionObserver(
       observerCallback,
-      observerOptions
+      observerOptions,
     );
     const sections = ["story", "mission", "values", "team"];
     sections.forEach((id) => {
@@ -63,24 +84,7 @@ const About = () => {
     return () => observer.disconnect();
   }, []);
 
-  const brandColors = {
-    primary: "#f5346b",
-    primaryDark: "#cf2a57",
-    gold: "#f7d794",
-    goldDark: "#d4af37",
-    bronze: "#c77d42",
-    black: "#0f0f0f",
-    darkSlate: "#1a1a1a",
-    earthLight: "#6d4c41",
-    cream: "#fcf8f5",
-    green: "#4caf50",
-  };
-
-  // ─── SHADOW CONSTANTS (stable, no hook deps needed) ───
-  const DARK_SHADOW_LIFT = "0 24px 50px rgba(0, 0, 0, 0.7)";
-  const LIGHT_SHADOW_LIFT = "0 24px 50px rgba(62, 39, 35, 0.12)";
-
-  // ─── DARK THEME TOKENS ───
+  // ─── Theme tokens ───
   const dark = {
     bg: brandColors.black,
     bgAlt: "#141414",
@@ -88,17 +92,19 @@ const About = () => {
     cardAlt: "#222222",
     border: "rgba(212, 175, 55, 0.14)",
     borderSoft: "rgba(255, 255, 255, 0.06)",
+    divider: "rgba(255, 255, 255, 0.08)",
     text: "#f5f0eb",
     textMuted: "#c9b8b0",
     textDim: "#8d7d76",
     gold: brandColors.gold,
+    green: brandColors.green,
+    accent: brandColors.primary,
     goldSoft: "rgba(212, 175, 55, 0.12)",
     pinkSoft: "rgba(245, 52, 107, 0.12)",
-    shadowCard: "0 10px 30px rgba(0, 0, 0, 0.55)",
+    shadow: DARK_SHADOW,
     shadowLift: DARK_SHADOW_LIFT,
   };
 
-  // ─── LIGHT THEME TOKENS ───
   const light = {
     bg: brandColors.cream,
     bgAlt: "#ffffff",
@@ -106,17 +112,23 @@ const About = () => {
     cardAlt: "#f9f4f0",
     border: "rgba(62, 39, 35, 0.08)",
     borderSoft: "rgba(62, 39, 35, 0.04)",
+    divider: "rgba(62, 39, 35, 0.06)",
     text: "#3e2723",
     textMuted: brandColors.earthLight,
     textDim: "#8d7d76",
     gold: brandColors.goldDark,
+    green: brandColors.green,
+    accent: brandColors.primary,
     goldSoft: "rgba(212, 175, 55, 0.08)",
     pinkSoft: "rgba(245, 52, 107, 0.06)",
-    shadowCard: "0 10px 30px rgba(62, 39, 35, 0.06)",
+    shadow: LIGHT_SHADOW,
     shadowLift: LIGHT_SHADOW_LIFT,
   };
 
   const T = isDarkMode ? dark : light;
+
+  const isMobile = windowWidth <= 480;
+  const isNarrow = windowWidth <= 768;
 
   const values = [
     {
@@ -191,11 +203,108 @@ const About = () => {
     setImgErrors((prev) => ({ ...prev, [key]: true }));
   };
 
-  const isMobile = windowWidth <= 480;
-  const isNarrow = windowWidth <= 768;
+  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  useLayoutEffect(() => {
+    document
+      .querySelectorAll('style[data-about-styles="true"]')
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
 
-  // ─── STYLES ───
+    const style = document.createElement("style");
+    style.setAttribute("data-about-styles", "true");
+    style.textContent = `
+      @keyframes aboutFloat1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(40px, -30px) scale(1.08); }
+      }
+      @keyframes aboutFloat2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(-35px, 25px) scale(1.06); }
+      }
+
+      .about-orb-1 { animation: aboutFloat1 14s ease-in-out infinite; }
+      .about-orb-2 { animation: aboutFloat2 18s ease-in-out infinite; }
+
+      .about-stat-card {
+        transition: transform 0.35s ease, box-shadow 0.35s ease,
+                    border-color 0.3s ease;
+      }
+      .about-stat-card:hover {
+        transform: translateY(-6px);
+        box-shadow: ${T.shadowLift};
+        border-color: ${
+          isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
+        } !important;
+      }
+
+      .about-mission-card {
+        transition: transform 0.35s ease, box-shadow 0.35s ease,
+                    border-color 0.3s ease;
+      }
+      .about-mission-card:hover {
+        transform: translateY(-5px);
+        box-shadow: ${T.shadowLift};
+        border-color: ${
+          isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
+        } !important;
+      }
+
+      .about-value-card {
+        transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                    box-shadow 0.45s ease, border-color 0.3s ease;
+      }
+      .about-value-card:hover {
+        transform: translateY(-8px);
+        box-shadow: ${T.shadowLift};
+        border-color: rgba(212, 175, 55, 0.45) !important;
+      }
+      .about-value-card:hover .about-value-icon {
+        transform: scale(1.1) rotate(-8deg);
+      }
+      .about-value-icon {
+        transition: transform 0.4s ease;
+      }
+
+      .about-team-card {
+        transition: transform 0.4s ease, box-shadow 0.4s ease,
+                    border-color 0.3s ease;
+      }
+      .about-team-card:hover {
+        transform: translateY(-6px);
+        box-shadow: ${T.shadowLift};
+        border-color: ${
+          isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
+        } !important;
+      }
+
+      .about-story-image img {
+        transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .about-story-image:hover img {
+        transform: scale(1.05);
+      }
+
+      .about-cta-btn {
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                    box-shadow 0.4s ease, gap 0.3s ease;
+      }
+      .about-cta-btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 44px rgba(245, 52, 107, 0.5);
+        gap: 0.8rem;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document
+        .querySelectorAll('style[data-about-styles="true"]')
+        .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDarkMode]);
+
   const themeStyles = {
+    // ─── Page wrapper ───
     container: {
       backgroundColor: T.bg,
       color: T.text,
@@ -203,6 +312,8 @@ const About = () => {
       transition: "background-color 0.3s ease, color 0.3s ease",
       boxSizing: "border-box",
       width: "100%",
+      overflowX: "hidden",
+      position: "relative",
     },
 
     // ─── HERO ───
@@ -224,10 +335,10 @@ const About = () => {
       height: "460px",
       borderRadius: "50%",
       background:
-        "radial-gradient(circle at 40% 40%, rgba(245, 52, 107, 0.28) 0%, transparent 70%)",
+        "radial-gradient(circle at 40% 40%, rgba(245, 52, 107, 0.3) 0%, transparent 70%)",
       filter: "blur(80px)",
       pointerEvents: "none",
-      opacity: isDarkMode ? 0.5 : 0.35,
+      opacity: isDarkMode ? 0.55 : 0.4,
     },
     heroOrb2: {
       position: "absolute",
@@ -237,10 +348,10 @@ const About = () => {
       height: "460px",
       borderRadius: "50%",
       background:
-        "radial-gradient(circle at 60% 60%, rgba(212, 175, 55, 0.28) 0%, transparent 70%)",
+        "radial-gradient(circle at 60% 60%, rgba(212, 175, 55, 0.3) 0%, transparent 70%)",
       filter: "blur(80px)",
       pointerEvents: "none",
-      opacity: isDarkMode ? 0.5 : 0.35,
+      opacity: isDarkMode ? 0.55 : 0.4,
     },
     heroPattern: {
       position: "absolute",
@@ -263,32 +374,41 @@ const About = () => {
       padding: "0.5rem 1.25rem",
       backgroundColor: isDarkMode
         ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.10)",
+        : "rgba(212, 175, 55, 0.1)",
       borderRadius: "50px",
-      fontSize: "0.78rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      fontSize: "0.72rem",
+      color: isDarkMode ? T.gold : brandColors.bronze,
       marginBottom: "1.75rem",
-      border: isDarkMode
-        ? "1px solid rgba(212, 175, 55, 0.32)"
-        : "1px solid rgba(199, 125, 66, 0.14)",
-      fontWeight: "600",
+      border: `1px solid ${
+        isDarkMode ? "rgba(212, 175, 55, 0.32)" : "rgba(199, 125, 66, 0.2)"
+      }`,
+      fontWeight: "800",
       letterSpacing: "1px",
       textTransform: "uppercase",
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
     },
+    // ✅ Solid title + gradient underline
     heroTitle: {
       fontSize: isMobile ? "2.1rem" : isNarrow ? "2.7rem" : "3.8rem",
       fontWeight: "900",
       marginBottom: "1.5rem",
-      background: isDarkMode
-        ? `linear-gradient(135deg, ${brandColors.gold} 0%, ${brandColors.primary} 100%)`
-        : `linear-gradient(135deg, ${brandColors.goldDark} 0%, ${brandColors.primary} 100%)`,
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
+      color: T.text,
       lineHeight: "1.1",
       letterSpacing: "-0.5px",
+      position: "relative",
+      display: "inline-block",
+      paddingBottom: "1rem",
+    },
+    heroTitleAccent: {
+      position: "absolute",
+      left: "50%",
+      bottom: 0,
+      transform: "translateX(-50%)",
+      width: "110px",
+      height: "4px",
+      borderRadius: "4px",
+      background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
     },
     heroText: {
       fontSize: isMobile ? "1rem" : "1.15rem",
@@ -309,31 +429,36 @@ const About = () => {
       backgroundColor: T.card,
       backdropFilter: "blur(12px)",
       WebkitBackdropFilter: "blur(12px)",
-      padding: isMobile ? "1.25rem 0.75rem" : "1.6rem 1rem",
-      borderRadius: "18px",
-      boxShadow: T.shadowCard,
+      padding: isMobile ? "1.35rem 0.85rem" : "1.7rem 1.15rem",
+      borderRadius: "20px",
+      boxShadow: T.shadow,
       transition: "transform 0.35s ease, box-shadow 0.35s ease",
       border: `1px solid ${T.border}`,
       cursor: "default",
       position: "relative",
       overflow: "hidden",
     },
+    statCardAccent: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "3px",
+      background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
+      opacity: 0.9,
+    },
     statNumber: {
-      fontSize: isMobile ? "1.5rem" : "1.9rem",
+      fontSize: isMobile ? "1.6rem" : "2rem",
       fontWeight: "900",
-      background: isDarkMode
-        ? `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`
-        : `linear-gradient(135deg, ${brandColors.goldDark}, ${brandColors.primary})`,
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-      marginBottom: "0.3rem",
+      color: isDarkMode ? brandColors.gold : brandColors.primary,
+      marginBottom: "0.4rem",
       lineHeight: "1.1",
+      letterSpacing: "-0.5px",
     },
     statLabel: {
-      fontSize: isMobile ? "0.72rem" : "0.8rem",
+      fontSize: isMobile ? "0.72rem" : "0.82rem",
       color: T.textMuted,
-      fontWeight: "600",
+      fontWeight: "700",
       letterSpacing: "0.3px",
     },
 
@@ -353,19 +478,19 @@ const About = () => {
     storyBadge: {
       display: "inline-flex",
       alignItems: "center",
-      gap: "0.4rem",
-      padding: "0.4rem 1.1rem",
-      backgroundColor: isDarkMode ? dark.goldSoft : "rgba(199, 125, 66, 0.08)",
+      gap: "0.45rem",
+      padding: "0.45rem 1.15rem",
+      backgroundColor: isDarkMode ? T.goldSoft : "rgba(199, 125, 66, 0.08)",
       borderRadius: "50px",
-      fontSize: "0.7rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      fontSize: "0.68rem",
+      color: isDarkMode ? T.gold : brandColors.bronze,
       textTransform: "uppercase",
       letterSpacing: "1.5px",
-      fontWeight: "700",
-      marginBottom: "1.25rem",
+      fontWeight: "800",
+      marginBottom: "1.5rem",
     },
     storyTitle: {
-      fontSize: isMobile ? "1.9rem" : "2.6rem",
+      fontSize: isMobile ? "2rem" : "2.6rem",
       fontWeight: "900",
       marginBottom: "1.5rem",
       color: T.text,
@@ -381,14 +506,12 @@ const About = () => {
     storyHighlight: {
       fontSize: "1.05rem",
       fontWeight: "600",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      color: isDarkMode ? T.gold : brandColors.bronze,
       marginTop: "2rem",
       padding: "1.5rem 1.75rem",
-      backgroundColor: isDarkMode
-        ? dark.goldSoft
-        : "rgba(199, 125, 66, 0.06)",
+      backgroundColor: isDarkMode ? T.goldSoft : "rgba(199, 125, 66, 0.06)",
       borderRadius: "18px",
-      borderLeft: `4px solid ${isDarkMode ? dark.gold : brandColors.bronze}`,
+      borderLeft: `4px solid ${isDarkMode ? T.gold : brandColors.bronze}`,
       display: "flex",
       alignItems: "flex-start",
       gap: "1rem",
@@ -410,7 +533,6 @@ const About = () => {
       objectFit: "cover",
       objectPosition: "center",
       display: "block",
-      transition: "transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)",
       maxWidth: "100%",
     },
     storyImageOverlay: {
@@ -425,11 +547,11 @@ const About = () => {
     },
     storyImageText: {
       fontSize: "1.15rem",
-      fontWeight: "700",
+      fontWeight: "800",
       marginBottom: "0.3rem",
       letterSpacing: "0.2px",
     },
-    storyImageSub: { fontSize: "0.88rem", opacity: 0.88 },
+    storyImageSub: { fontSize: "0.88rem", opacity: 0.9 },
 
     // ─── MISSION ───
     missionSection: {
@@ -451,9 +573,9 @@ const About = () => {
     },
     missionCard: {
       backgroundColor: T.card,
-      padding: isMobile ? "2rem 1.5rem" : "2.75rem 2.25rem",
+      padding: isMobile ? "2.25rem 1.6rem" : "2.75rem 2.25rem",
       borderRadius: "22px",
-      boxShadow: T.shadowCard,
+      boxShadow: T.shadow,
       border: `1px solid ${T.border}`,
       transition: "transform 0.35s ease, box-shadow 0.35s ease",
       position: "relative",
@@ -466,11 +588,24 @@ const About = () => {
       right: 0,
       height: "4px",
       background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
-      opacity: 0.85,
+      opacity: 0.9,
+    },
+    missionIconWrap: {
+      width: "56px",
+      height: "56px",
+      borderRadius: "16px",
+      background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "1.35rem",
+      marginBottom: "1.35rem",
+      boxShadow: "0 10px 26px rgba(245, 52, 107, 0.3)",
     },
     missionTitle: {
-      fontSize: "1.6rem",
-      fontWeight: "800",
+      fontSize: "1.55rem",
+      fontWeight: "900",
       marginBottom: "1rem",
       color: T.text,
       letterSpacing: "-0.3px",
@@ -480,11 +615,6 @@ const About = () => {
       color: T.textMuted,
       lineHeight: "1.8",
       marginBottom: 0,
-    },
-    missionIcon: {
-      fontSize: "2.4rem",
-      marginBottom: "1.25rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
     },
 
     // ─── VALUES ───
@@ -496,21 +626,34 @@ const About = () => {
       transform: isVisible.values ? "translateY(0)" : "translateY(30px)",
       transition: "all 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.25s",
     },
+    sectionTitleRow: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      marginBottom: "1rem",
+    },
     sectionTitle: {
-      fontSize: isMobile ? "1.9rem" : "2.6rem",
+      fontSize: isMobile ? "2rem" : "2.6rem",
       textAlign: "center",
       fontWeight: "900",
-      marginBottom: "1.25rem",
+      margin: 0,
       color: T.text,
       letterSpacing: "-0.5px",
       lineHeight: "1.15",
+    },
+    sectionTitleUnderline: {
+      width: "80px",
+      height: "4px",
+      borderRadius: "4px",
+      marginTop: "1rem",
+      background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
     },
     sectionSubtitle: {
       textAlign: "center",
       color: T.textMuted,
       fontSize: "1.02rem",
       maxWidth: "620px",
-      margin: "0 auto 3rem auto",
+      margin: "1.25rem auto 3rem",
       lineHeight: "1.75",
     },
     valuesGrid: {
@@ -518,15 +661,15 @@ const About = () => {
       gridTemplateColumns: isMobile
         ? "1fr"
         : isNarrow
-        ? "repeat(2, 1fr)"
-        : "repeat(3, 1fr)",
+          ? "repeat(2, 1fr)"
+          : "repeat(3, 1fr)",
       gap: "1.5rem",
     },
     valueCard: {
       backgroundColor: T.card,
       padding: "2.25rem 1.75rem",
       borderRadius: "22px",
-      boxShadow: T.shadowCard,
+      boxShadow: T.shadow,
       transition:
         "transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.45s ease, border-color 0.3s ease",
       border: `1px solid ${T.border}`,
@@ -535,20 +678,29 @@ const About = () => {
       position: "relative",
       overflow: "hidden",
     },
+    valueCardAccent: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "3px",
+      background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
+      opacity: 0.85,
+    },
     valueIconHalo: {
-      width: "64px",
-      height: "64px",
-      margin: "0 auto 1.25rem",
+      width: "68px",
+      height: "68px",
+      margin: "0 auto 1.35rem",
       borderRadius: "50%",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "1.5rem",
+      fontSize: "1.6rem",
       position: "relative",
     },
     valueTitle: {
       fontSize: "1.15rem",
-      fontWeight: "800",
+      fontWeight: "900",
       marginBottom: "0.75rem",
       color: T.text,
       letterSpacing: "-0.2px",
@@ -557,6 +709,7 @@ const About = () => {
       fontSize: "0.92rem",
       color: T.textMuted,
       lineHeight: "1.7",
+      margin: 0,
     },
 
     // ─── TEAM ───
@@ -580,10 +733,10 @@ const About = () => {
     },
     teamCard: {
       textAlign: "center",
-      padding: isMobile ? "2.25rem 1.5rem" : "2.75rem 2rem",
+      padding: isMobile ? "2.5rem 1.75rem" : "3rem 2.25rem",
       backgroundColor: T.card,
       borderRadius: "22px",
-      boxShadow: T.shadowCard,
+      boxShadow: T.shadow,
       transition: "transform 0.4s ease, box-shadow 0.4s ease",
       border: `1px solid ${T.border}`,
       position: "relative",
@@ -599,20 +752,20 @@ const About = () => {
       opacity: 0.9,
     },
     teamImageContainer: {
-      width: "120px",
-      height: "120px",
+      width: "128px",
+      height: "128px",
       margin: "0 auto 1.5rem",
       borderRadius: "50%",
       padding: "3px",
       background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
-      boxShadow: "0 12px 30px rgba(245, 52, 107, 0.25)",
+      boxShadow: "0 14px 34px rgba(245, 52, 107, 0.28)",
     },
     teamImageInner: {
       width: "100%",
       height: "100%",
       borderRadius: "50%",
       overflow: "hidden",
-      backgroundColor: isDarkMode ? dark.cardAlt : "#f5f0eb",
+      backgroundColor: isDarkMode ? T.cardAlt : "#f5f0eb",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -631,30 +784,30 @@ const About = () => {
       justifyContent: "center",
       fontSize: "2.8rem",
       fontWeight: "900",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      color: isDarkMode ? T.gold : brandColors.bronze,
       background: `linear-gradient(135deg, ${
         isDarkMode ? "#222222" : "#f5f0eb"
       }, ${isDarkMode ? "#1a1a1a" : "#ede3db"})`,
     },
     teamName: {
-      fontSize: "1.2rem",
-      fontWeight: "800",
-      marginBottom: "0.3rem",
+      fontSize: "1.25rem",
+      fontWeight: "900",
+      marginBottom: "0.35rem",
       color: T.text,
       letterSpacing: "-0.2px",
     },
     teamRole: {
       fontSize: "0.88rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
-      marginBottom: "1rem",
-      fontWeight: "600",
+      color: isDarkMode ? T.gold : brandColors.bronze,
+      marginBottom: "1.15rem",
+      fontWeight: "700",
       letterSpacing: "0.3px",
     },
     teamQuote: {
       fontSize: "0.88rem",
       color: T.textMuted,
       fontStyle: "italic",
-      padding: "0.85rem 1.1rem",
+      padding: "0.9rem 1.15rem",
       backgroundColor: isDarkMode
         ? "rgba(255,255,255,0.04)"
         : "rgba(62, 39, 35, 0.03)",
@@ -663,11 +816,11 @@ const About = () => {
       alignItems: "center",
       gap: "0.4rem",
       justifyContent: "center",
-      lineHeight: "1.55",
+      lineHeight: "1.6",
     },
     quoteIcon: {
       fontSize: "0.7rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      color: isDarkMode ? T.gold : brandColors.bronze,
       opacity: 0.7,
       flexShrink: 0,
     },
@@ -708,24 +861,24 @@ const About = () => {
     ctaBadge: {
       display: "inline-flex",
       alignItems: "center",
-      gap: "0.4rem",
-      padding: "0.4rem 1.2rem",
+      gap: "0.45rem",
+      padding: "0.45rem 1.25rem",
       backgroundColor: isDarkMode
         ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.10)",
+        : "rgba(212, 175, 55, 0.1)",
       borderRadius: "50px",
-      fontSize: "0.72rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      fontSize: "0.7rem",
+      color: isDarkMode ? T.gold : brandColors.bronze,
       textTransform: "uppercase",
       letterSpacing: "1.5px",
-      fontWeight: "700",
+      fontWeight: "800",
       marginBottom: "1.5rem",
-      border: isDarkMode
-        ? "1px solid rgba(212, 175, 55, 0.32)"
-        : "1px solid rgba(199, 125, 66, 0.14)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(212, 175, 55, 0.32)" : "rgba(199, 125, 66, 0.18)"
+      }`,
     },
     ctaTitle: {
-      fontSize: isMobile ? "1.9rem" : "2.6rem",
+      fontSize: isMobile ? "2rem" : "2.6rem",
       fontWeight: "900",
       marginBottom: "1rem",
       color: T.text,
@@ -742,65 +895,55 @@ const About = () => {
       display: "inline-flex",
       alignItems: "center",
       gap: "0.6rem",
-      padding: "1.05rem 2.5rem",
+      padding: "1.1rem 2.5rem",
       background: `linear-gradient(135deg, ${brandColors.gold} 0%, ${brandColors.primary} 100%)`,
       color: isDarkMode ? brandColors.black : "#ffffff",
       textDecoration: "none",
       borderRadius: "50px",
       fontSize: "1.02rem",
       fontWeight: "800",
-      transition:
-        "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease",
-      boxShadow: isDarkMode
-        ? "0 10px 30px rgba(245, 52, 107, 0.42)"
-        : "0 10px 30px rgba(245, 52, 107, 0.25)",
+      boxShadow: "0 12px 30px rgba(245, 52, 107, 0.35)",
       letterSpacing: "0.3px",
+      fontFamily: "inherit",
     },
     ctaLeaf: {
       fontSize: "1.6rem",
       marginBottom: "1rem",
-      color: isDarkMode ? dark.gold : brandColors.bronze,
+      lineHeight: 1,
     },
   };
 
-  // ─── Global CSS for hover effects ───
-  // Uses stable string constants (DARK_SHADOW_LIFT / LIGHT_SHADOW_LIFT)
-  // so the effect only re-runs when isDarkMode changes.
-  useEffect(() => {
-    const lift = isDarkMode ? DARK_SHADOW_LIFT : LIGHT_SHADOW_LIFT;
-    const style = document.createElement("style");
-    style.textContent = `
-      .about-stat-card:hover { transform: translateY(-6px); box-shadow: ${lift}; }
-      .about-mission-card:hover { transform: translateY(-5px); box-shadow: ${lift}; }
-      .about-value-card:hover {
-        transform: translateY(-8px);
-        box-shadow: ${lift};
-        border-color: rgba(212, 175, 55, 0.45) !important;
-      }
-      .about-team-card:hover { transform: translateY(-6px); box-shadow: ${lift}; }
-      .about-story-image:hover img { transform: scale(1.05); }
-      .about-cta-btn:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 18px 40px rgba(245, 52, 107, 0.5);
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, [isDarkMode]);
-
   return (
     <div style={themeStyles.container}>
+      <SEO
+        title="About Us | ASudha Beauty"
+        description="Learn about ASudha Beauty — rooted in Ayurvedic wisdom, delivering 100% natural, chemical-free herbal skincare and hair care powders from Gorakhpur, India."
+        keywords="about ASudha Beauty, Ayurvedic brand, natural skincare brand, chemical-free beauty, Gorakhpur"
+        url="/about"
+      />
+
       {/* ─── HERO ─── */}
       <section style={themeStyles.hero}>
-        <div style={themeStyles.heroOrb1} />
-        <div style={themeStyles.heroOrb2} />
+        <div
+          className="about-orb-1"
+          style={themeStyles.heroOrb1}
+          aria-hidden="true"
+        />
+        <div
+          className="about-orb-2"
+          style={themeStyles.heroOrb2}
+          aria-hidden="true"
+        />
         <div style={themeStyles.heroPattern} />
         <div style={themeStyles.heroContent}>
-          <div style={themeStyles.heroBadge}>
+          {/* <div style={themeStyles.heroBadge}>
             <FaLeaf style={{ fontSize: "0.7rem" }} />
             Since 2026 • Gorakhpur, India
-          </div>
-          <h1 style={themeStyles.heroTitle}>Pure. Natural. You.</h1>
+          </div> */}
+          <h1 style={themeStyles.heroTitle}>
+            Pure. Natural. You.
+            <span style={themeStyles.heroTitleAccent} aria-hidden="true" />
+          </h1>
           <p style={themeStyles.heroText}>
             Welcome to ASudha Beauty. Rooted in the ancient wisdom of Ayurveda,
             we bring you 100% natural, chemical-free herbal powders—crafted with
@@ -814,6 +957,7 @@ const About = () => {
                 style={themeStyles.statCard}
                 className="about-stat-card"
               >
+                <div style={themeStyles.statCardAccent} />
                 <div style={themeStyles.statNumber}>{stat.number}</div>
                 <div style={themeStyles.statLabel}>{stat.label}</div>
               </div>
@@ -873,12 +1017,9 @@ const About = () => {
       {/* ─── MISSION ─── */}
       <section id="mission" style={themeStyles.missionSection}>
         <div style={themeStyles.missionContainer}>
-          <div
-            style={themeStyles.missionCard}
-            className="about-mission-card"
-          >
+          <div style={themeStyles.missionCard} className="about-mission-card">
             <div style={themeStyles.missionAccent} />
-            <div style={themeStyles.missionIcon}>
+            <div style={themeStyles.missionIconWrap}>
               <FaHandHoldingHeart />
             </div>
             <h2 style={themeStyles.missionTitle}>Our Mission</h2>
@@ -888,17 +1029,20 @@ const About = () => {
               ingredients.
             </p>
           </div>
-          <div
-            style={themeStyles.missionCard}
-            className="about-mission-card"
-          >
+          <div style={themeStyles.missionCard} className="about-mission-card">
             <div
               style={{
                 ...themeStyles.missionAccent,
                 background: `linear-gradient(90deg, ${brandColors.green}, ${brandColors.gold})`,
               }}
             />
-            <div style={themeStyles.missionIcon}>
+            <div
+              style={{
+                ...themeStyles.missionIconWrap,
+                background: `linear-gradient(135deg, ${brandColors.green}, #8bc34a)`,
+                boxShadow: "0 10px 26px rgba(76, 175, 80, 0.3)",
+              }}
+            >
               <FaSpa />
             </div>
             <h2 style={themeStyles.missionTitle}>Our Vision</h2>
@@ -913,7 +1057,10 @@ const About = () => {
 
       {/* ─── VALUES ─── */}
       <section id="values" style={themeStyles.valuesSection}>
-        <h2 style={themeStyles.sectionTitle}>Our Core Values</h2>
+        <div style={themeStyles.sectionTitleRow}>
+          <h2 style={themeStyles.sectionTitle}>Our Core Values</h2>
+          <div style={themeStyles.sectionTitleUnderline} />
+        </div>
         <p style={themeStyles.sectionSubtitle}>
           These are the principles that guide everything we do—from sourcing
           ingredients to crafting your daily self-care ritual.
@@ -925,13 +1072,15 @@ const About = () => {
               style={themeStyles.valueCard}
               className="about-value-card"
             >
+              <div style={themeStyles.valueCardAccent} />
               <div
                 style={{
                   ...themeStyles.valueIconHalo,
                   background: `${value.color}1f`,
                   color: value.color,
-                  boxShadow: `0 8px 22px ${value.color}33`,
+                  boxShadow: `0 10px 26px ${value.color}33`,
                 }}
+                className="about-value-icon"
               >
                 {value.icon}
               </div>
@@ -945,7 +1094,10 @@ const About = () => {
       {/* ─── TEAM ─── */}
       <section id="team" style={themeStyles.teamSection}>
         <div style={themeStyles.teamContainer}>
-          <h2 style={themeStyles.sectionTitle}>Rooted in Trust</h2>
+          <div style={themeStyles.sectionTitleRow}>
+            <h2 style={themeStyles.sectionTitle}>Rooted in Trust</h2>
+            <div style={themeStyles.sectionTitleUnderline} />
+          </div>
           <p style={themeStyles.sectionSubtitle}>
             Meet the passionate individuals behind ASudha Beauty—dedicated to
             bringing you the purest Ayurvedic powders.
