@@ -455,7 +455,7 @@ const Home = () => {
       content:
         "The Multani Mitti powder from ASudha Beauty is 100% natural and effective! It deeply cleanses my skin, controls oil, and gives me a natural glow. Pure Ayurvedic goodness!",
       rating: 5,
-      date: "March 2024",
+      date: "March 2026",
       productLink: "/product/11001",
       productName: "Multani Mitti",
     },
@@ -467,7 +467,7 @@ const Home = () => {
       content:
         "The Ubtan powder is amazing! Made with traditional ingredients, it nourishes and revitalizes my skin. Chemical-free, paraben-free, and suitable for all skin types.",
       rating: 5,
-      date: "February 2024",
+      date: "February 2026",
       productLink: "/product/11002",
       productName: "Ubtan Powder",
     },
@@ -479,7 +479,7 @@ const Home = () => {
       content:
         "ASudha Beauty's Amla powder is a game-changer for my hair! It strengthens my roots, adds natural shine, and reduces hair fall. 100% natural and chemical-free.",
       rating: 5,
-      date: "January 2024",
+      date: "January 2026",
       productLink: "/product/12001",
       productName: "Amla Powder",
     },
@@ -491,7 +491,7 @@ const Home = () => {
       content:
         "The Herbal Mix Hair Pack is incredible! A unique blend of Bhringraj, Amla, Shikakai, and Hibiscus. My hair feels stronger, softer, and silkier after just 3 uses.",
       rating: 5,
-      date: "December 2023",
+      date: "June 2026",
       productLink: "/product/12004",
       productName: "Herbal Mix",
     },
@@ -503,7 +503,7 @@ const Home = () => {
       content:
         "I love ASudha Beauty's Reetha and Shikakai powders! They gently cleanse my hair without harsh chemicals. My hair is now soft, shiny, and naturally healthy.",
       rating: 5,
-      date: "November 2023",
+      date: "July 2026",
       productLink: "/product/12002",
       productName: "Reetha & Shikakai",
     },

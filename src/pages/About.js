@@ -38,7 +38,7 @@ const LIGHT_SHADOW_LIFT = "0 24px 50px rgba(62, 39, 35, 0.12)";
 const About = () => {
   const { isDarkMode } = useTheme();
   const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1440,
+    typeof window !== "undefined" ? window.innerWidth : 1440
   );
   const [isVisible, setIsVisible] = useState({
     story: false,
@@ -73,7 +73,7 @@ const About = () => {
 
     const observer = new IntersectionObserver(
       observerCallback,
-      observerOptions,
+      observerOptions
     );
     const sections = ["story", "mission", "values", "team"];
     sections.forEach((id) => {
@@ -129,6 +129,7 @@ const About = () => {
 
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
+  const isTeamStack = windowWidth <= 820;
 
   const values = [
     {
@@ -189,13 +190,7 @@ const About = () => {
       image: "/assets/images/founders/ashram.jpeg",
       fallback: "A",
       quote: "Bringing ancient wisdom to modern beauty.",
-    },
-    {
-      name: "Ashish Kumar Mishra",
-      role: "Co-Founder & Head of Product",
-      image: "/assets/images/founders/ashish.jpg",
-      fallback: "A",
-      quote: "Crafting nature's best for your well-being.",
+      bio: "Guided by a lifelong love for Ayurveda, Ashram founded ASudha Beauty with a simple mission — to make pure, chemical-free herbal beauty accessible to every home in India.",
     },
   ];
 
@@ -203,7 +198,7 @@ const About = () => {
     setImgErrors((prev) => ({ ...prev, [key]: true }));
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── Injected CSS ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-about-styles="true"]')
@@ -220,9 +215,43 @@ const About = () => {
         0%, 100% { transform: translate(0, 0) scale(1); }
         50% { transform: translate(-35px, 25px) scale(1.06); }
       }
+      @keyframes aboutRingSpin {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      @keyframes aboutRingSpinSlow {
+        from { transform: translate(-50%, -50%) rotate(360deg); }
+        to { transform: translate(-50%, -50%) rotate(0deg); }
+      }
+      @keyframes aboutPulseDot {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.4); opacity: 0.6; }
+      }
+      @keyframes aboutConicSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes aboutFloatLeaf {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+      @keyframes aboutShimmer {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+      }
 
       .about-orb-1 { animation: aboutFloat1 14s ease-in-out infinite; }
       .about-orb-2 { animation: aboutFloat2 18s ease-in-out infinite; }
+      .about-hero-ring { animation: aboutRingSpin 40s linear infinite; }
+      .about-hero-ring-2 { animation: aboutRingSpinSlow 60s linear infinite; }
+
+      /* Rotating conic glow behind hero */
+      .about-hero-conic {
+        animation: aboutConicSpin 30s linear infinite;
+      }
+      .about-cta-leaf {
+        animation: aboutFloatLeaf 4s ease-in-out infinite;
+      }
 
       .about-stat-card {
         transition: transform 0.35s ease, box-shadow 0.35s ease,
@@ -247,6 +276,12 @@ const About = () => {
           isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
         } !important;
       }
+      .about-mission-card:hover .about-mission-icon {
+        transform: scale(1.1) rotate(-6deg);
+      }
+      .about-mission-icon {
+        transition: transform 0.35s ease;
+      }
 
       .about-value-card {
         transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275),
@@ -258,10 +293,29 @@ const About = () => {
         border-color: rgba(212, 175, 55, 0.45) !important;
       }
       .about-value-card:hover .about-value-icon {
-        transform: scale(1.1) rotate(-8deg);
+        transform: scale(1.12) rotate(-8deg);
+      }
+      .about-value-card:hover .about-value-number {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .about-value-card:hover .about-value-ring {
+        opacity: 1;
+        transform: scale(1);
       }
       .about-value-icon {
         transition: transform 0.4s ease;
+      }
+      .about-value-number {
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      /* decorative ring that scales in on hover */
+      .about-value-ring {
+        transition: opacity 0.5s ease, transform 0.5s ease;
+        opacity: 0;
+        transform: scale(0.8);
       }
 
       .about-team-card {
@@ -274,6 +328,15 @@ const About = () => {
         border-color: ${
           isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
         } !important;
+      }
+      .about-team-card:hover .about-team-photo img {
+        transform: scale(1.05);
+      }
+      .about-team-photo img {
+        transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .about-pulse-dot {
+        animation: aboutPulseDot 2s ease-in-out infinite;
       }
 
       .about-story-image img {
@@ -291,6 +354,33 @@ const About = () => {
         transform: translateY(-4px);
         box-shadow: 0 18px 44px rgba(245, 52, 107, 0.5);
         gap: 0.8rem;
+      }
+
+      /* Signature shimmer text for the founder chip dot ring */
+      .about-shimmer {
+        background: linear-gradient(
+          90deg,
+          ${brandColors.gold} 0%,
+          ${brandColors.primary} 50%,
+          ${brandColors.gold} 100%
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: aboutShimmer 4s linear infinite;
+      }
+
+      /* Responsive: stack on mobile */
+      @media (max-width: 820px) {
+        .about-team-inner {
+          grid-template-columns: 1fr !important;
+        }
+        .about-team-photo {
+          order: -1;
+          height: 380px !important;
+          min-height: unset !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -322,7 +412,7 @@ const About = () => {
       background: isDarkMode
         ? `linear-gradient(160deg, #1a1212 0%, ${brandColors.black} 60%, #120a0a 100%)`
         : `linear-gradient(160deg, #fbf3ec 0%, ${brandColors.cream} 60%, #f7efe8 100%)`,
-      padding: isNarrow ? "4rem 1.25rem 3rem" : "6rem 2rem 5rem",
+      padding: isNarrow ? "5rem 1.25rem 4rem" : "7.5rem 2rem 6.5rem",
       textAlign: "center",
       overflow: "hidden",
       borderBottom: `1px solid ${T.borderSoft}`,
@@ -331,27 +421,92 @@ const About = () => {
       position: "absolute",
       top: "-180px",
       left: "-180px",
-      width: "460px",
-      height: "460px",
+      width: "500px",
+      height: "500px",
       borderRadius: "50%",
       background:
-        "radial-gradient(circle at 40% 40%, rgba(245, 52, 107, 0.3) 0%, transparent 70%)",
+        "radial-gradient(circle at 40% 40%, rgba(245, 52, 107, 0.35) 0%, transparent 70%)",
       filter: "blur(80px)",
       pointerEvents: "none",
-      opacity: isDarkMode ? 0.55 : 0.4,
+      opacity: isDarkMode ? 0.6 : 0.45,
     },
     heroOrb2: {
       position: "absolute",
       bottom: "-180px",
       right: "-180px",
-      width: "460px",
-      height: "460px",
+      width: "500px",
+      height: "500px",
       borderRadius: "50%",
       background:
-        "radial-gradient(circle at 60% 60%, rgba(212, 175, 55, 0.3) 0%, transparent 70%)",
+        "radial-gradient(circle at 60% 60%, rgba(212, 175, 55, 0.35) 0%, transparent 70%)",
       filter: "blur(80px)",
       pointerEvents: "none",
-      opacity: isDarkMode ? 0.55 : 0.4,
+      opacity: isDarkMode ? 0.6 : 0.45,
+    },
+    // Rotating conic gradient halo behind the hero title
+    heroConic: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "900px",
+      height: "900px",
+      maxWidth: "120vw",
+      maxHeight: "120vw",
+      borderRadius: "50%",
+      background: isDarkMode
+        ? "conic-gradient(from 0deg, rgba(245, 52, 107, 0.0) 0deg, rgba(245, 52, 107, 0.12) 90deg, rgba(212, 175, 55, 0.0) 180deg, rgba(212, 175, 55, 0.12) 270deg, rgba(245, 52, 107, 0.0) 360deg)"
+        : "conic-gradient(from 0deg, rgba(245, 52, 107, 0.0) 0deg, rgba(245, 52, 107, 0.08) 90deg, rgba(212, 175, 55, 0.0) 180deg, rgba(212, 175, 55, 0.08) 270deg, rgba(245, 52, 107, 0.0) 360deg)",
+      filter: "blur(60px)",
+      pointerEvents: "none",
+      zIndex: 0,
+    },
+    heroRing: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "780px",
+      height: "780px",
+      maxWidth: "110vw",
+      maxHeight: "110vw",
+      borderRadius: "50%",
+      border: `1px dashed ${
+        isDarkMode ? "rgba(212, 175, 55, 0.18)" : "rgba(199, 125, 66, 0.15)"
+      }`,
+      pointerEvents: "none",
+      zIndex: 1,
+    },
+    heroRingInner: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "560px",
+      height: "560px",
+      maxWidth: "85vw",
+      maxHeight: "85vw",
+      borderRadius: "50%",
+      border: `1px dashed ${
+        isDarkMode ? "rgba(245, 52, 107, 0.14)" : "rgba(199, 125, 66, 0.12)"
+      }`,
+      pointerEvents: "none",
+      zIndex: 1,
+    },
+    // subtle dot grid
+    heroGrid: {
+      position: "absolute",
+      inset: 0,
+      backgroundImage: isDarkMode
+        ? "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)"
+        : "radial-gradient(rgba(62,39,35,0.05) 1px, transparent 1px)",
+      backgroundSize: "28px 28px",
+      maskImage:
+        "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.35) 55%, transparent 100%)",
+      WebkitMaskImage:
+        "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.35) 55%, transparent 100%)",
+      pointerEvents: "none",
+      zIndex: 0,
     },
     heroPattern: {
       position: "absolute",
@@ -367,10 +522,10 @@ const About = () => {
       position: "relative",
       zIndex: 2,
     },
-    heroBadge: {
+    heroEyebrow: {
       display: "inline-flex",
       alignItems: "center",
-      gap: "0.5rem",
+      gap: "0.55rem",
       padding: "0.5rem 1.25rem",
       backgroundColor: isDarkMode
         ? "rgba(212, 175, 55, 0.14)"
@@ -388,14 +543,13 @@ const About = () => {
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
     },
-    // ✅ Solid title + gradient underline
     heroTitle: {
-      fontSize: isMobile ? "2.1rem" : isNarrow ? "2.7rem" : "3.8rem",
+      fontSize: isMobile ? "2.25rem" : isNarrow ? "3rem" : "4.5rem",
       fontWeight: "900",
-      marginBottom: "1.5rem",
+      marginBottom: "1.75rem",
       color: T.text,
-      lineHeight: "1.1",
-      letterSpacing: "-0.5px",
+      lineHeight: "1.05",
+      letterSpacing: "-0.7px",
       position: "relative",
       display: "inline-block",
       paddingBottom: "1rem",
@@ -405,15 +559,15 @@ const About = () => {
       left: "50%",
       bottom: 0,
       transform: "translateX(-50%)",
-      width: "110px",
+      width: "140px",
       height: "4px",
       borderRadius: "4px",
       background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
     },
     heroText: {
-      fontSize: isMobile ? "1rem" : "1.15rem",
+      fontSize: isMobile ? "1rem" : "1.18rem",
       color: T.textMuted,
-      lineHeight: "1.8",
+      lineHeight: "1.85",
       marginBottom: "2rem",
       maxWidth: "680px",
       marginLeft: "auto",
@@ -423,14 +577,14 @@ const About = () => {
       display: "grid",
       gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`,
       gap: "1rem",
-      marginTop: "3rem",
+      marginTop: "3.5rem",
     },
     statCard: {
       backgroundColor: T.card,
       backdropFilter: "blur(12px)",
       WebkitBackdropFilter: "blur(12px)",
-      padding: isMobile ? "1.35rem 0.85rem" : "1.7rem 1.15rem",
-      borderRadius: "20px",
+      padding: isMobile ? "1.35rem 0.85rem" : "1.85rem 1.15rem",
+      borderRadius: "22px",
       boxShadow: T.shadow,
       transition: "transform 0.35s ease, box-shadow 0.35s ease",
       border: `1px solid ${T.border}`,
@@ -448,10 +602,10 @@ const About = () => {
       opacity: 0.9,
     },
     statNumber: {
-      fontSize: isMobile ? "1.6rem" : "2rem",
+      fontSize: isMobile ? "1.65rem" : "2.1rem",
       fontWeight: "900",
       color: isDarkMode ? brandColors.gold : brandColors.primary,
-      marginBottom: "0.4rem",
+      marginBottom: "0.45rem",
       lineHeight: "1.1",
       letterSpacing: "-0.5px",
     },
@@ -466,10 +620,10 @@ const About = () => {
     storySection: {
       maxWidth: "1200px",
       margin: "0 auto",
-      padding: isNarrow ? "3rem 1.25rem" : "5rem 2rem",
+      padding: isNarrow ? "3.5rem 1.25rem" : "6.5rem 2rem",
       display: "grid",
       gridTemplateColumns: isNarrow ? "1fr" : "1fr 1fr",
-      gap: isNarrow ? "2.5rem" : "4.5rem",
+      gap: isNarrow ? "2.5rem" : "5rem",
       alignItems: "center",
       opacity: isVisible.story ? 1 : 0,
       transform: isVisible.story ? "translateY(0)" : "translateY(30px)",
@@ -490,73 +644,101 @@ const About = () => {
       marginBottom: "1.5rem",
     },
     storyTitle: {
-      fontSize: isMobile ? "2rem" : "2.6rem",
+      fontSize: isMobile ? "2rem" : "2.85rem",
       fontWeight: "900",
       marginBottom: "1.5rem",
       color: T.text,
-      lineHeight: "1.15",
-      letterSpacing: "-0.5px",
+      lineHeight: "1.1",
+      letterSpacing: "-0.6px",
     },
     storyText: {
-      fontSize: "1.03rem",
+      fontSize: "1.05rem",
       color: T.textMuted,
-      lineHeight: "1.85",
-      marginBottom: "1.25rem",
+      lineHeight: "1.9",
+      marginBottom: "1.35rem",
     },
     storyHighlight: {
       fontSize: "1.05rem",
       fontWeight: "600",
       color: isDarkMode ? T.gold : brandColors.bronze,
       marginTop: "2rem",
-      padding: "1.5rem 1.75rem",
+      padding: "1.6rem 1.85rem",
       backgroundColor: isDarkMode ? T.goldSoft : "rgba(199, 125, 66, 0.06)",
-      borderRadius: "18px",
+      borderRadius: "20px",
       borderLeft: `4px solid ${isDarkMode ? T.gold : brandColors.bronze}`,
       display: "flex",
       alignItems: "flex-start",
-      gap: "1rem",
+      gap: "1.1rem",
       fontStyle: "italic",
-      lineHeight: "1.7",
+      lineHeight: "1.75",
       backdropFilter: "blur(6px)",
       WebkitBackdropFilter: "blur(6px)",
+      position: "relative",
+    },
+    // Corner flourish on the highlight block
+    storyHighlightCorner: {
+      position: "absolute",
+      top: "-8px",
+      right: "-8px",
+      width: "20px",
+      height: "20px",
+      borderRadius: "50%",
+      background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
+      boxShadow: "0 6px 16px rgba(245, 52, 107, 0.35)",
     },
     storyImageContainer: {
       position: "relative",
       width: "100%",
-      borderRadius: "24px",
+      borderRadius: "28px",
       boxShadow: T.shadowLift,
       overflow: "hidden",
     },
+    // Offset gold frame behind the story image
+    storyImageFrame: {
+      position: "absolute",
+      inset: "-14px -14px auto auto",
+      width: "60%",
+      height: "60%",
+      borderRadius: "28px",
+      border: `2px solid ${
+        isDarkMode ? "rgba(212, 175, 55, 0.35)" : "rgba(199, 125, 66, 0.28)"
+      }`,
+      pointerEvents: "none",
+      zIndex: 0,
+    },
     storyImage: {
+      position: "relative",
       width: "100%",
       height: "auto",
       objectFit: "cover",
       objectPosition: "center",
       display: "block",
       maxWidth: "100%",
+      zIndex: 1,
     },
     storyImageOverlay: {
       position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
-      padding: "2rem 1.75rem 1.5rem",
+      padding: "2.25rem 1.85rem 1.65rem",
       background:
-        "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 55%, transparent 100%)",
+        "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 55%, transparent 100%)",
       color: "#ffffff",
+      zIndex: 2,
     },
     storyImageText: {
-      fontSize: "1.15rem",
+      fontSize: "1.2rem",
       fontWeight: "800",
-      marginBottom: "0.3rem",
+      marginBottom: "0.35rem",
       letterSpacing: "0.2px",
     },
-    storyImageSub: { fontSize: "0.88rem", opacity: 0.9 },
+    storyImageSub: { fontSize: "0.9rem", opacity: 0.9 },
 
     // ─── MISSION ───
     missionSection: {
       backgroundColor: T.bgAlt,
-      padding: isNarrow ? "3rem 1.25rem" : "5rem 2rem",
+      padding: isNarrow ? "3.5rem 1.25rem" : "6.5rem 2rem",
       borderTop: `1px solid ${T.borderSoft}`,
       borderBottom: `1px solid ${T.borderSoft}`,
       opacity: isVisible.mission ? 1 : 0,
@@ -573,8 +755,8 @@ const About = () => {
     },
     missionCard: {
       backgroundColor: T.card,
-      padding: isMobile ? "2.25rem 1.6rem" : "2.75rem 2.25rem",
-      borderRadius: "22px",
+      padding: isMobile ? "2.5rem 1.85rem" : "3.25rem 2.75rem",
+      borderRadius: "26px",
       boxShadow: T.shadow,
       border: `1px solid ${T.border}`,
       transition: "transform 0.35s ease, box-shadow 0.35s ease",
@@ -590,38 +772,59 @@ const About = () => {
       background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
       opacity: 0.9,
     },
+    // Big faded number in the corner
+    missionNumber: {
+      position: "absolute",
+      top: "0.5rem",
+      right: "1.25rem",
+      fontSize: "6rem",
+      fontWeight: "900",
+      lineHeight: 1,
+      color: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(199, 125, 66, 0.07)",
+      fontFamily: "Georgia, serif",
+      pointerEvents: "none",
+      userSelect: "none",
+    },
     missionIconWrap: {
-      width: "56px",
-      height: "56px",
-      borderRadius: "16px",
+      width: "68px",
+      height: "68px",
+      borderRadius: "20px",
       background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
       color: isDarkMode ? brandColors.black : "#ffffff",
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "1.35rem",
-      marginBottom: "1.35rem",
-      boxShadow: "0 10px 26px rgba(245, 52, 107, 0.3)",
+      fontSize: "1.6rem",
+      marginBottom: "1.6rem",
+      boxShadow: "0 16px 36px rgba(245, 52, 107, 0.38)",
+      position: "relative",
+      zIndex: 1,
     },
     missionTitle: {
-      fontSize: "1.55rem",
+      fontSize: "1.7rem",
       fontWeight: "900",
-      marginBottom: "1rem",
+      marginBottom: "1.1rem",
       color: T.text,
-      letterSpacing: "-0.3px",
+      letterSpacing: "-0.4px",
+      position: "relative",
+      zIndex: 1,
     },
     missionText: {
-      fontSize: "1.02rem",
+      fontSize: "1.05rem",
       color: T.textMuted,
-      lineHeight: "1.8",
+      lineHeight: "1.85",
       marginBottom: 0,
+      position: "relative",
+      zIndex: 1,
     },
 
     // ─── VALUES ───
     valuesSection: {
       maxWidth: "1200px",
       margin: "0 auto",
-      padding: isNarrow ? "3rem 1.25rem" : "5rem 2rem",
+      padding: isNarrow ? "3.5rem 1.25rem" : "6.5rem 2rem",
       opacity: isVisible.values ? 1 : 0,
       transform: isVisible.values ? "translateY(0)" : "translateY(30px)",
       transition: "all 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.25s",
@@ -633,12 +836,12 @@ const About = () => {
       marginBottom: "1rem",
     },
     sectionTitle: {
-      fontSize: isMobile ? "2rem" : "2.6rem",
+      fontSize: isMobile ? "2rem" : "2.85rem",
       textAlign: "center",
       fontWeight: "900",
       margin: 0,
       color: T.text,
-      letterSpacing: "-0.5px",
+      letterSpacing: "-0.6px",
       lineHeight: "1.15",
     },
     sectionTitleUnderline: {
@@ -651,9 +854,9 @@ const About = () => {
     sectionSubtitle: {
       textAlign: "center",
       color: T.textMuted,
-      fontSize: "1.02rem",
-      maxWidth: "620px",
-      margin: "1.25rem auto 3rem",
+      fontSize: "1.05rem",
+      maxWidth: "640px",
+      margin: "1.35rem auto 3.5rem",
       lineHeight: "1.75",
     },
     valuesGrid: {
@@ -661,14 +864,14 @@ const About = () => {
       gridTemplateColumns: isMobile
         ? "1fr"
         : isNarrow
-          ? "repeat(2, 1fr)"
-          : "repeat(3, 1fr)",
+        ? "repeat(2, 1fr)"
+        : "repeat(3, 1fr)",
       gap: "1.5rem",
     },
     valueCard: {
       backgroundColor: T.card,
-      padding: "2.25rem 1.75rem",
-      borderRadius: "22px",
+      padding: "2.5rem 1.85rem",
+      borderRadius: "24px",
       boxShadow: T.shadow,
       transition:
         "transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.45s ease, border-color 0.3s ease",
@@ -687,59 +890,110 @@ const About = () => {
       background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
       opacity: 0.85,
     },
+    // Decorative inner ring that scales in on hover
+    valueRing: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "200px",
+      height: "200px",
+      borderRadius: "50%",
+      border: `1px dashed ${
+        isDarkMode ? "rgba(212, 175, 55, 0.22)" : "rgba(199, 125, 66, 0.18)"
+      }`,
+      pointerEvents: "none",
+    },
+    valueNumber: {
+      position: "absolute",
+      top: "1rem",
+      right: "1.15rem",
+      fontSize: "0.65rem",
+      fontWeight: "900",
+      color: isDarkMode ? T.gold : brandColors.bronze,
+      letterSpacing: "1.2px",
+      opacity: 0,
+    },
     valueIconHalo: {
-      width: "68px",
-      height: "68px",
-      margin: "0 auto 1.35rem",
+      width: "76px",
+      height: "76px",
+      margin: "0 auto 1.5rem",
       borderRadius: "50%",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "1.6rem",
+      fontSize: "1.8rem",
       position: "relative",
+      zIndex: 1,
     },
     valueTitle: {
-      fontSize: "1.15rem",
+      fontSize: "1.18rem",
       fontWeight: "900",
-      marginBottom: "0.75rem",
+      marginBottom: "0.8rem",
       color: T.text,
       letterSpacing: "-0.2px",
+      position: "relative",
+      zIndex: 1,
     },
     valueDescription: {
-      fontSize: "0.92rem",
+      fontSize: "0.94rem",
       color: T.textMuted,
-      lineHeight: "1.7",
+      lineHeight: "1.75",
       margin: 0,
+      position: "relative",
+      zIndex: 1,
     },
 
     // ─── TEAM ───
     teamSection: {
+      position: "relative",
       backgroundColor: T.bgAlt,
-      padding: isNarrow ? "3rem 1.25rem" : "5rem 2rem",
+      padding: isNarrow ? "3.5rem 1.25rem" : "6.5rem 2rem",
       borderTop: `1px solid ${T.borderSoft}`,
       opacity: isVisible.team ? 1 : 0,
       transform: isVisible.team ? "translateY(0)" : "translateY(30px)",
       transition: "all 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.35s",
+      overflow: "hidden",
     },
-    teamContainer: { maxWidth: "1200px", margin: "0 auto" },
+    teamOrb: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "700px",
+      height: "700px",
+      maxWidth: "90vw",
+      maxHeight: "90vw",
+      borderRadius: "50%",
+      background:
+        "radial-gradient(circle at center, rgba(245, 52, 107, 0.14) 0%, rgba(212, 175, 55, 0.06) 40%, transparent 70%)",
+      filter: "blur(60px)",
+      pointerEvents: "none",
+      zIndex: 0,
+    },
+    teamContainer: {
+      maxWidth: "1100px",
+      margin: "0 auto",
+      position: "relative",
+      zIndex: 1,
+    },
     teamGrid: {
       display: "grid",
-      gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
+      gridTemplateColumns: "1fr",
       gap: "2rem",
       marginTop: "1rem",
-      maxWidth: "820px",
+      maxWidth: "960px",
       marginLeft: "auto",
       marginRight: "auto",
     },
     teamCard: {
-      textAlign: "center",
-      padding: isMobile ? "2.5rem 1.75rem" : "3rem 2.25rem",
+      position: "relative",
+      padding: 0,
       backgroundColor: T.card,
-      borderRadius: "22px",
-      boxShadow: T.shadow,
+      borderRadius: "28px",
+      boxShadow: T.shadowLift,
       transition: "transform 0.4s ease, box-shadow 0.4s ease",
       border: `1px solid ${T.border}`,
-      position: "relative",
       overflow: "hidden",
     },
     teamAccent: {
@@ -747,82 +1001,170 @@ const About = () => {
       top: 0,
       left: 0,
       right: 0,
-      height: "3px",
-      background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary}, ${brandColors.green})`,
-      opacity: 0.9,
+      height: "4px",
+      background: `linear-gradient(90deg, ${brandColors.green}, ${brandColors.gold}, ${brandColors.primary})`,
+      opacity: 0.95,
+      zIndex: 3,
     },
-    teamImageContainer: {
-      width: "128px",
-      height: "128px",
-      margin: "0 auto 1.5rem",
-      borderRadius: "50%",
-      padding: "3px",
-      background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
-      boxShadow: "0 14px 34px rgba(245, 52, 107, 0.28)",
+    teamInner: {
+      display: "grid",
+      gridTemplateColumns: isTeamStack ? "1fr" : "1.1fr 0.9fr",
+      alignItems: "stretch",
     },
-    teamImageInner: {
-      width: "100%",
-      height: "100%",
-      borderRadius: "50%",
-      overflow: "hidden",
-      backgroundColor: isDarkMode ? T.cardAlt : "#f5f0eb",
+    teamContent: {
+      padding: isMobile ? "2.25rem 1.75rem" : "3rem 2.75rem",
       display: "flex",
-      alignItems: "center",
+      flexDirection: "column",
       justifyContent: "center",
+      position: "relative",
+      zIndex: 1,
     },
-    teamImage: {
+    // ✅ Fixed-height photo column so the card fits nicely
+    teamPhoto: {
+      position: "relative",
+      height: isTeamStack ? "420px" : "520px",
+      overflow: "hidden",
+      backgroundColor: isDarkMode ? brandColors.black : brandColors.cream,
+      order: isTeamStack ? -1 : 1,
+    },
+    teamPhotoImg: {
+      position: "absolute",
+      inset: 0,
       width: "100%",
       height: "100%",
       objectFit: "cover",
-      objectPosition: "center",
+      objectPosition: "center 30%",
+      display: "block",
     },
-    teamImageFallback: {
-      width: "100%",
-      height: "100%",
+    teamPhotoOverlay: {
+      position: "absolute",
+      inset: 0,
+      background: isDarkMode
+        ? "linear-gradient(90deg, rgba(26,26,26,0.5) 0%, rgba(26,26,26,0) 40%, rgba(26,26,26,0.1) 100%)"
+        : "linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.05) 100%)",
+      pointerEvents: "none",
+      zIndex: 1,
+    },
+    // Warm gradient wash at the bottom of the photo
+    teamPhotoGradient: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: "40%",
+      background: isDarkMode
+        ? "linear-gradient(to top, rgba(26,26,26,0.55), transparent)"
+        : "linear-gradient(to top, rgba(252,248,245,0.55), transparent)",
+      pointerEvents: "none",
+      zIndex: 1,
+    },
+    teamPhotoFallback: {
+      position: "absolute",
+      inset: 0,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "2.8rem",
+      fontSize: "6rem",
       fontWeight: "900",
       color: isDarkMode ? T.gold : brandColors.bronze,
       background: `linear-gradient(135deg, ${
         isDarkMode ? "#222222" : "#f5f0eb"
       }, ${isDarkMode ? "#1a1a1a" : "#ede3db"})`,
     },
+    teamChip: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.4rem 0.95rem",
+      backgroundColor: isDarkMode
+        ? "rgba(76, 175, 80, 0.15)"
+        : "rgba(76, 175, 80, 0.1)",
+      color: brandColors.green,
+      borderRadius: "50px",
+      fontSize: "0.7rem",
+      fontWeight: "800",
+      letterSpacing: "0.6px",
+      textTransform: "uppercase",
+      marginBottom: "1.35rem",
+      border: `1px solid ${
+        isDarkMode ? "rgba(76, 175, 80, 0.28)" : "rgba(76, 175, 80, 0.2)"
+      }`,
+      width: "fit-content",
+    },
+    teamChipDot: {
+      width: "7px",
+      height: "7px",
+      borderRadius: "50%",
+      backgroundColor: brandColors.green,
+      display: "inline-block",
+      flexShrink: 0,
+    },
     teamName: {
-      fontSize: "1.25rem",
+      fontSize: isMobile ? "1.65rem" : "2.15rem",
       fontWeight: "900",
-      marginBottom: "0.35rem",
+      marginBottom: "0.45rem",
       color: T.text,
-      letterSpacing: "-0.2px",
+      letterSpacing: "-0.4px",
+      lineHeight: "1.15",
     },
     teamRole: {
-      fontSize: "0.88rem",
+      fontSize: "0.92rem",
       color: isDarkMode ? T.gold : brandColors.bronze,
-      marginBottom: "1.15rem",
-      fontWeight: "700",
-      letterSpacing: "0.3px",
+      marginBottom: "1.5rem",
+      fontWeight: "800",
+      letterSpacing: "0.6px",
+      textTransform: "uppercase",
+    },
+    teamBio: {
+      fontSize: "1rem",
+      color: T.textMuted,
+      lineHeight: "1.85",
+      marginBottom: "1.65rem",
+      marginTop: 0,
     },
     teamQuote: {
-      fontSize: "0.88rem",
-      color: T.textMuted,
-      fontStyle: "italic",
-      padding: "0.9rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(255,255,255,0.04)"
-        : "rgba(62, 39, 35, 0.03)",
-      borderRadius: "12px",
       display: "flex",
-      alignItems: "center",
-      gap: "0.4rem",
-      justifyContent: "center",
-      lineHeight: "1.6",
+      alignItems: "flex-start",
+      gap: "0.7rem",
+      fontSize: "0.98rem",
+      color: isDarkMode ? T.gold : brandColors.bronze,
+      fontStyle: "italic",
+      padding: "1.1rem 1.4rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.08)"
+        : "rgba(212, 175, 55, 0.06)",
+      borderRadius: "18px",
+      lineHeight: "1.7",
+      fontWeight: "600",
+      border: `1px solid ${
+        isDarkMode ? "rgba(212, 175, 55, 0.2)" : "rgba(212, 175, 55, 0.15)"
+      }`,
     },
     quoteIcon: {
-      fontSize: "0.7rem",
+      fontSize: "0.9rem",
       color: isDarkMode ? T.gold : brandColors.bronze,
-      opacity: 0.7,
+      opacity: 0.85,
       flexShrink: 0,
+      marginTop: "0.2rem",
+    },
+    // Signature strip under the founder content
+    teamSignature: {
+      marginTop: "1.6rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.7rem",
+      color: T.textMuted,
+      fontSize: "0.78rem",
+      fontWeight: "700",
+      letterSpacing: "1.4px",
+      textTransform: "uppercase",
+    },
+    teamSignatureLine: {
+      flex: 1,
+      height: "1px",
+      background: isDarkMode
+        ? "linear-gradient(90deg, rgba(212,175,55,0.35), transparent)"
+        : "linear-gradient(90deg, rgba(199,125,66,0.35), transparent)",
     },
 
     // ─── CTA ───
@@ -831,7 +1173,7 @@ const About = () => {
       background: isDarkMode
         ? `linear-gradient(160deg, #1a1212 0%, ${brandColors.black} 60%, #120a0a 100%)`
         : `linear-gradient(160deg, #fbf3ec 0%, ${brandColors.cream} 60%, #f7efe8 100%)`,
-      padding: isNarrow ? "4rem 1.25rem" : "6rem 2rem",
+      padding: isNarrow ? "4.5rem 1.25rem" : "7rem 2rem",
       textAlign: "center",
       color: T.text,
       borderTop: `1px solid ${T.borderSoft}`,
@@ -842,14 +1184,44 @@ const About = () => {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      width: "600px",
-      height: "600px",
+      width: "640px",
+      height: "640px",
       maxWidth: "90vw",
       maxHeight: "90vw",
       borderRadius: "50%",
       background:
         "radial-gradient(circle at center, rgba(212, 175, 55, 0.18) 0%, transparent 65%)",
       filter: "blur(60px)",
+      pointerEvents: "none",
+    },
+    ctaRing: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "520px",
+      height: "520px",
+      maxWidth: "100vw",
+      maxHeight: "100vw",
+      borderRadius: "50%",
+      border: `1px dashed ${
+        isDarkMode ? "rgba(212, 175, 55, 0.16)" : "rgba(199, 125, 66, 0.14)"
+      }`,
+      pointerEvents: "none",
+    },
+    ctaRingInner: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "380px",
+      height: "380px",
+      maxWidth: "80vw",
+      maxHeight: "80vw",
+      borderRadius: "50%",
+      border: `1px dashed ${
+        isDarkMode ? "rgba(245, 52, 107, 0.14)" : "rgba(199, 125, 66, 0.12)"
+      }`,
       pointerEvents: "none",
     },
     ctaContent: {
@@ -878,15 +1250,15 @@ const About = () => {
       }`,
     },
     ctaTitle: {
-      fontSize: isMobile ? "2rem" : "2.6rem",
+      fontSize: isMobile ? "2rem" : "2.85rem",
       fontWeight: "900",
       marginBottom: "1rem",
       color: T.text,
-      letterSpacing: "-0.5px",
-      lineHeight: "1.15",
+      letterSpacing: "-0.6px",
+      lineHeight: "1.12",
     },
     ctaText: {
-      fontSize: isMobile ? "1rem" : "1.12rem",
+      fontSize: isMobile ? "1rem" : "1.15rem",
       marginBottom: "2.25rem",
       color: T.textMuted,
       lineHeight: "1.75",
@@ -895,19 +1267,19 @@ const About = () => {
       display: "inline-flex",
       alignItems: "center",
       gap: "0.6rem",
-      padding: "1.1rem 2.5rem",
+      padding: "1.15rem 2.6rem",
       background: `linear-gradient(135deg, ${brandColors.gold} 0%, ${brandColors.primary} 100%)`,
       color: isDarkMode ? brandColors.black : "#ffffff",
       textDecoration: "none",
       borderRadius: "50px",
-      fontSize: "1.02rem",
+      fontSize: "1.05rem",
       fontWeight: "800",
-      boxShadow: "0 12px 30px rgba(245, 52, 107, 0.35)",
+      boxShadow: "0 14px 34px rgba(245, 52, 107, 0.4)",
       letterSpacing: "0.3px",
       fontFamily: "inherit",
     },
     ctaLeaf: {
-      fontSize: "1.6rem",
+      fontSize: "1.8rem",
       marginBottom: "1rem",
       lineHeight: 1,
     },
@@ -925,6 +1297,12 @@ const About = () => {
       {/* ─── HERO ─── */}
       <section style={themeStyles.hero}>
         <div
+          className="about-hero-conic"
+          style={themeStyles.heroConic}
+          aria-hidden="true"
+        />
+        <div style={themeStyles.heroGrid} aria-hidden="true" />
+        <div
           className="about-orb-1"
           style={themeStyles.heroOrb1}
           aria-hidden="true"
@@ -934,12 +1312,22 @@ const About = () => {
           style={themeStyles.heroOrb2}
           aria-hidden="true"
         />
+        <div
+          className="about-hero-ring"
+          style={themeStyles.heroRing}
+          aria-hidden="true"
+        />
+        <div
+          className="about-hero-ring-2"
+          style={themeStyles.heroRingInner}
+          aria-hidden="true"
+        />
         <div style={themeStyles.heroPattern} />
         <div style={themeStyles.heroContent}>
-          {/* <div style={themeStyles.heroBadge}>
+          <div style={themeStyles.heroEyebrow}>
             <FaLeaf style={{ fontSize: "0.7rem" }} />
             Since 2026 • Gorakhpur, India
-          </div> */}
+          </div>
           <h1 style={themeStyles.heroTitle}>
             Pure. Natural. You.
             <span style={themeStyles.heroTitleAccent} aria-hidden="true" />
@@ -984,6 +1372,10 @@ const About = () => {
             single drop of chemicals.
           </p>
           <div style={themeStyles.storyHighlight}>
+            <span
+              style={themeStyles.storyHighlightCorner}
+              aria-hidden="true"
+            />
             <FaQuoteLeft
               style={{ fontSize: "1.4rem", opacity: 0.5, flexShrink: 0 }}
             />
@@ -995,6 +1387,10 @@ const About = () => {
           style={themeStyles.storyImageContainer}
           className="about-story-image"
         >
+          <div
+            style={themeStyles.storyImageFrame}
+            aria-hidden="true"
+          />
           <img
             src="/assets/images/about/story.png"
             alt="ASudha Beauty - Natural Ayurvedic Powders"
@@ -1019,7 +1415,13 @@ const About = () => {
         <div style={themeStyles.missionContainer}>
           <div style={themeStyles.missionCard} className="about-mission-card">
             <div style={themeStyles.missionAccent} />
-            <div style={themeStyles.missionIconWrap}>
+            <span style={themeStyles.missionNumber} aria-hidden="true">
+              01
+            </span>
+            <div
+              style={themeStyles.missionIconWrap}
+              className="about-mission-icon"
+            >
               <FaHandHoldingHeart />
             </div>
             <h2 style={themeStyles.missionTitle}>Our Mission</h2>
@@ -1036,12 +1438,16 @@ const About = () => {
                 background: `linear-gradient(90deg, ${brandColors.green}, ${brandColors.gold})`,
               }}
             />
+            <span style={themeStyles.missionNumber} aria-hidden="true">
+              02
+            </span>
             <div
               style={{
                 ...themeStyles.missionIconWrap,
                 background: `linear-gradient(135deg, ${brandColors.green}, #8bc34a)`,
-                boxShadow: "0 10px 26px rgba(76, 175, 80, 0.3)",
+                boxShadow: "0 16px 36px rgba(76, 175, 80, 0.32)",
               }}
+              className="about-mission-icon"
             >
               <FaSpa />
             </div>
@@ -1074,11 +1480,22 @@ const About = () => {
             >
               <div style={themeStyles.valueCardAccent} />
               <div
+                style={themeStyles.valueRing}
+                className="about-value-ring"
+                aria-hidden="true"
+              />
+              <span
+                style={themeStyles.valueNumber}
+                className="about-value-number"
+              >
+                0{index + 1}
+              </span>
+              <div
                 style={{
                   ...themeStyles.valueIconHalo,
                   background: `${value.color}1f`,
                   color: value.color,
-                  boxShadow: `0 10px 26px ${value.color}33`,
+                  boxShadow: `0 14px 34px ${value.color}33`,
                 }}
                 className="about-value-icon"
               >
@@ -1093,13 +1510,14 @@ const About = () => {
 
       {/* ─── TEAM ─── */}
       <section id="team" style={themeStyles.teamSection}>
+        <div style={themeStyles.teamOrb} aria-hidden="true" />
         <div style={themeStyles.teamContainer}>
           <div style={themeStyles.sectionTitleRow}>
             <h2 style={themeStyles.sectionTitle}>Rooted in Trust</h2>
             <div style={themeStyles.sectionTitleUnderline} />
           </div>
           <p style={themeStyles.sectionSubtitle}>
-            Meet the passionate individuals behind ASudha Beauty—dedicated to
+            Meet the passionate individual behind ASudha Beauty—dedicated to
             bringing you the purest Ayurvedic powders.
           </p>
           <div style={themeStyles.teamGrid}>
@@ -1110,33 +1528,57 @@ const About = () => {
                 className="about-team-card"
               >
                 <div style={themeStyles.teamAccent} />
-                <div style={themeStyles.teamImageContainer}>
-                  <div style={themeStyles.teamImageInner}>
-                    {!imgErrors[`team-${index}`] ? (
-                      <img
-                        src={member.image}
-                        alt={member.name}
-                        style={themeStyles.teamImage}
-                        onError={() => handleImageError(`team-${index}`)}
+                <div style={themeStyles.teamInner} className="about-team-inner">
+                  {/* Left: text content */}
+                  <div style={themeStyles.teamContent}>
+                    <div style={themeStyles.teamChip}>
+                      <span
+                        style={themeStyles.teamChipDot}
+                        className="about-pulse-dot"
                       />
+                      Verified Founder
+                    </div>
+
+                    <h3 style={themeStyles.teamName}>{member.name}</h3>
+                    <p style={themeStyles.teamRole}>{member.role}</p>
+
+                    {member.bio && (
+                      <p style={themeStyles.teamBio}>{member.bio}</p>
+                    )}
+
+                    <div style={themeStyles.teamQuote}>
+                      <FaQuoteLeft style={themeStyles.quoteIcon} />
+                      <span>{member.quote}</span>
+                    </div>
+
+                    <div style={themeStyles.teamSignature}>
+                      <span>ASudha Beauty</span>
+                      <span style={themeStyles.teamSignatureLine} />
+                    </div>
+                  </div>
+
+                  {/* Right: photo panel */}
+                  <div
+                    style={themeStyles.teamPhoto}
+                    className="about-team-photo"
+                  >
+                    {!imgErrors[`team-${index}`] ? (
+                      <>
+                        <img
+                          src={member.image}
+                          alt={member.name}
+                          style={themeStyles.teamPhotoImg}
+                          onError={() => handleImageError(`team-${index}`)}
+                        />
+                        <div style={themeStyles.teamPhotoOverlay} />
+                        <div style={themeStyles.teamPhotoGradient} />
+                      </>
                     ) : (
-                      <div style={themeStyles.teamImageFallback}>
+                      <div style={themeStyles.teamPhotoFallback}>
                         {member.fallback}
                       </div>
                     )}
                   </div>
-                </div>
-                <h3 style={themeStyles.teamName}>{member.name}</h3>
-                <p style={themeStyles.teamRole}>{member.role}</p>
-                <div style={themeStyles.teamQuote}>
-                  <FaQuoteLeft style={themeStyles.quoteIcon} />
-                  {member.quote}
-                  <FaQuoteLeft
-                    style={{
-                      ...themeStyles.quoteIcon,
-                      transform: "rotate(180deg)",
-                    }}
-                  />
                 </div>
               </div>
             ))}
@@ -1147,11 +1589,15 @@ const About = () => {
       {/* ─── CTA ─── */}
       <section style={themeStyles.ctaSection}>
         <div style={themeStyles.ctaOrb} />
+        <div style={themeStyles.ctaRing} aria-hidden="true" />
+        <div style={themeStyles.ctaRingInner} aria-hidden="true" />
         <div style={themeStyles.ctaContent}>
           <div style={themeStyles.ctaBadge}>
             <FaStar style={{ fontSize: "0.6rem" }} /> Discover Nature's Best
           </div>
-          <div style={themeStyles.ctaLeaf}>🌿</div>
+          <div style={themeStyles.ctaLeaf} className="about-cta-leaf">
+            🌿
+          </div>
           <h2 style={themeStyles.ctaTitle}>Experience the Power of Nature</h2>
           <p style={themeStyles.ctaText}>
             Discover our collection of 100% natural Ayurvedic powders—crafted

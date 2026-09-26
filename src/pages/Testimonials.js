@@ -135,7 +135,7 @@ const Testimonials = () => {
         name: "Sarah Johnson",
         location: "New York, USA",
         rating: 5,
-        date: "March 15, 2024",
+        date: "March 15, 2026",
         title: "My skin has never felt this clean!",
         content:
           "Multani Mitti is a game changer! I mix it with rose water and use it twice a week. My oily skin has finally found its match. It deep cleanses without over-drying. ASudha's powder is so pure and fine!",
@@ -149,7 +149,7 @@ const Testimonials = () => {
         name: "Priya Sharma",
         location: "Mumbai, India",
         rating: 5,
-        date: "February 28, 2024",
+        date: "February 28, 2026",
         title: "Traditional radiance in a pack!",
         content:
           "The Ubtan powder instantly gave my face a glow. It smells incredible, and my skin feels so soft and bright after every use. Perfect for special occasions or just a weekend pamper session!",
@@ -163,7 +163,7 @@ const Testimonials = () => {
         name: "Emily Chen",
         location: "Singapore",
         rating: 5,
-        date: "January 20, 2024",
+        date: "January 20, 2026",
         title: "My hair fall has reduced drastically!",
         content:
           "I've been using ASudha's Amla powder mixed with coconut oil. My hair feels thicker and has a beautiful natural shine. The fact that it is 100% natural with no chemicals makes it a must-have for me!",
@@ -177,7 +177,7 @@ const Testimonials = () => {
         name: "Rajesh Kumar",
         location: "Delhi, India",
         rating: 4,
-        date: "December 10, 2023",
+        date: "June 10, 2026",
         title: "Amazing natural cleanser!",
         content:
           "Reetha powder is wonderful. It gently cleanses my hair without stripping away natural oils. My scalp feels much healthier now. Shipping was fast and the packaging was great!",
@@ -191,7 +191,7 @@ const Testimonials = () => {
         name: "Anita Desai",
         location: "Bangalore, India",
         rating: 5,
-        date: "November 5, 2023",
+        date: "July 5, 2026",
         title: "My hair is finally silky and strong!",
         content:
           "The Herbal Mix Hair Pack is a hidden gem! It has transformed my dry, dull hair into soft, shiny locks. I love that it has Bhringraj and Amla mixed together. ASudha Beauty is now my go-to for hair care!",
@@ -205,7 +205,7 @@ const Testimonials = () => {
         name: "Michael Brown",
         location: "London, UK",
         rating: 5,
-        date: "October 18, 2023",
+        date: "October 18, 2026",
         title: "Shikakai is pure magic!",
         content:
           "Finally a brand that offers pure, unadulterated Shikakai powder! It strengthens my roots and gives me the perfect natural shine. Shipping to the UK was fast and the quality is impeccable.",
@@ -219,7 +219,7 @@ const Testimonials = () => {
         name: "Neha Gupta",
         location: "Pune, India",
         rating: 5,
-        date: "September 22, 2023",
+        date: "September 22, 2026",
         title: "Perfect for my budget and my skin!",
         content:
           "As a student, I love that these natural powders are affordable but deliver amazing results. The Multani Mitti controls my excess oil perfectly. My skin feels so fresh and clean!",
@@ -233,7 +233,7 @@ const Testimonials = () => {
         name: "Sophia Martinez",
         location: "Los Angeles, USA",
         rating: 4,
-        date: "August 30, 2023",
+        date: "August 30, 2026",
         title: "Lovely glow, lovely ingredients!",
         content:
           "Using Ubtan for my face has become a Sunday ritual. The traditional blend of herbs gives me a lovely glow. Only giving 4 stars because I wish the packs were a bit bigger!",
