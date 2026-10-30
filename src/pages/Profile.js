@@ -38,8 +38,7 @@ import {
 import SEO from "../components/SEO";
 
 // ─── Site constants ───
-// const SITE_URL = "https://www.asudhabeauty.shop";
-const ORDERS_STORAGE_KEY = "asudha_orders"; // primary storage key
+const ORDERS_STORAGE_KEY = "asudha_orders"; 
 const ORDERS_STORAGE_KEYS = [
   ORDERS_STORAGE_KEY,
   "orders",
@@ -148,10 +147,9 @@ const Profile = () => {
   const [loggingOut, setLoggingOut] = useState(false);
   const [reorderMessage, setReorderMessage] = useState(null);
 
-  // ✅ NEW: Robust order state
+  // ✅ Robust order state
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
-  const [ordersRefreshedAt, setOrdersRefreshedAt] = useState(null);
   const [diagnostic, setDiagnostic] = useState(null);
 
   // ─── Theme tokens ───
@@ -185,7 +183,7 @@ const Profile = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ✅ NEW: Robust order loading with 3 fallbacks
+  // ✅ Robust order loading with 3 fallbacks
   const loadOrders = useCallback(() => {
     setOrdersLoading(true);
     setDiagnostic(null);
@@ -227,7 +225,6 @@ const Profile = () => {
             found = matched;
             source = "localStorage-email";
           } else if (normalizedEmail) {
-            // Set a diagnostic — orders exist in storage but don't match this user
             setDiagnostic({
               type: "no-match",
               totalStored: stored.length,
@@ -262,7 +259,6 @@ const Profile = () => {
       normalized.sort((a, b) => new Date(b.date) - new Date(a.date));
 
       setOrders(normalized);
-      setOrdersRefreshedAt(new Date());
 
       if (process.env.NODE_ENV === "development") {
         console.info(
@@ -1215,7 +1211,6 @@ const Profile = () => {
               <FaLeaf aria-hidden="true" /> Natural Skincare Lover
             </div>
 
-            {/* ✅ Dynamic stats */}
             <div style={themeStyles.stats}>
               <div style={themeStyles.statItem}>
                 <div style={themeStyles.statValue}>
@@ -1267,7 +1262,6 @@ const Profile = () => {
               <FaUser aria-hidden="true" /> Profile Information
             </h2>
 
-            {/* Name row */}
             <div style={themeStyles.infoRow}>
               <span style={themeStyles.infoLabel}>Name</span>
               {isEditing ? (
@@ -1330,7 +1324,6 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Email row */}
             <div style={themeStyles.infoRow}>
               <span style={themeStyles.infoLabel}>Email</span>
               {isEditing ? (
@@ -1357,7 +1350,6 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Member since — fixed fallback */}
             <div style={themeStyles.infoRow}>
               <span style={themeStyles.infoLabel}>Member Since</span>
               <span style={themeStyles.infoValue}>
@@ -1383,7 +1375,6 @@ const Profile = () => {
               </span>
             </div>
 
-            {/* Skin type — emoji replaced */}
             <div
               style={{
                 ...themeStyles.infoRow,
@@ -1400,7 +1391,6 @@ const Profile = () => {
               </span>
             </div>
 
-            {/* ─── Recent Orders — the actual fix ─── */}
             <div style={themeStyles.sectionHeader}>
               <h2 style={themeStyles.sectionTitle}>
                 <FaShoppingBag aria-hidden="true" /> Recent Orders
@@ -1430,7 +1420,6 @@ const Profile = () => {
               </button>
             </div>
 
-            {/* Diagnostic warning when orders exist in storage but don't match */}
             {diagnostic?.type === "no-match" && (
               <div style={themeStyles.diagnosticBox}>
                 <FaExclamationTriangle
@@ -1571,7 +1560,6 @@ const Profile = () => {
               </div>
             )}
 
-            {/* Natural Skincare Collection — now clickable */}
             <h2
               style={{
                 ...themeStyles.sectionTitle,
@@ -1604,7 +1592,6 @@ const Profile = () => {
               ))}
             </div>
 
-            {/* Wishlist */}
             <h2
               style={{
                 ...themeStyles.sectionTitle,

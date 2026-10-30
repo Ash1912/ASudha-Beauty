@@ -14,7 +14,6 @@ import {
   FaSlidersH,
   FaTimes,
   FaInfoCircle,
-  FaShoppingBag,
   FaBookOpen,
   FaExternalLinkAlt,
   FaShieldAlt,
@@ -400,7 +399,6 @@ const SearchPage = () => {
       width: "100%",
     },
 
-    // ─── Background blobs ───
     bgBlob1: {
       position: "absolute",
       top: "-150px",
@@ -428,7 +426,6 @@ const SearchPage = () => {
       pointerEvents: "none",
     },
 
-    // ─── Breadcrumb ───
     breadcrumb: {
       position: "relative",
       zIndex: 1,
@@ -447,7 +444,6 @@ const SearchPage = () => {
       fontWeight: "700",
     },
 
-    // ─── Suggestions box ───
     suggestionsBox: {
       position: "relative",
       zIndex: 1,
@@ -496,7 +492,6 @@ const SearchPage = () => {
       transition: "all 0.2s ease",
     },
 
-    // ─── Header ───
     header: {
       position: "relative",
       zIndex: 1,
@@ -532,7 +527,6 @@ const SearchPage = () => {
       flexWrap: "wrap",
     },
 
-    // ─── Filter controls ───
     filterButton: {
       display: "inline-flex",
       alignItems: "center",
@@ -635,7 +629,6 @@ const SearchPage = () => {
       boxSizing: "border-box",
     },
 
-    // ─── Active filter chips ───
     activeFilters: {
       position: "relative",
       zIndex: 1,
@@ -688,7 +681,6 @@ const SearchPage = () => {
       fontFamily: "inherit",
     },
 
-    // ─── Products grid ───
     productsGrid: {
       position: "relative",
       zIndex: 1,
@@ -705,7 +697,6 @@ const SearchPage = () => {
       alignItems: "stretch",
     },
 
-    // ─── Empty state ───
     noResults: {
       position: "relative",
       zIndex: 1,
@@ -734,7 +725,6 @@ const SearchPage = () => {
       color: isDarkMode ? "#ffffff" : brandColors.earthDark,
     },
 
-    // ─── Pagination ───
     pagination: {
       position: "relative",
       zIndex: 1,
@@ -780,7 +770,6 @@ const SearchPage = () => {
       padding: "0 0.25rem",
     },
 
-    // ─── Popular searches / related links ───
     popularCard: {
       position: "relative",
       zIndex: 1,
@@ -863,7 +852,6 @@ const SearchPage = () => {
       fontSize: "0.8rem",
     },
 
-    // ─── Sources ───
     citationCard: {
       position: "relative",
       zIndex: 1,
@@ -1036,7 +1024,6 @@ const SearchPage = () => {
         <div style={themeStyles.bgBlob2} aria-hidden="true" />
 
         <main>
-
           <div style={themeStyles.noResults}>
             <FaLeaf aria-hidden="true" style={themeStyles.noResultsIcon} />
             <h1 style={themeStyles.noResultsTitle}>
@@ -1096,7 +1083,6 @@ const SearchPage = () => {
       <div style={themeStyles.bgBlob2} aria-hidden="true" />
 
       <main>
-
         {/* Header */}
         <div style={themeStyles.header}>
           <div>

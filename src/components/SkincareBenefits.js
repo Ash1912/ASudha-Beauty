@@ -200,11 +200,11 @@ const SkincareBenefits = ({ benefits, isNatural = true }) => {
       alignItems: "center",
       gap: "0.25rem",
     },
+    // ─── FIXED: removed duplicate marginBottom ───
     badgeContainer: {
       display: "flex",
       flexWrap: "wrap",
       gap: "0.6rem",
-      marginBottom: "2rem",
       listStyle: "none",
       padding: 0,
       margin: 0,
@@ -256,6 +256,7 @@ const SkincareBenefits = ({ benefits, isNatural = true }) => {
       border: "1px solid rgba(255,255,255,0.2)",
       transition: "all 0.3s ease",
     },
+    // ─── FIXED: removed duplicate padding ───
     claimsContainer: {
       marginTop: "1.5rem",
       padding: "1.5rem",
@@ -275,7 +276,6 @@ const SkincareBenefits = ({ benefits, isNatural = true }) => {
           : "repeat(auto-fit, minmax(140px, 1fr))",
       gap: "0.75rem",
       listStyle: "none",
-      padding: "1.5rem",
       margin: 0,
     },
     claimItem: {
@@ -493,7 +493,7 @@ const SkincareBenefits = ({ benefits, isNatural = true }) => {
 
       {/* Benefits list — semantic <ul> for better indexability */}
       {safeBenefits.length > 0 ? (
-        <ul style={themeStyles.badgeContainer} role="list">
+        <ul style={themeStyles.badgeContainer}>
           {safeBenefits.map((benefit, index) => {
             const icon = getBenefitIcon(benefit);
             const guide = getRelatedGuide(benefit);
@@ -541,7 +541,7 @@ const SkincareBenefits = ({ benefits, isNatural = true }) => {
             Pure Goodness of Nature
           </h3>
 
-          <ul style={themeStyles.claimsContainer} role="list">
+          <ul style={themeStyles.claimsContainer}>
             {FREE_FROM_CLAIMS.map((claim, index) => (
               <li
                 key={`${claim.label}-${index}`}

@@ -50,6 +50,10 @@ const DARK_SHADOW_LIFT = "0 24px 60px rgba(0, 0, 0, 0.75)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 24px 60px rgba(62, 39, 35, 0.15)";
 
+// ─── Muted text color (identical across themes; hoisted to avoid
+//     react-hooks/exhaustive-deps warning inside useLayoutEffect) ───
+const TEXT_DIM = "#8d7d76";
+
 // ─── Authoritative external reference for the legal requirement ───
 const LEGAL_SOURCES = [
   {
@@ -106,7 +110,7 @@ const Signup = () => {
     divider: "rgba(255, 255, 255, 0.08)",
     text: "#f5f0eb",
     textMuted: "#c9b8b0",
-    textDim: "#8d7d76",
+    textDim: TEXT_DIM,
     gold: brandColors.gold,
     green: brandColors.green,
     accent: brandColors.primary,
@@ -133,7 +137,7 @@ const Signup = () => {
     divider: "rgba(62, 39, 35, 0.06)",
     text: "#3e2723",
     textMuted: brandColors.earthLight,
-    textDim: "#8d7d76",
+    textDim: TEXT_DIM,
     gold: brandColors.goldDark,
     green: brandColors.green,
     accent: brandColors.primary,
@@ -393,7 +397,7 @@ const Signup = () => {
         align-items: center;
         gap: 0.35rem;
         font-size: 0.72rem;
-        color: ${T.textDim};
+        color: ${TEXT_DIM};
         text-decoration: none;
         font-weight: 600;
         transition: color 0.2s ease;
