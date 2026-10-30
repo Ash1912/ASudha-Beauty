@@ -1,4 +1,10 @@
-import React, { useState, useLayoutEffect } from "react";
+// src/pages/Signup.jsx
+import React, {
+  useState,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -12,10 +18,17 @@ import {
   FaCheckCircle,
   FaLeaf,
   FaExclamationTriangle,
+  FaShieldAlt,
+  FaExternalLinkAlt,
+  FaTimesCircle,
+  FaCheck,
 } from "react-icons/fa";
 import SEO from "../components/SEO";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -37,10 +50,36 @@ const DARK_SHADOW_LIFT = "0 24px 60px rgba(0, 0, 0, 0.75)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 24px 60px rgba(62, 39, 35, 0.15)";
 
+// ─── Authoritative external reference for the legal requirement ───
+const LEGAL_SOURCES = [
+  {
+    label:
+      "Consumer Protection (E-Commerce) Rules 2020 — Department of Consumer Affairs, Government of India",
+    href: "https://consumeraffairs.nic.in/",
+    domain: "consumeraffairs.nic.in",
+  },
+];
+
+// ─── Password rules (used by validation AND the live checklist) ───
+const PASSWORD_RULES = [
+  { id: "length", label: "At least 6 characters", test: (p) => p.length >= 6 },
+  {
+    id: "letter",
+    label: "Contains a letter",
+    test: (p) => /[a-zA-Z]/.test(p),
+  },
+  {
+    id: "number",
+    label: "Contains a number",
+    test: (p) => /[0-9]/.test(p),
+  },
+];
+
 const Signup = () => {
   const { isDarkMode } = useTheme();
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const firstInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -50,8 +89,10 @@ const Signup = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState(false);
 
   // ─── Theme tokens ───
@@ -111,37 +152,56 @@ const Signup = () => {
 
   const T = isDarkMode ? dark : light;
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // ─── Handlers ───
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear per-field error on change
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+    if (error) setError("");
+  };
 
   const validateForm = () => {
     const trimmedName = formData.name.trim();
     const trimmedEmail = formData.email.trim();
+    const nextErrors = {};
 
     if (trimmedName.length < 2) {
-      setError("Please enter your full name");
-      return false;
+      nextErrors.name = "Please enter your full name";
     }
     if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
-      setError("Please enter a valid email address");
-      return false;
+      nextErrors.email = "Please enter a valid email address";
     }
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return false;
+    if (!PASSWORD_RULES.every((r) => r.test(formData.password))) {
+      nextErrors.password = "Password does not meet the requirements below";
     }
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return false;
+      nextErrors.confirmPassword = "Passwords do not match";
     }
-    return true;
+    if (!acceptTerms) {
+      nextErrors.terms = "You must accept the Terms & Privacy Policy to continue";
+    }
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    setLoading(true);
     setError("");
+    if (!validateForm()) {
+      // Focus the first invalid field for a11y
+      const firstErrorKey = Object.keys(fieldErrors)[0] || "name";
+      document.getElementById(`signup-${firstErrorKey}`)?.focus();
+      return;
+    }
+    setLoading(true);
     const result = await signup(
       formData.name.trim(),
       formData.email.trim(),
@@ -156,7 +216,29 @@ const Signup = () => {
     setLoading(false);
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── JSON-LD: WebPage (referenced from Organization) ───
+  const signupJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/signup#webpage`,
+      url: `${SITE_URL}/signup`,
+      name: "Sign Up | ASudha Beauty",
+      description:
+        "Create your ASudha Beauty account and start your natural Ayurvedic journey.",
+      isPartOf: { "@id": `${SITE_URL}/#website` },
+      inLanguage: "en-IN",
+      isFamilyFriendly: true,
+      potentialAction: {
+        "@type": "RegisterAction",
+        target: `${SITE_URL}/signup`,
+        name: "Create an ASudha Beauty account",
+      },
+    }),
+    []
+  );
+
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-signup-styles="true"]')
@@ -197,30 +279,38 @@ const Signup = () => {
       .signup-input:focus {
         border-color: ${brandColors.green} !important;
         box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15) !important;
-        background-color: ${
-          isDarkMode ? "rgba(0, 0, 0, 0.6)" : "#ffffff"
-        } !important;
+        background-color: ${isDarkMode ? "rgba(0, 0, 0, 0.6)" : "#ffffff"} !important;
       }
       .signup-input::placeholder {
         color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
+      }
+      .signup-input[aria-invalid="true"] {
+        border-color: ${brandColors.danger} !important;
+      }
+      .signup-input[aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15) !important;
       }
 
       .signup-back-btn {
         transition: all 0.25s ease;
       }
-      .signup-back-btn:hover {
+      .signup-back-btn:hover,
+      .signup-back-btn:focus-visible {
         background: linear-gradient(135deg, ${brandColors.green}, ${brandColors.greenLight}) !important;
         border-color: transparent !important;
         color: #ffffff !important;
         transform: translateX(-4px);
+        outline: none;
       }
 
       .signup-pw-toggle {
         transition: color 0.25s ease, transform 0.25s ease;
       }
-      .signup-pw-toggle:hover {
+      .signup-pw-toggle:hover,
+      .signup-pw-toggle:focus-visible {
         color: ${brandColors.green} !important;
         transform: translateY(-50%) scale(1.1);
+        outline: none;
       }
 
       .signup-submit-btn {
@@ -229,13 +319,19 @@ const Signup = () => {
         position: relative;
         overflow: hidden;
       }
-      .signup-submit-btn:hover:not(:disabled) {
+      .signup-submit-btn:hover:not(:disabled),
+      .signup-submit-btn:focus-visible:not(:disabled) {
         transform: translateY(-3px) scale(1.01);
         box-shadow: 0 16px 42px rgba(76, 175, 80, 0.5);
+        outline: none;
       }
       .signup-submit-btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+      }
+      .signup-submit-btn:focus-visible {
+        outline: 2px solid ${brandColors.green};
+        outline-offset: 2px;
       }
 
       /* Shine sweep */
@@ -249,11 +345,7 @@ const Signup = () => {
         background: linear-gradient(
           90deg,
           transparent,
-          ${
-            isDarkMode
-              ? "rgba(255,255,255,0.15)"
-              : "rgba(255,255,255,0.5)"
-          },
+          ${isDarkMode ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.5)"},
           transparent
         );
         transition: left 0.7s ease;
@@ -265,9 +357,62 @@ const Signup = () => {
       .signup-link {
         transition: all 0.25s ease;
       }
-      .signup-link:hover {
+      .signup-link:hover,
+      .signup-link:focus-visible {
         text-decoration: underline;
         color: ${brandColors.greenLight};
+        outline: none;
+      }
+
+      .signup-terms-input {
+        accent-color: ${brandColors.green};
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .signup-terms-input:focus-visible {
+        outline: 2px solid ${brandColors.green};
+        outline-offset: 2px;
+      }
+
+      .signup-legal-link {
+        color: ${brandColors.green};
+        text-decoration: underline;
+        font-weight: 700;
+        transition: color 0.2s ease;
+      }
+      .signup-legal-link:hover,
+      .signup-legal-link:focus-visible {
+        color: ${brandColors.greenLight};
+        outline: none;
+      }
+
+      .signup-legal-source {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.72rem;
+        color: ${T.textDim};
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s ease;
+      }
+      .signup-legal-source:hover,
+      .signup-legal-source:focus-visible {
+        color: ${brandColors.green};
+        outline: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .signup-orb-1, .signup-orb-2, .signup-orb-3, .signup-card {
+          animation: none !important;
+        }
+        .signup-input, .signup-back-btn, .signup-pw-toggle,
+        .signup-submit-btn, .signup-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -277,11 +422,9 @@ const Signup = () => {
         .querySelectorAll('style[data-signup-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -297,8 +440,6 @@ const Signup = () => {
       boxSizing: "border-box",
       width: "100%",
     },
-
-    // ─── Animated background layer ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -368,11 +509,10 @@ const Signup = () => {
       opacity: isDarkMode ? 0.42 : 0.32,
     },
 
-    // ─── Signup card ───
     signupBox: {
       position: "relative",
       zIndex: 1,
-      maxWidth: "460px",
+      maxWidth: "480px",
       width: "100%",
       backgroundColor: T.card,
       borderRadius: "28px",
@@ -385,7 +525,6 @@ const Signup = () => {
       boxSizing: "border-box",
       overflow: "hidden",
     },
-    // Tri-color accent bar — matches the rest of the app
     cardAccentBar: {
       position: "absolute",
       top: 0,
@@ -396,7 +535,6 @@ const Signup = () => {
       opacity: 0.9,
     },
 
-    // ─── Back button ───
     backButton: {
       display: "inline-flex",
       alignItems: "center",
@@ -414,7 +552,6 @@ const Signup = () => {
       letterSpacing: "0.2px",
     },
 
-    // ─── Icon ───
     iconWrapper: {
       width: "68px",
       height: "68px",
@@ -429,7 +566,6 @@ const Signup = () => {
       boxShadow: "0 16px 40px rgba(76, 175, 80, 0.4)",
     },
 
-    // ─── Title ───
     title: {
       fontSize: "1.9rem",
       fontWeight: "900",
@@ -453,7 +589,6 @@ const Signup = () => {
       width: "100%",
     },
 
-    // ─── Status boxes ───
     errorBox: {
       background: T.errorBg,
       color: T.errorText,
@@ -485,7 +620,6 @@ const Signup = () => {
       gap: "0.5rem",
     },
 
-    // ─── Form ───
     inputGroup: {
       display: "flex",
       flexDirection: "column",
@@ -540,7 +674,79 @@ const Signup = () => {
       borderRadius: "50%",
     },
 
-    // ─── Submit ───
+    // ─── Field-level error text ───
+    fieldError: {
+      fontSize: "0.75rem",
+      color: T.errorText,
+      fontWeight: "700",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      marginTop: "0.1rem",
+    },
+
+    // ─── Password requirements checklist ───
+    passwordRules: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.3rem",
+      padding: "0.7rem 0.9rem",
+      borderRadius: "12px",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.03)"
+        : "rgba(62, 39, 35, 0.03)",
+      border: `1px dashed ${T.borderSoft}`,
+      marginTop: "-0.25rem",
+    },
+    passwordRule: (passed) => ({
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.75rem",
+      fontWeight: "600",
+      color: passed ? brandColors.green : T.textDim,
+      transition: "color 0.2s ease",
+    }),
+
+    // ─── Terms acceptance ───
+    termsLabel: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.6rem",
+      fontSize: "0.83rem",
+      color: T.textMuted,
+      lineHeight: "1.6",
+      marginBottom: "1.5rem",
+      cursor: "pointer",
+      fontWeight: "500",
+    },
+    termsText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    termsError: {
+      fontSize: "0.75rem",
+      color: T.errorText,
+      fontWeight: "700",
+      marginTop: "0.35rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+    },
+
+    // ─── Legal footnote ───
+    legalFootnote: {
+      marginTop: "1.75rem",
+      paddingTop: "1.25rem",
+      borderTop: `1px solid ${T.divider}`,
+      fontSize: "0.7rem",
+      color: T.textDim,
+      lineHeight: "1.7",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+    },
+
     signupButton: {
       width: "100%",
       padding: "1.05rem",
@@ -562,10 +768,9 @@ const Signup = () => {
       opacity: loading || success ? 0.65 : 1,
     },
 
-    // ─── Footer ───
     footer: {
       textAlign: "center",
-      marginTop: "2rem",
+      marginTop: "1.5rem",
       fontSize: "0.9rem",
       color: T.textMuted,
       fontWeight: "600",
@@ -581,44 +786,44 @@ const Signup = () => {
   return (
     <>
       <SEO
-        title="Sign Up | ASudha Beauty"
-        description="Create your ASudha Beauty account and start your natural Ayurvedic journey today."
+        title="Sign Up | ASudha Beauty — Create Your Account"
+        description="Create your ASudha Beauty account and start your natural Ayurvedic journey. Shop 100% natural Multani Mitti, Ubtan, Amla, Reetha & Shikakai with faster checkout and order tracking."
+        keywords="asudha beauty signup, create account, register, ayurvedic skincare account, natural beauty login"
+        url="/signup"
+        noindex
       />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(signupJsonLd),
+        }}
+      />
+
       <div style={themeStyles.container}>
         {/* Animated background */}
-        <div style={themeStyles.bgLayer}>
+        <div style={themeStyles.bgLayer} aria-hidden="true">
           <div style={themeStyles.bgGradient} />
           <div style={themeStyles.bgGrid} />
-          <div
-            className="signup-orb-1"
-            style={themeStyles.bgOrb1}
-            aria-hidden="true"
-          />
-          <div
-            className="signup-orb-2"
-            style={themeStyles.bgOrb2}
-            aria-hidden="true"
-          />
-          <div
-            className="signup-orb-3"
-            style={themeStyles.bgOrb3}
-            aria-hidden="true"
-          />
+          <div className="signup-orb-1" style={themeStyles.bgOrb1} />
+          <div className="signup-orb-2" style={themeStyles.bgOrb2} />
+          <div className="signup-orb-3" style={themeStyles.bgOrb3} />
         </div>
 
-        <div style={themeStyles.signupBox} className="signup-card">
-          <div style={themeStyles.cardAccentBar} />
+        <main style={themeStyles.signupBox} className="signup-card">
+          <div style={themeStyles.cardAccentBar} aria-hidden="true" />
 
           <button
+            type="button"
             onClick={() => navigate(-1)}
             style={themeStyles.backButton}
             className="signup-back-btn"
-            type="button"
+            aria-label="Go back to previous page"
           >
-            <FaArrowLeft /> Back
+            <FaArrowLeft aria-hidden="true" /> Back
           </button>
 
-          <div style={themeStyles.iconWrapper}>
+          <div style={themeStyles.iconWrapper} aria-hidden="true">
             <FaLeaf />
           </div>
           <h1 style={themeStyles.title}>Create Account</h1>
@@ -627,24 +832,28 @@ const Signup = () => {
           </p>
 
           {success && (
-            <div style={themeStyles.successBox} role="status">
-              <FaCheckCircle /> Account created! Redirecting...
+            <div style={themeStyles.successBox} role="status" aria-live="polite">
+              <FaCheckCircle aria-hidden="true" /> Account created!
+              Redirecting to login…
             </div>
           )}
           {error && (
-            <div style={themeStyles.errorBox} role="alert">
-              <FaExclamationTriangle /> {error}
+            <div style={themeStyles.errorBox} role="alert" aria-live="assertive">
+              <FaExclamationTriangle aria-hidden="true" /> {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          {/* ✅ noValidate lets our JS validation run first */}
+          <form onSubmit={handleSubmit} noValidate>
+            {/* Full name */}
             <div style={themeStyles.inputGroup}>
               <label style={themeStyles.label} htmlFor="signup-name">
                 Full Name
               </label>
               <div style={themeStyles.inputWrapper}>
-                <FaUser style={themeStyles.inputIcon} />
+                <FaUser aria-hidden="true" style={themeStyles.inputIcon} />
                 <input
+                  ref={firstInputRef}
                   id="signup-name"
                   type="text"
                   name="name"
@@ -655,16 +864,31 @@ const Signup = () => {
                   onChange={handleChange}
                   autoComplete="name"
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.name ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.name ? "signup-name-error" : undefined
+                  }
                 />
               </div>
+              {fieldErrors.name && (
+                <div
+                  id="signup-name-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" /> {fieldErrors.name}
+                </div>
+              )}
             </div>
 
+            {/* Email */}
             <div style={themeStyles.inputGroup}>
               <label style={themeStyles.label} htmlFor="signup-email">
                 Email Address
               </label>
               <div style={themeStyles.inputWrapper}>
-                <FaEnvelope style={themeStyles.inputIcon} />
+                <FaEnvelope aria-hidden="true" style={themeStyles.inputIcon} />
                 <input
                   id="signup-email"
                   type="email"
@@ -676,16 +900,31 @@ const Signup = () => {
                   onChange={handleChange}
                   autoComplete="email"
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.email ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.email ? "signup-email-error" : undefined
+                  }
                 />
               </div>
+              {fieldErrors.email && (
+                <div
+                  id="signup-email-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" /> {fieldErrors.email}
+                </div>
+              )}
             </div>
 
+            {/* Password */}
             <div style={themeStyles.inputGroup}>
               <label style={themeStyles.label} htmlFor="signup-password">
                 Password
               </label>
               <div style={themeStyles.inputWrapper}>
-                <FaLock style={themeStyles.inputIcon} />
+                <FaLock aria-hidden="true" style={themeStyles.inputIcon} />
                 <input
                   id="signup-password"
                   type={showPassword ? "text" : "password"}
@@ -697,25 +936,67 @@ const Signup = () => {
                   onChange={handleChange}
                   autoComplete="new-password"
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.password ? "true" : "false"}
+                  aria-describedby="signup-password-rules"
                 />
                 <button
                   type="button"
                   style={themeStyles.passwordToggle}
                   className="signup-pw-toggle"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showPassword ? (
+                    <FaEyeSlash aria-hidden="true" />
+                  ) : (
+                    <FaEye aria-hidden="true" />
+                  )}
                 </button>
               </div>
+
+              {/* Live password rules checklist */}
+              <div
+                id="signup-password-rules"
+                style={themeStyles.passwordRules}
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {PASSWORD_RULES.map((rule) => {
+                  const passed = rule.test(formData.password);
+                  return (
+                    <div
+                      key={rule.id}
+                      style={themeStyles.passwordRule(passed)}
+                    >
+                      {passed ? (
+                        <FaCheck aria-hidden="true" />
+                      ) : (
+                        <FaTimesCircle aria-hidden="true" />
+                      )}
+                      {rule.label}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {fieldErrors.password && (
+                <div style={themeStyles.fieldError} role="alert">
+                  <FaTimesCircle aria-hidden="true" />{" "}
+                  {fieldErrors.password}
+                </div>
+              )}
             </div>
 
+            {/* Confirm password */}
             <div style={themeStyles.inputGroup}>
               <label style={themeStyles.label} htmlFor="signup-confirm">
                 Confirm Password
               </label>
               <div style={themeStyles.inputWrapper}>
-                <FaLock style={themeStyles.inputIcon} />
+                <FaLock aria-hidden="true" style={themeStyles.inputIcon} />
                 <input
                   id="signup-confirm"
                   type={showConfirmPassword ? "text" : "password"}
@@ -727,19 +1008,102 @@ const Signup = () => {
                   onChange={handleChange}
                   autoComplete="new-password"
                   required
+                  aria-required="true"
+                  aria-invalid={
+                    fieldErrors.confirmPassword ? "true" : "false"
+                  }
+                  aria-describedby={
+                    fieldErrors.confirmPassword
+                      ? "signup-confirm-error"
+                      : undefined
+                  }
                 />
                 <button
                   type="button"
                   style={themeStyles.passwordToggle}
                   className="signup-pw-toggle"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                   aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
+                    showConfirmPassword
+                      ? "Hide password"
+                      : "Show password"
                   }
                 >
-                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showConfirmPassword ? (
+                    <FaEyeSlash aria-hidden="true" />
+                  ) : (
+                    <FaEye aria-hidden="true" />
+                  )}
                 </button>
               </div>
+              {fieldErrors.confirmPassword && (
+                <div
+                  id="signup-confirm-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" />{" "}
+                  {fieldErrors.confirmPassword}
+                </div>
+              )}
+            </div>
+
+            {/* ✅ Terms & Privacy acceptance (legal requirement) */}
+            <div>
+              <label style={themeStyles.termsLabel} htmlFor="signup-terms">
+                <input
+                  id="signup-terms"
+                  type="checkbox"
+                  className="signup-terms-input"
+                  checked={acceptTerms}
+                  onChange={(e) => {
+                    setAcceptTerms(e.target.checked);
+                    if (fieldErrors.terms) {
+                      setFieldErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.terms;
+                        return next;
+                      });
+                    }
+                  }}
+                  aria-required="true"
+                  aria-invalid={fieldErrors.terms ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.terms ? "signup-terms-error" : undefined
+                  }
+                />
+                <span style={themeStyles.termsText}>
+                  I agree to the{" "}
+                  <Link
+                    to="/terms"
+                    className="signup-legal-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Terms &amp; Conditions
+                  </Link>
+                  {" "}and{" "}
+                  <Link
+                    to="/returns"
+                    className="signup-legal-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Returns Policy
+                  </Link>
+                  {" "}of ASudha Beauty, and consent to receive transactional
+                  emails related to my order.
+                </span>
+              </label>
+              {fieldErrors.terms && (
+                <div
+                  id="signup-terms-error"
+                  style={themeStyles.termsError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" /> {fieldErrors.terms}
+                </div>
+              )}
             </div>
 
             <button
@@ -747,18 +1111,49 @@ const Signup = () => {
               style={themeStyles.signupButton}
               className="signup-submit-btn"
               disabled={loading || success}
+              aria-busy={loading}
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {loading ? "Creating Account…" : "Create Account"}
             </button>
           </form>
 
           <div style={themeStyles.footer}>
-            Already have an account?
+            Already have an account?{" "}
             <Link to="/login" style={themeStyles.link} className="signup-link">
               Login here
             </Link>
           </div>
-        </div>
+
+          {/* ─── Legal footnote with authoritative source ─── */}
+          <div style={themeStyles.legalFootnote}>
+            <FaShieldAlt
+              aria-hidden="true"
+              style={{
+                color: isDarkMode ? brandColors.gold : brandColors.green,
+                fontSize: "0.85rem",
+                marginTop: "0.15rem",
+                flexShrink: 0,
+              }}
+            />
+            <span>
+              By creating an account you agree to our terms under the{" "}
+              <a
+                href={LEGAL_SOURCES[0].href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="signup-legal-source"
+                aria-label={`${LEGAL_SOURCES[0].label} — opens in new tab`}
+              >
+                Consumer Protection (E-Commerce) Rules 2020
+                <FaExternalLinkAlt
+                  aria-hidden="true"
+                  style={{ fontSize: "0.6rem" }}
+                />
+              </a>
+              .
+            </span>
+          </div>
+        </main>
       </div>
     </>
   );

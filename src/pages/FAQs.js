@@ -1,6 +1,7 @@
-// src/pages/FAQs.js
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/FAQs.jsx
+import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useTheme } from "../context/ThemeContext";
 import {
   FaChevronDown,
@@ -16,9 +17,18 @@ import {
   FaQuestionCircle,
   FaWhatsapp,
   FaComments,
+  FaLeaf,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaArrowRight,
+  FaFlask,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+const SITE_NAME = "ASudha Beauty";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -38,6 +48,205 @@ const DARK_SHADOW = "0 10px 30px rgba(0, 0, 0, 0.55)";
 const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
+
+// ─── Category list (module scope) ───
+const CATEGORIES = [
+  { id: "all", label: "All", icon: <FaQuestionCircle /> },
+  { id: "products", label: "Products", icon: <FaBox /> },
+  { id: "orders", label: "Orders", icon: <FaShoppingBag /> },
+  { id: "shipping", label: "Shipping", icon: <FaTruck /> },
+  { id: "returns", label: "Returns", icon: <FaUndo /> },
+  { id: "payment", label: "Payment", icon: <FaCreditCard /> },
+  { id: "account", label: "Account", icon: <FaUserCircle /> },
+];
+
+// ─── FAQ data (module scope: reused by JSON-LD + UI) ───
+// relatedLinks: optional internal backlinks rendered under each answer.
+const FAQ_DATA = [
+  {
+    id: 1,
+    category: "products",
+    question: "What makes ASudha Beauty powders 100% natural?",
+    answer:
+      "ASudha Beauty powders are crafted from pure, natural ingredients sourced directly from nature. Our Multani Mitti, Ubtan, Amla, Reetha, and Shikakai powders contain absolutely no added chemicals, parabens, or artificial preservatives. We believe in the power of nature — just as it is. Pure. Natural. Effective.",
+    relatedLinks: [{ label: "Explore all natural products", to: "/shop" }],
+  },
+  {
+    id: 2,
+    category: "products",
+    question: "Are your herbal powders safe for sensitive skin?",
+    answer:
+      "Yes! Our 100% natural Ayurvedic powders are generally safe for all skin types, including sensitive skin. However, we always recommend doing a patch test on a small area of your inner arm before applying to your face or hair, especially if you have known allergies to specific herbs or clays.",
+    relatedLinks: [
+      { label: "Herbal face packs for every skin type", to: "/blog/6" },
+    ],
+  },
+  {
+    id: 3,
+    category: "products",
+    question: "What is Multani Mitti and how do I use it?",
+    answer:
+      "Multani Mitti (Fuller's Earth) is a natural clay powder used for deep cleansing and oil control. Mix 2 tablespoons of Multani Mitti powder with rose water, milk, or plain water to form a smooth paste. Apply evenly on your face and neck, leave for 10–15 minutes until dry, and rinse with lukewarm water. Use 2–3 times per week for glowing skin.",
+    relatedLinks: [
+      { label: "Shop Multani Mitti Face Pack", to: "/product/multani-mitti" },
+      { label: "Read the Multani Mitti benefits guide", to: "/blog/1" },
+    ],
+  },
+  {
+    id: 4,
+    category: "products",
+    question: "What are the benefits of Amla, Reetha, and Shikakai for hair?",
+    answer:
+      "Amla (Indian Gooseberry) strengthens hair roots and adds natural shine. Reetha (Soapnut) acts as a gentle, natural cleanser. Shikakai (Acacia concinna) nourishes the scalp and promotes healthy hair growth. Together, they form the ultimate Ayurvedic hair care trio — chemical-free and perfect for all hair types.",
+    relatedLinks: [
+      {
+        label: "Read the Amla-Reetha-Shikakai hair care science",
+        to: "/blog/3",
+      },
+    ],
+  },
+  {
+    id: 5,
+    category: "orders",
+    question: "How do I place an order for your herbal powders?",
+    answer:
+      "Placing an order is simple! Browse our collection of 100% natural Ayurvedic powders, add your desired products to your cart, proceed to checkout, enter your shipping details, choose a secure payment method, and confirm your order. You'll receive an order confirmation email once your order is placed.",
+    relatedLinks: [{ label: "Start shopping", to: "/shop" }],
+  },
+  {
+    id: 6,
+    category: "orders",
+    question: "Can I cancel or modify my order?",
+    answer:
+      "Orders can be cancelled within 2 hours of placement. Please contact our customer support immediately via email or WhatsApp if you need to modify or cancel your order. Once our team has processed your order for shipping, we cannot make changes.",
+    relatedLinks: [{ label: "Contact support", to: "/contact" }],
+  },
+  {
+    id: 7,
+    category: "orders",
+    question: "How do I track my order?",
+    answer:
+      "Once your herbal powder order ships, you'll receive a tracking number via email and SMS. You can also track your order by logging into your ASudha Beauty account and visiting the 'Track Order' section in your dashboard.",
+    relatedLinks: [{ label: "Track your order", to: "/track-order" }],
+  },
+  {
+    id: 8,
+    category: "shipping",
+    question: "What are your shipping charges?",
+    answer:
+      "We offer free shipping on all orders above ₹500. For orders below ₹500, a flat shipping fee of ₹50 applies. Express shipping options are available at an additional cost. We deliver pan-India, directly from our store in Gorakhpur to your doorstep.",
+    relatedLinks: [{ label: "Full shipping policy", to: "/shipping" }],
+  },
+  {
+    id: 9,
+    category: "shipping",
+    question: "How long does delivery take?",
+    answer:
+      "Delivery times vary by location. Metro cities (Mumbai, Delhi, Bangalore, etc.): 2–4 business days. Tier 2 cities: 3–5 business days. Rural areas: 5–7 business days. You'll receive tracking information to monitor your delivery status.",
+    relatedLinks: [{ label: "Shipping details", to: "/shipping" }],
+  },
+  {
+    id: 10,
+    category: "shipping",
+    question: "Do you ship internationally?",
+    answer:
+      "Currently, we ship only within India. We are actively working on expanding our Ayurvedic beauty products to international locations. Stay tuned for updates — we're excited to bring the power of nature to the world!",
+  },
+  {
+    id: 11,
+    category: "returns",
+    question: "What is your return policy for unopened products?",
+    answer:
+      "We offer a 30-day return policy for completely unused products in their original packaging. Simply initiate a return through your ASudha account or contact our support team. Refunds are processed within 7–10 business days after we receive the returned item.",
+    relatedLinks: [{ label: "Returns & exchanges policy", to: "/returns" }],
+  },
+  {
+    id: 12,
+    category: "returns",
+    question: "Can I return opened or used products?",
+    answer:
+      "For hygiene reasons, we cannot accept returns on opened or used herbal powders unless they are defective (e.g., damaged packaging, contamination). If you received a defective product, please contact us immediately with photos of the item, and we will arrange a replacement or refund.",
+    relatedLinks: [{ label: "Contact support", to: "/contact" }],
+  },
+  {
+    id: 13,
+    category: "payment",
+    question: "What payment methods do you accept?",
+    answer:
+      "We accept all major credit/debit cards, UPI (Google Pay, PhonePe, Paytm), net banking, and Cash on Delivery (COD) for orders up to ₹5,000. All payments are processed securely through our trusted payment gateways. Your safety is our priority.",
+  },
+  {
+    id: 14,
+    category: "payment",
+    question: "Is Cash on Delivery (COD) available?",
+    answer:
+      "Yes, Cash on Delivery is available for orders up to ₹5,000. A small convenience fee may apply for COD orders. Payment must be made in cash at the time of delivery. Please keep the exact amount ready to ensure a smooth handover.",
+  },
+  {
+    id: 15,
+    category: "account",
+    question: "How do I create an account?",
+    answer:
+      "Click on the 'Account' icon at the top right corner of our website and select 'Sign Up'. Enter your details to create an account. Benefits include: faster checkout, order tracking, personalized recommendations, and exclusive offers on our Ayurvedic products.",
+    relatedLinks: [{ label: "Create an account", to: "/signup" }],
+  },
+  {
+    id: 16,
+    category: "account",
+    question: "How do I reset my password?",
+    answer:
+      "Click on 'Forgot Password' on the login page and enter your registered email. You'll receive instructions to reset your password. Please check your spam folder if you don't see the email in your inbox. If you face any issues, contact our support team.",
+    relatedLinks: [{ label: "Sign in", to: "/login" }],
+  },
+];
+
+// ─── Related blog reading (internal backlinks) ───
+const RELATED_READING = [
+  {
+    to: "/blog/1",
+    label: "Multani Mitti benefits for glowing skin",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/2",
+    label: "Ubtan for glowing skin: the Ayurvedic ritual",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/3",
+    label: "Amla-Reetha-Shikakai natural hair care",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/7",
+    label: "The science behind Ayurvedic herbs",
+    icon: <FaFlask />,
+  },
+];
+
+// ─── Authoritative external sources (E-E-A-T) ───
+const TRUSTED_SOURCES = [
+  {
+    label: "NIH NCCIH — Ayurvedic Medicine: In Depth",
+    href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth",
+    domain: "nccih.nih.gov",
+  },
+  {
+    label: "PubMed — Multani Mitti (Fuller's Earth) skin research",
+    href: "https://pubmed.ncbi.nlm.nih.gov/?term=multani+mitti+fuller%27s+earth+skin",
+    domain: "pubmed.ncbi.nlm.nih.gov",
+  },
+  {
+    label: "PubMed — Evaluation of traditional Ubtan formulations",
+    href: "https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation",
+    domain: "pubmed.ncbi.nlm.nih.gov",
+  },
+  {
+    label: "Ministry of AYUSH — Government of India",
+    href: "https://ayush.gov.in/",
+    domain: "ayush.gov.in",
+  },
+];
 
 const FAQs = () => {
   const { isDarkMode } = useTheme();
@@ -94,154 +303,77 @@ const FAQs = () => {
   };
 
   const T = isDarkMode ? dark : light;
-
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
 
-  // Categories with icons
-  const categories = [
-    { id: "all", label: "All", icon: <FaQuestionCircle /> },
-    { id: "products", label: "Products", icon: <FaBox /> },
-    { id: "orders", label: "Orders", icon: <FaShoppingBag /> },
-    { id: "shipping", label: "Shipping", icon: <FaTruck /> },
-    { id: "returns", label: "Returns", icon: <FaUndo /> },
-    { id: "payment", label: "Payment", icon: <FaCreditCard /> },
-    { id: "account", label: "Account", icon: <FaUserCircle /> },
-  ];
+  // ─── JSON-LD: FAQPage + BreadcrumbList + WebPage ───
+  const faqJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "FAQPage",
+          "@id": `${SITE_URL}/faqs#faq`,
+          mainEntity: FAQ_DATA.map((faq) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: faq.answer,
+            },
+          })),
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${SITE_URL}/faqs#breadcrumb`,
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "FAQs",
+              item: `${SITE_URL}/faqs`,
+            },
+          ],
+        },
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/faqs#webpage`,
+          url: `${SITE_URL}/faqs`,
+          name: "Frequently Asked Questions | ASudha Beauty",
+          description:
+            "Answers to your questions about Multani Mitti, Ubtan, Amla, Reetha, and Shikakai — 100% natural Ayurvedic powders for glowing skin and healthy hair.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          about: {
+            "@type": "Thing",
+            name: "Ayurvedic skincare — Multani Mitti, Ubtan, Amla, Reetha, Shikakai",
+          },
+          breadcrumb: { "@id": `${SITE_URL}/faqs#breadcrumb` },
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/assets/images/og-default.png`,
+          },
+        },
+      ],
+    }),
+    []
+  );
 
-  // FAQs data (unchanged)
-  const faqs = [
-    {
-      id: 1,
-      category: "products",
-      question: "What makes ASudha Beauty powders 100% natural?",
-      answer:
-        "ASudha Beauty powders are crafted from pure, natural ingredients sourced directly from nature. Our Multani Mitti, Ubtan, Amla, Reetha, and Shikakai powders contain absolutely no added chemicals, parabens, or artificial preservatives. We believe in the power of nature—just as it is. Pure. Natural. Effective.",
-    },
-    {
-      id: 2,
-      category: "products",
-      question: "Are your herbal powders safe for sensitive skin?",
-      answer:
-        "Yes! Our 100% natural Ayurvedic powders are generally safe for all skin types, including sensitive skin. However, we always recommend doing a patch test on a small area of your inner arm before applying to your face or hair, especially if you have known allergies to specific herbs or clays.",
-    },
-    {
-      id: 3,
-      category: "products",
-      question: "What is Multani Mitti and how do I use it?",
-      answer:
-        "Multani Mitti (Fuller's Earth) is a natural clay powder used for deep cleansing and oil control. To use, simply mix 2 tablespoons of Multani Mitti powder with rose water, milk, or plain water to form a smooth paste. Apply evenly on your face and neck, leave for 10-15 minutes until dry, and rinse with lukewarm water. Use 2-3 times per week for glowing skin.",
-    },
-    {
-      id: 4,
-      category: "products",
-      question: "What are the benefits of Amla, Reetha, and Shikakai for hair?",
-      answer:
-        "Amla (Indian Gooseberry) strengthens hair roots and adds natural shine. Reetha (Soapnut) acts as a gentle, natural cleanser. Shikakai (Acacia concinna) nourishes the scalp and promotes healthy hair growth. Together, they form the ultimate Ayurvedic hair care trio—chemical-free and perfect for all hair types.",
-    },
-    {
-      id: 5,
-      category: "orders",
-      question: "How do I place an order for your herbal powders?",
-      answer:
-        "Placing an order is simple! Browse our collection of 100% natural Ayurvedic powders, add your desired products (Multani Mitti, Ubtan, Amla, etc.) to your cart, proceed to checkout, enter your shipping details, choose a secure payment method, and confirm your order. You'll receive an order confirmation email once your order is placed.",
-    },
-    {
-      id: 6,
-      category: "orders",
-      question: "Can I cancel or modify my order?",
-      answer:
-        "Orders can be cancelled within 2 hours of placement. Please contact our customer support immediately via email or WhatsApp if you need to modify or cancel your order. Once our team has processed your order for shipping, we cannot make changes.",
-    },
-    {
-      id: 7,
-      category: "orders",
-      question: "How do I track my order?",
-      answer:
-        "Once your herbal powder order ships, you'll receive a tracking number via email and SMS. You can also track your order by logging into your ASudha Beauty account and visiting the 'Track Order' section in your dashboard.",
-    },
-    {
-      id: 8,
-      category: "shipping",
-      question: "What are your shipping charges?",
-      answer:
-        "We offer free shipping on all orders above ₹500. For orders below ₹500, a flat shipping fee of ₹50 applies. Express shipping options are available at an additional cost. We deliver pan-India, directly from our store in Gorakhpur to your doorstep.",
-    },
-    {
-      id: 9,
-      category: "shipping",
-      question: "How long does delivery take?",
-      answer:
-        "Delivery times vary by location: Metro cities (Mumbai, Delhi, Bangalore, etc.): 2-4 business days. Tier 2 cities: 3-5 business days. Rural areas: 5-7 business days. You'll receive tracking information to monitor your delivery status.",
-    },
-    {
-      id: 10,
-      category: "shipping",
-      question: "Do you ship internationally?",
-      answer:
-        "Currently, we ship only within India. We are actively working on expanding our Ayurvedic beauty products to international locations. Stay tuned for updates—we're excited to bring the power of nature to the world!",
-    },
-    {
-      id: 11,
-      category: "returns",
-      question: "What is your return policy for unopened products?",
-      answer:
-        "We offer a 30-day return policy for completely unused products in their original packaging. Simply initiate a return through your ASudha account or contact our support team. Refunds are processed within 7-10 business days after we receive the returned item.",
-    },
-    {
-      id: 12,
-      category: "returns",
-      question: "Can I return opened or used products?",
-      answer:
-        "For hygiene reasons, we cannot accept returns on opened or used herbal powders unless they are defective (e.g., damaged packaging, contamination). If you received a defective product, please contact us immediately with photos of the item, and we will arrange a replacement or refund.",
-    },
-    {
-      id: 13,
-      category: "payment",
-      question: "What payment methods do you accept?",
-      answer:
-        "We accept all major credit/debit cards, UPI (Google Pay, PhonePe, Paytm), net banking, and Cash on Delivery (COD) for orders up to ₹5,000. All payments are processed securely through our trusted payment gateways. Your safety is our priority.",
-    },
-    {
-      id: 14,
-      category: "payment",
-      question: "Is Cash on Delivery (COD) available?",
-      answer:
-        "Yes, Cash on Delivery is available for orders up to ₹5,000. A small convenience fee may apply for COD orders. Payment must be made in cash at the time of delivery. Please keep the exact amount ready to ensure a smooth handover.",
-    },
-    {
-      id: 15,
-      category: "account",
-      question: "How do I create an account?",
-      answer:
-        "Click on the 'Account' icon at the top right corner of our website and select 'Sign Up'. Enter your details to create an account. Benefits include: faster checkout, order tracking, personalized recommendations, and exclusive offers on our Ayurvedic products.",
-    },
-    {
-      id: 16,
-      category: "account",
-      question: "How do I reset my password?",
-      answer:
-        "Click on 'Forgot Password' on the login page and enter your registered email. You'll receive instructions to reset your password. Please check your spam folder if you don't see the email in your inbox. If you face any issues, contact our support team.",
-    },
-  ];
-
+  // ─── Helpers ───
   const getCategoryIcon = (categoryId) => {
-    const found = categories.find((c) => c.id === categoryId);
+    const found = CATEGORIES.find((c) => c.id === categoryId);
     return found ? found.icon : <FaQuestionCircle />;
   };
-
   const getCategoryLabel = (categoryId) => {
-    const found = categories.find((c) => c.id === categoryId);
+    const found = CATEGORIES.find((c) => c.id === categoryId);
     return found ? found.label : "";
   };
-
   const toggleFaq = (id) => {
     setOpenFaqs((prev) =>
-      prev.includes(id) ? prev.filter((faqId) => faqId !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     );
   };
-
-  const filteredFaqs = faqs.filter((faq) => {
+  const filteredFaqs = FAQ_DATA.filter((faq) => {
     const matchesCategory =
       activeCategory === "all" || faq.category === activeCategory;
     const matchesSearch =
@@ -250,13 +382,12 @@ const FAQs = () => {
       faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
   const getCategoryCount = (categoryId) => {
-    if (categoryId === "all") return faqs.length;
-    return faqs.filter((f) => f.category === categoryId).length;
+    if (categoryId === "all") return FAQ_DATA.length;
+    return FAQ_DATA.filter((f) => f.category === categoryId).length;
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── Injected CSS ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-faq-styles="true"]')
@@ -318,6 +449,12 @@ const FAQs = () => {
         } !important;
         box-shadow: 0 10px 22px rgba(245, 52, 107, 0.18);
       }
+      .faq-category-btn:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: 2px;
+      }
 
       .faq-item {
         transition: transform 0.3s ease, box-shadow 0.3s ease,
@@ -339,11 +476,25 @@ const FAQs = () => {
         transition: transform 0.3s ease;
       }
 
-      .faq-question-row {
+      /* FAQ toggle button */
+      .faq-question-btn {
         transition: color 0.25s ease;
+        background: transparent;
+        border: none;
+        text-align: left;
+        font-family: inherit;
+        width: 100%;
+        box-sizing: border-box;
       }
-      .faq-question-row:hover {
+      .faq-question-btn:hover {
         color: ${isDarkMode ? brandColors.gold : brandColors.primary};
+      }
+      .faq-question-btn:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: -2px;
+        border-radius: 14px;
       }
 
       .faq-chevron {
@@ -352,6 +503,16 @@ const FAQs = () => {
 
       .faq-answer {
         animation: faqFade 0.3s ease;
+      }
+
+      .faq-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .faq-related-link:hover {
+        color: ${
+          isDarkMode ? brandColors.gold : brandColors.bronze
+        } !important;
+        gap: 0.6rem;
       }
 
       .faq-contact-btn {
@@ -370,6 +531,28 @@ const FAQs = () => {
         box-shadow: 0 14px 36px rgba(37, 211, 102, 0.45);
         gap: 0.6rem;
       }
+
+      .faq-citation-link {
+        transition: color 0.25s ease, border-color 0.25s ease;
+      }
+      .faq-citation-link:hover,
+      .faq-citation-link:focus-visible {
+        color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        outline: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .faq-orb-1, .faq-orb-2, .faq-orb-3 { animation: none !important; }
+        .faq-item, .faq-category-btn, .faq-contact-btn,
+        .faq-contact-btn-wa, .faq-answer, .faq-chevron {
+          transition: none !important;
+        }
+      }
     `;
     document.head.appendChild(style);
 
@@ -381,8 +564,8 @@ const FAQs = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
+  // ─── Theme styles ───
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -393,8 +576,6 @@ const FAQs = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -463,8 +644,6 @@ const FAQs = () => {
       filter: "blur(95px)",
       opacity: isDarkMode ? 0.38 : 0.28,
     },
-
-    // ─── Content ───
     content: {
       position: "relative",
       zIndex: 1,
@@ -478,32 +657,24 @@ const FAQs = () => {
       width: "100%",
       boxSizing: "border-box",
     },
-
-    // ─── Header ───
+    breadcrumb: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.78rem",
+      color: T.textDim,
+      marginBottom: "1.5rem",
+      flexWrap: "wrap",
+      fontWeight: "600",
+    },
+    breadcrumbLink: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      fontWeight: "700",
+    },
     header: {
       textAlign: "center",
       marginBottom: isNarrow ? "2rem" : "2.75rem",
-    },
-    heroBadge: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.45rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.1)",
-      borderRadius: "50px",
-      fontSize: "0.72rem",
-      color: isDarkMode ? T.gold : brandColors.bronze,
-      marginBottom: "1.25rem",
-      border: `1px solid ${
-        isDarkMode ? "rgba(212, 175, 55, 0.3)" : "rgba(199, 125, 66, 0.2)"
-      }`,
-      fontWeight: "800",
-      letterSpacing: "1px",
-      textTransform: "uppercase",
-      backdropFilter: "blur(8px)",
-      WebkitBackdropFilter: "blur(8px)",
     },
     title: {
       fontSize: isMobile ? "2rem" : isNarrow ? "2.4rem" : "3rem",
@@ -533,8 +704,6 @@ const FAQs = () => {
       margin: "0 auto",
       lineHeight: "1.7",
     },
-
-    // ─── Search ───
     searchContainer: {
       maxWidth: "520px",
       margin: "2rem auto 1.75rem",
@@ -565,8 +734,6 @@ const FAQs = () => {
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
     },
-
-    // ─── Categories ───
     categoriesContainer: {
       display: "flex",
       flexWrap: "wrap",
@@ -608,8 +775,6 @@ const FAQs = () => {
       marginLeft: "0.1rem",
       color: "inherit",
     },
-
-    // ─── FAQ list ───
     faqsContainer: {
       maxWidth: "820px",
       margin: "0 auto",
@@ -707,8 +872,31 @@ const FAQs = () => {
       border: `1px solid ${T.borderSoft}`,
       width: "fit-content",
     },
-
-    // ─── Empty state ───
+    faqRelatedRow: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.5rem",
+      marginTop: "1rem",
+      paddingTop: "0.85rem",
+      borderTop: `1px dashed ${T.divider}`,
+    },
+    faqRelatedLink: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      padding: "0.4rem 0.85rem",
+      fontSize: "0.78rem",
+      fontWeight: "700",
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      borderRadius: "50px",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.08)"
+        : "rgba(199, 125, 66, 0.06)",
+      border: `1px dashed ${
+        isDarkMode ? "rgba(212, 175, 55, 0.25)" : "rgba(199, 125, 66, 0.2)"
+      }`,
+    },
     noResults: {
       textAlign: "center",
       padding: isMobile ? "2.5rem 1.5rem" : "4rem 2rem",
@@ -754,11 +942,108 @@ const FAQs = () => {
       fontSize: "0.92rem",
       margin: 0,
     },
-
-    // ─── Contact section ───
+    // ─── Related Reading ───
+    relatedSection: {
+      maxWidth: "820px",
+      margin: "2.5rem auto 0",
+      padding: "1.75rem",
+      backgroundColor: T.card,
+      borderRadius: "20px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+    },
+    relatedTitle: {
+      fontSize: "1rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.1rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.7rem 0.9rem",
+      borderRadius: "10px",
+      fontSize: "0.88rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+      transition: "color 0.25s ease, gap 0.25s ease",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.75rem",
+    },
+    // ─── Sources / citations ───
+    citationSection: {
+      maxWidth: "820px",
+      margin: "1.5rem auto 0",
+      padding: "1.5rem 1.75rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "16px",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    citationTitle: {
+      fontSize: "0.85rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.85rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.82rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
+    // ─── Contact ───
     contactSection: {
       maxWidth: "820px",
-      margin: "3rem auto 0",
+      margin: "2.5rem auto 0",
       padding: isMobile ? "2rem 1.5rem" : "2.75rem 2.5rem",
       backgroundColor: T.cardAlt,
       borderRadius: "26px",
@@ -867,78 +1152,126 @@ const FAQs = () => {
 
   return (
     <div style={themeStyles.container}>
+      {/* ─── SEO: Meta + JSON-LD ─── */}
+      <Helmet htmlAttributes={{ lang: "en-IN" }}>
+        <title>
+          FAQs — Multani Mitti, Ubtan, Amla & Shipping | ASudha Beauty
+        </title>
+        <meta
+          name="description"
+          content="Answers to common questions about Multani Mitti benefits, how to use Ubtan for glowing skin, Amla-Reetha-Shikakai hair care, shipping, returns, and payments. 100% natural Ayurvedic products."
+        />
+        <meta
+          name="keywords"
+          content="multani mitti benefits, how to use multani mitti, ubtan benefits for glowing skin, amla reetha shikakai for hair, natural skincare india, chemical free skincare, ayurvedic powders, best natural face pack, ASudha Beauty FAQ"
+        />
+        <link rel="canonical" href={`${SITE_URL}/faqs`} />
+        <meta
+          name="robots"
+          content="index, follow, max-image-preview:large, max-snippet:-1"
+        />
+        <meta name="author" content={SITE_NAME} />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta
+          property="og:title"
+          content="FAQs — Multani Mitti, Ubtan, Amla & Shipping | ASudha Beauty"
+        />
+        <meta
+          property="og:description"
+          content="Answers to common questions about our 100% natural Ayurvedic products — Multani Mitti, Ubtan, Amla, Reetha & Shikakai."
+        />
+        <meta
+          property="og:image"
+          content={`${SITE_URL}/assets/images/og-default.png`}
+        />
+        <meta property="og:url" content={`${SITE_URL}/faqs`} />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:locale" content="en_IN" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content="FAQs | ASudha Beauty — 100% Natural Ayurvedic Skincare"
+        />
+        <meta
+          name="twitter:description"
+          content="Everything you need to know about Multani Mitti, Ubtan, Amla, Reetha, Shikakai, and our Ayurvedic ritual."
+        />
+        <meta
+          name="twitter:image"
+          content={`${SITE_URL}/assets/images/og-default.png`}
+        />
+
+        {/* JSON-LD: FAQPage + BreadcrumbList + WebPage */}
+        <script type="application/ld+json">
+          {JSON.stringify(faqJsonLd)}
+        </script>
+      </Helmet>
+
       {/* Animated background */}
-      <div style={themeStyles.bgLayer}>
+      <div style={themeStyles.bgLayer} aria-hidden="true">
         <div style={themeStyles.bgGradient} />
         <div style={themeStyles.bgGrid} />
-        <div
-          className="faq-orb-1"
-          style={themeStyles.bgOrb1}
-          aria-hidden="true"
-        />
-        <div
-          className="faq-orb-2"
-          style={themeStyles.bgOrb2}
-          aria-hidden="true"
-        />
-        <div
-          className="faq-orb-3"
-          style={themeStyles.bgOrb3}
-          aria-hidden="true"
-        />
+        <div className="faq-orb-1" style={themeStyles.bgOrb1} />
+        <div className="faq-orb-2" style={themeStyles.bgOrb2} />
+        <div className="faq-orb-3" style={themeStyles.bgOrb3} />
       </div>
 
-      <div style={themeStyles.content}>
+      <main style={themeStyles.content}>
+
         {/* Header */}
         <div style={themeStyles.header}>
-          {/* <div style={themeStyles.heroBadge}>
-            <FaLeaf style={{ fontSize: "0.7rem" }} />
-            Frequently Asked Questions
-          </div> */}
           <h1 style={themeStyles.title}>
-            How Can We Help?
+            Frequently Asked Questions
             <span style={themeStyles.titleAccent} aria-hidden="true" />
           </h1>
           <p style={themeStyles.subtitle}>
-            Find answers to commonly asked questions about our 100% natural
-            Ayurvedic powders, orders, shipping, and the ASudha Beauty
-            experience.
+            Answers to common questions about our 100% natural Ayurvedic
+            powders — Multani Mitti, Ubtan, Amla, Reetha & Shikakai — plus
+            orders, shipping, and returns.
           </p>
         </div>
 
         {/* Search */}
         <div style={themeStyles.searchContainer}>
-          <div style={themeStyles.searchIcon}>
+          <div style={themeStyles.searchIcon} aria-hidden="true">
             <FaSearch />
           </div>
           <input
-            type="text"
-            placeholder="Search for answers..."
+            type="search"
+            placeholder="Search FAQs about Multani Mitti, Ubtan, shipping…"
             style={themeStyles.searchInput}
             className="faq-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Search FAQs"
+            aria-label="Search frequently asked questions"
           />
         </div>
 
         {/* Categories */}
-        <div style={themeStyles.categoriesContainer}>
-          {categories.map((category) => {
+        <div
+          style={themeStyles.categoriesContainer}
+          role="group"
+          aria-label="Filter FAQs by category"
+        >
+          {CATEGORIES.map((category) => {
             const isActive = activeCategory === category.id;
             return (
               <button
                 key={category.id}
+                type="button"
                 style={{
                   ...themeStyles.categoryButton,
                   ...(isActive ? themeStyles.activeCategoryButton : {}),
                 }}
                 className="faq-category-btn"
                 onClick={() => setActiveCategory(category.id)}
-                type="button"
                 aria-pressed={isActive}
               >
-                {category.icon}
+                <span aria-hidden="true">{category.icon}</span>
                 {category.label}
                 <span style={themeStyles.categoryCount}>
                   {getCategoryCount(category.id)}
@@ -948,31 +1281,32 @@ const FAQs = () => {
           })}
         </div>
 
-        {/* FAQs List */}
+        {/* FAQs list */}
         <div style={themeStyles.faqsContainer}>
           {filteredFaqs.length > 0 ? (
             filteredFaqs.map((faq) => {
               const isOpen = openFaqs.includes(faq.id);
+              const answerId = `faq-answer-${faq.id}`;
               return (
-                <div key={faq.id} style={themeStyles.faqItem} className="faq-item">
-                  <div
+                <div
+                  key={faq.id}
+                  style={themeStyles.faqItem}
+                  className="faq-item"
+                >
+                  {/* Real <button> — keyboard + screen-reader native */}
+                  <button
+                    type="button"
                     style={themeStyles.faqQuestion}
-                    className="faq-question-row"
+                    className="faq-question-btn"
                     onClick={() => toggleFaq(faq.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleFaq(faq.id);
-                      }
-                    }}
                     aria-expanded={isOpen}
+                    aria-controls={answerId}
                   >
                     <span style={themeStyles.faqQuestionText}>
                       <span
                         style={themeStyles.faqIconWrap}
                         className="faq-question-icon"
+                        aria-hidden="true"
                       >
                         {getCategoryIcon(faq.category)}
                       </span>
@@ -984,17 +1318,48 @@ const FAQs = () => {
                         transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                       }}
                       className="faq-chevron"
+                      aria-hidden="true"
                     >
                       <FaChevronDown />
                     </span>
-                  </div>
+                  </button>
+
                   {isOpen && (
-                    <div style={themeStyles.faqAnswer} className="faq-answer">
+                    <div
+                      id={answerId}
+                      style={themeStyles.faqAnswer}
+                      className="faq-answer"
+                      role="region"
+                      aria-label={faq.question}
+                    >
                       <div style={themeStyles.faqCategoryTag}>
-                        {getCategoryIcon(faq.category)}
+                        <span aria-hidden="true">
+                          {getCategoryIcon(faq.category)}
+                        </span>
                         {getCategoryLabel(faq.category)}
                       </div>
                       {faq.answer}
+
+                      {/* Internal backlinks (contextual, only when relevant) */}
+                      {Array.isArray(faq.relatedLinks) &&
+                        faq.relatedLinks.length > 0 && (
+                          <div style={themeStyles.faqRelatedRow}>
+                            {faq.relatedLinks.map((link) => (
+                              <Link
+                                key={link.to}
+                                to={link.to}
+                                className="faq-related-link"
+                                style={themeStyles.faqRelatedLink}
+                              >
+                                <FaArrowRight
+                                  aria-hidden="true"
+                                  style={{ fontSize: "0.65rem" }}
+                                />
+                                {link.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>
@@ -1002,8 +1367,8 @@ const FAQs = () => {
             })
           ) : (
             <div style={themeStyles.noResults}>
-              <div style={themeStyles.noResultsAccent} />
-              <div style={themeStyles.noResultsIconWrap}>
+              <div style={themeStyles.noResultsAccent} aria-hidden="true" />
+              <div style={themeStyles.noResultsIconWrap} aria-hidden="true">
                 <FaSearch />
               </div>
               <h3 style={themeStyles.noResultsTitle}>No answers found</h3>
@@ -1015,16 +1380,106 @@ const FAQs = () => {
           )}
         </div>
 
-        {/* Contact Section */}
-        <div style={themeStyles.contactSection}>
-          <div style={themeStyles.contactAccentBar} />
-          <div style={themeStyles.contactIconWrap}>
+        {/* ─── Related Reading: internal backlinks to blog ─── */}
+        <section
+          style={themeStyles.relatedSection}
+          aria-labelledby="related-reading-title"
+        >
+          <h2 id="related-reading-title" style={themeStyles.relatedTitle}>
+            <FaBookOpen aria-hidden="true" /> Related Reading
+          </h2>
+          <ul style={themeStyles.relatedList}>
+            {RELATED_READING.map((item) => (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  style={themeStyles.relatedLink}
+                  className="faq-related-link"
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span style={themeStyles.relatedIcon} aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </span>
+                  <FaArrowRight
+                    aria-hidden="true"
+                    style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ─── Sources & References (E-E-A-T) ─── */}
+        <section
+          style={themeStyles.citationSection}
+          aria-labelledby="sources-title"
+        >
+          <h2 id="sources-title" style={themeStyles.citationTitle}>
+            <FaFlask aria-hidden="true" /> Sources &amp; References
+          </h2>
+          <ul style={themeStyles.citationList}>
+            {TRUSTED_SOURCES.map((source) => (
+              <li key={source.href}>
+                <a
+                  href={source.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.citationLink}
+                  className="faq-citation-link"
+                  aria-label={`${source.label} — opens in new tab`}
+                >
+                  <FaExternalLinkAlt
+                    aria-hidden="true"
+                    style={{
+                      fontSize: "0.65rem",
+                      marginTop: "0.2rem",
+                      flexShrink: 0,
+                      color: isDarkMode
+                        ? brandColors.gold
+                        : brandColors.bronze,
+                    }}
+                  />
+                  <span>
+                    {source.label}
+                    <div style={themeStyles.citationDomain}>
+                      {source.domain}
+                    </div>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ─── Contact ─── */}
+        <section
+          style={themeStyles.contactSection}
+          aria-labelledby="contact-section-title"
+        >
+          <div style={themeStyles.contactAccentBar} aria-hidden="true" />
+          <div style={themeStyles.contactIconWrap} aria-hidden="true">
             <FaComments />
           </div>
-          <h3 style={themeStyles.contactTitle}>Still Have Questions?</h3>
+          <h2
+            id="contact-section-title"
+            style={themeStyles.contactTitle}
+          >
+            Still Have Questions?
+          </h2>
           <p style={themeStyles.contactText}>
             Can&apos;t find what you&apos;re looking for? Our Ayurvedic support
-            team is here to help you.
+            team is here to help — whether it&apos;s choosing the right
+            Multani Mitti or Ubtan ritual for your skin type, or tracking an
+            order.
           </p>
           <div style={themeStyles.contactButtons}>
             <Link
@@ -1032,14 +1487,14 @@ const FAQs = () => {
               style={themeStyles.contactButton}
               className="faq-contact-btn"
             >
-              <FaEnvelope /> Contact Us
+              <FaEnvelope aria-hidden="true" /> Contact Us
             </Link>
             <a
               href="tel:+917518217726"
               style={themeStyles.contactButtonSecondary}
               className="faq-contact-btn"
             >
-              <FaPhone /> Call Us
+              <FaPhone aria-hidden="true" /> Call Us
             </a>
             <a
               href="https://wa.me/917518217726"
@@ -1048,11 +1503,11 @@ const FAQs = () => {
               style={themeStyles.contactButtonWhatsApp}
               className="faq-contact-btn-wa"
             >
-              <FaWhatsapp /> WhatsApp
+              <FaWhatsapp aria-hidden="true" /> WhatsApp
             </a>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

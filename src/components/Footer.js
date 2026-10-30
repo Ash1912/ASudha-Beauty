@@ -4,8 +4,6 @@ import { useTheme } from "../context/ThemeContext";
 import {
   FaInstagram,
   FaFacebook,
-  FaTwitter,
-  FaPinterest,
   FaYoutube,
   FaEnvelope,
   FaPhone,
@@ -62,7 +60,7 @@ const Footer = () => {
   const { isDarkMode } = useTheme();
   const location = useLocation();
   const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1440
+    typeof window !== "undefined" ? window.innerWidth : 1440,
   );
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [email, setEmail] = useState("");
@@ -172,7 +170,11 @@ const Footer = () => {
 
   const resourceLinks = [
     { name: "Blog", link: "/blog", icon: <FaBlog /> },
-    { name: "Beauty Tips", link: "/blog?category=beauty-tips", icon: <FaNewspaper /> },
+    {
+      name: "Beauty Tips",
+      link: "/blog?category=beauty-tips",
+      icon: <FaNewspaper />,
+    },
     { name: "Tutorials", link: "/blog?category=tutorials", icon: <FaEye /> },
     { name: "Customer Reviews", link: "/testimonials", icon: <FaStar /> },
     { name: "Affiliate Program", link: "/affiliate", icon: <FaHeart /> },
@@ -211,9 +213,7 @@ const Footer = () => {
                     padding-left 0.25s ease;
       }
       .footer-link svg {
-        color: ${
-          isDarkMode ? "rgba(212,175,55,0.65)" : "rgba(199,125,66,0.7)"
-        };
+        color: ${isDarkMode ? "rgba(212,175,55,0.65)" : "rgba(199,125,66,0.7)"};
         transition: color 0.25s ease, transform 0.25s ease;
       }
       .footer-link:hover {
@@ -254,15 +254,11 @@ const Footer = () => {
           isDarkMode ? brandColors.gold : brandColors.bronze
         } !important;
         box-shadow: 0 0 0 4px ${
-          isDarkMode
-            ? "rgba(212, 175, 55, 0.18)"
-            : "rgba(199, 125, 66, 0.12)"
+          isDarkMode ? "rgba(212, 175, 55, 0.18)" : "rgba(199, 125, 66, 0.12)"
         };
       }
       .footer-input::placeholder {
-        color: ${
-          isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"
-        };
+        color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
       }
 
       /* Newsletter button */
@@ -993,7 +989,7 @@ const Footer = () => {
                 <FaInstagram />
               </a>
               <a
-                href="https://www.facebook.com/"
+                href="https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={themeStyles.socialLink}
@@ -1001,26 +997,6 @@ const Footer = () => {
                 aria-label="Facebook"
               >
                 <FaFacebook />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={themeStyles.socialLink}
-                className="footer-social"
-                aria-label="Twitter"
-              >
-                <FaTwitter />
-              </a>
-              <a
-                href="https://pinterest.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={themeStyles.socialLink}
-                className="footer-social"
-                aria-label="Pinterest"
-              >
-                <FaPinterest />
               </a>
               <a
                 href="https://youtube.com"

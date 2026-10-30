@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/AffiliateProgram.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import SEO from "../components/SEO";
 import {
@@ -20,9 +27,21 @@ import {
   FaHandshake,
   FaChevronDown,
   FaPenNib,
+  FaExclamationTriangle,
+  FaTimesCircle,
+  FaExternalLinkAlt,
+  FaShieldAlt,
+  FaBookOpen,
+  FaShoppingBag,
+  FaQuestionCircle,
+  FaHeadset,
+  FaGavel,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -48,6 +67,205 @@ const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
+// ─── Content data (module scope: stable references) ───
+const BENEFITS = [
+  {
+    icon: <FaMoneyBillWave />,
+    title: "Generous Commission",
+    description:
+      "Earn up to 10% commission on every referral sale. No caps, just pure earnings.",
+    color: brandColors.gold,
+  },
+  {
+    icon: <FaUsers />,
+    title: "Dedicated Support",
+    description:
+      "Get personalized onboarding and support from our Ayurvedic beauty team.",
+    color: brandColors.primary,
+  },
+  {
+    icon: <FaChartLine />,
+    title: "Real-time Analytics",
+    description:
+      "Track your clicks, sales, and commissions with a simple, transparent dashboard.",
+    color: brandColors.bronze,
+  },
+  {
+    icon: <FaGift />,
+    title: "Free Product Samples",
+    description:
+      "Receive complimentary product kits to create authentic, honest reviews.",
+    color: brandColors.gold,
+  },
+  {
+    icon: <FaLaptopCode />,
+    title: "Creative Assets",
+    description:
+      "Access high-resolution product imagery, banners, and herbal ingredient guides.",
+    color: brandColors.primary,
+  },
+  {
+    icon: <FaRocket />,
+    title: "Fast Payouts",
+    description:
+      "Monthly payouts via bank transfer or digital wallets. Minimum payout is ₹500.",
+    color: brandColors.bronze,
+  },
+];
+
+const PLATFORMS = [
+  {
+    name: "Instagram",
+    icon: <FaInstagram />,
+    followers: "500+",
+    color: brandColors.instagram,
+  },
+  {
+    name: "YouTube",
+    icon: <FaYoutube />,
+    followers: "100+",
+    color: brandColors.youtube,
+  },
+  {
+    name: "Facebook",
+    icon: <FaFacebook />,
+    followers: "1K+",
+    color: brandColors.facebook,
+  },
+  {
+    name: "Twitter/X",
+    icon: <FaTwitter />,
+    followers: "500+",
+    color: brandColors.twitter,
+  },
+  {
+    name: "Blog",
+    icon: <FaLaptopCode />,
+    followers: "500+",
+    color: brandColors.blog,
+  },
+];
+
+const STEPS = [
+  {
+    step: "1",
+    title: "Apply",
+    description: "Fill out our simple application form below.",
+  },
+  {
+    step: "2",
+    title: "Get Approved",
+    description:
+      "Our team reviews and approves your application within 48 hours.",
+  },
+  {
+    step: "3",
+    title: "Share Your Links",
+    description: "Get your unique affiliate links for our herbal powders.",
+  },
+  {
+    step: "4",
+    title: "Earn & Grow",
+    description: "Get paid monthly for every verified sale you generate.",
+  },
+];
+
+const STATS = [
+  { number: "10%", label: "Commission Rate" },
+  { number: "100+", label: "Active Affiliates" },
+  { number: "₹5k+", label: "Avg. Monthly Earnings" },
+  { number: "30-Day", label: "Cookie Duration" },
+];
+
+// ─── FAQs (used for FAQPage schema AND visible accordion) ───
+const AFFILIATE_FAQS = [
+  {
+    q: "Who can join the ASudha Beauty affiliate program?",
+    a: "Anyone who loves natural Ayurvedic products! We welcome beauty influencers, lifestyle bloggers, YouTube creators, and passionate customers who want to share the goodness of Multani Mitti, Amla, Reetha, and more.",
+  },
+  {
+    q: "How much commission can I earn?",
+    a: "Affiliates earn a standard 10% commission on each sale generated through your unique link. We also offer bonus incentives for top performers!",
+  },
+  {
+    q: "How do I get paid?",
+    a: "Payments are processed monthly via bank transfer or UPI. The minimum payout threshold is just ₹500.",
+  },
+  {
+    q: "How do I track my sales?",
+    a: "You'll receive access to a personal affiliate dashboard where you can view clicks, successful referrals, and commissions in real-time.",
+  },
+  {
+    q: "Do I need my own products to promote ASudha Beauty?",
+    a: "Not at all! We provide you with sample kits, high-quality product images, and promotional banners so you can easily create authentic content.",
+  },
+  {
+    q: "Do I need to disclose that I'm an affiliate?",
+    a: "Yes — this is a legal requirement in India under the Advertising Standards Council of India (ASCI) Influencer Guidelines and the Consumer Protection Act 2019. Every post, video, or blog you publish that includes an affiliate link must clearly disclose the relationship (e.g., '#ad', '#affiliate', 'Paid partnership'). We provide a ready-to-use disclosure kit as part of your welcome package.",
+  },
+  {
+    q: "Can I promote ASudha Beauty in countries outside India?",
+    a: "Currently, ASudha Beauty ships only within India. We're expanding internationally — affiliates targeting Indian audiences will earn the most commissions today, but international affiliates can still build awareness for future launches.",
+  },
+];
+
+// ─── Internal backlinks ───
+const RELATED_PAGES = [
+  {
+    to: "/shop",
+    label: "Browse our full Ayurvedic collection",
+    icon: <FaShoppingBag />,
+  },
+  {
+    to: "/blog",
+    label: "Read our Ayurvedic beauty guides",
+    icon: <FaBookOpen />,
+  },
+  {
+    to: "/faqs",
+    label: "Frequently asked questions",
+    icon: <FaQuestionCircle />,
+  },
+  {
+    to: "/contact",
+    label: "Contact our team",
+    icon: <FaHeadset />,
+  },
+  {
+    to: "/partners",
+    label: "Become a brand partner",
+    icon: <FaHandshake />,
+  },
+  {
+    to: "/terms",
+    label: "Terms & Conditions",
+    icon: <FaGavel />,
+  },
+];
+
+// ─── Authoritative external hyperlinks (legal + compliance references) ───
+const TRUSTED_SOURCES = [
+  {
+    label:
+      "Advertising Standards Council of India (ASCI) — Influencer Disclosure Guidelines",
+    href: "https://www.ascionline.in/",
+    domain: "ascionline.in",
+  },
+  {
+    label:
+      "Consumer Protection Act, 2019 — Department of Consumer Affairs, Government of India",
+    href: "https://consumeraffairs.nic.in/",
+    domain: "consumeraffairs.nic.in",
+  },
+  {
+    label: "Reserve Bank of India — Payment & Digital Commerce",
+    href: "https://www.rbi.org.in/",
+    domain: "rbi.org.in",
+  },
+];
+
+const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+
 const AffiliateProgram = () => {
   const { isDarkMode } = useTheme();
   const [windowWidth, setWindowWidth] = useState(
@@ -62,6 +280,8 @@ const AffiliateProgram = () => {
     reason: "",
   });
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [activeFaq, setActiveFaq] = useState(null);
 
   useEffect(() => {
@@ -85,6 +305,12 @@ const AffiliateProgram = () => {
     gold: brandColors.gold,
     green: brandColors.green,
     accent: brandColors.primary,
+    errorBg: "rgba(244, 67, 54, 0.15)",
+    errorBorder: "rgba(244, 67, 54, 0.3)",
+    errorText: "#ff8a80",
+    successBg: "rgba(76, 175, 80, 0.15)",
+    successBorder: "rgba(76, 175, 80, 0.25)",
+    successText: "#a5d6a7",
     shadow: DARK_SHADOW,
     shadowLift: DARK_SHADOW_LIFT,
   };
@@ -103,6 +329,12 @@ const AffiliateProgram = () => {
     gold: brandColors.goldDark,
     green: brandColors.green,
     accent: brandColors.primary,
+    errorBg: "rgba(244, 67, 54, 0.1)",
+    errorBorder: "rgba(244, 67, 54, 0.25)",
+    errorText: "#c62828",
+    successBg: "rgba(76, 175, 80, 0.1)",
+    successBorder: "rgba(76, 175, 80, 0.25)",
+    successText: "#2e7d32",
     shadow: LIGHT_SHADOW,
     shadowLift: LIGHT_SHADOW_LIFT,
   };
@@ -112,15 +344,53 @@ const AffiliateProgram = () => {
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
 
+  // ─── Form handlers ───
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+    if (formError) setFormError("");
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (formData.name.trim().length < 2) {
+      errors.name = "Please enter your full name";
+    }
+    if (!EMAIL_REGEX.test(formData.email.trim())) {
+      errors.email = "Please enter a valid email address";
+    }
+    if (!/^https?:\/\/\S+/.test(formData.website.trim())) {
+      errors.website = "Please enter a valid URL starting with http:// or https://";
+    }
+    if (!formData.platform) {
+      errors.platform = "Please select your primary platform";
+    }
+    if (!formData.audienceSize) {
+      errors.audienceSize = "Please select your audience size";
+    }
+    if (formData.reason.trim().length < 20) {
+      errors.reason = "Please tell us a bit more (at least 20 characters)";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      const firstKey = Object.keys(fieldErrors)[0] || "name";
+      document.getElementById(`af-${firstKey}`)?.focus();
+      return;
+    }
     setFormSubmitted(true);
-    setTimeout(() => setFormSubmitted(false), 5000);
+    setTimeout(() => setFormSubmitted(false), 8000);
     setFormData({
       name: "",
       email: "",
@@ -135,143 +405,46 @@ const AffiliateProgram = () => {
     setActiveFaq(activeFaq === index ? null : index);
   };
 
-  // Benefits Data
-  const benefits = [
-    {
-      icon: <FaMoneyBillWave />,
-      title: "Generous Commission",
-      description:
-        "Earn up to 10% commission on every referral sale. No caps, just pure earnings.",
-      color: brandColors.gold,
-    },
-    {
-      icon: <FaUsers />,
-      title: "Dedicated Support",
-      description:
-        "Get personalized onboarding and support from our Ayurvedic beauty team.",
-      color: brandColors.primary,
-    },
-    {
-      icon: <FaChartLine />,
-      title: "Real-time Analytics",
-      description:
-        "Track your clicks, sales, and commissions with a simple, transparent dashboard.",
-      color: brandColors.bronze,
-    },
-    {
-      icon: <FaGift />,
-      title: "Free Product Samples",
-      description:
-        "Receive complimentary product kits to create authentic, honest reviews.",
-      color: brandColors.gold,
-    },
-    {
-      icon: <FaLaptopCode />,
-      title: "Creative Assets",
-      description:
-        "Access high-resolution product imagery, banners, and herbal ingredient guides.",
-      color: brandColors.primary,
-    },
-    {
-      icon: <FaRocket />,
-      title: "Fast Payouts",
-      description:
-        "Monthly payouts via bank transfer or digital wallets. Minimum payout is ₹500.",
-      color: brandColors.bronze,
-    },
-  ];
+  // ─── JSON-LD: WebPage + FAQPage (no BreadcrumbList per user request) ───
+  const affiliateJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/affiliate#webpage`,
+          url: `${SITE_URL}/affiliate`,
+          name: "Affiliate Program | ASudha Beauty",
+          description:
+            "Join the ASudha Beauty affiliate program and earn up to 10% commission by sharing our 100% natural Ayurvedic skincare and haircare powders.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          inLanguage: "en-IN",
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/assets/images/og-default.png`,
+          },
+        },
+        {
+          "@type": "FAQPage",
+          "@id": `${SITE_URL}/affiliate#faq`,
+          mainEntity: AFFILIATE_FAQS.map((faq) => ({
+            "@type": "Question",
+            name: faq.q,
+            acceptedAnswer: { "@type": "Answer", text: faq.a },
+          })),
+        },
+      ],
+    }),
+    []
+  );
 
-  // Platforms
-  const platforms = [
-    {
-      name: "Instagram",
-      icon: <FaInstagram />,
-      followers: "500+",
-      color: brandColors.instagram,
-    },
-    {
-      name: "YouTube",
-      icon: <FaYoutube />,
-      followers: "100+",
-      color: brandColors.youtube,
-    },
-    {
-      name: "Facebook",
-      icon: <FaFacebook />,
-      followers: "1K+",
-      color: brandColors.facebook,
-    },
-    {
-      name: "Twitter/X",
-      icon: <FaTwitter />,
-      followers: "500+",
-      color: brandColors.twitter,
-    },
-    {
-      name: "Blog",
-      icon: <FaLaptopCode />,
-      followers: "500+",
-      color: brandColors.blog,
-    },
-  ];
+  const citations = useMemo(
+    () => TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    []
+  );
 
-  // FAQs
-  const faqs = [
-    {
-      q: "Who can join the ASudha Beauty affiliate program?",
-      a: "Anyone who loves natural Ayurvedic products! We welcome beauty influencers, lifestyle bloggers, YouTube creators, and passionate customers who want to share the goodness of Multani Mitti, Amla, Reetha, and more.",
-    },
-    {
-      q: "How much commission can I earn?",
-      a: "Affiliates earn a standard 10% commission on each sale generated through your unique link. We also offer bonus incentives for top performers!",
-    },
-    {
-      q: "How do I get paid?",
-      a: "Payments are processed monthly via bank transfer or UPI. The minimum payout threshold is just ₹500.",
-    },
-    {
-      q: "How do I track my sales?",
-      a: "You'll receive access to a personal affiliate dashboard where you can view clicks, successful referrals, and commissions in real-time.",
-    },
-    {
-      q: "Do I need my own products to promote ASudha Beauty?",
-      a: "Not at all! We provide you with sample kits, high-quality product images, and promotional banners so you can easily create authentic content.",
-    },
-  ];
-
-  // Steps
-  const steps = [
-    {
-      step: "1",
-      title: "Apply",
-      description: "Fill out our simple application form below.",
-    },
-    {
-      step: "2",
-      title: "Get Approved",
-      description:
-        "Our team reviews and approves your application within 48 hours.",
-    },
-    {
-      step: "3",
-      title: "Share Your Links",
-      description: "Get your unique affiliate links for our herbal powders.",
-    },
-    {
-      step: "4",
-      title: "Earn & Grow",
-      description: "Get paid monthly for every verified sale you generate.",
-    },
-  ];
-
-  const stats = [
-    { number: "10%", label: "Commission Rate" },
-    { number: "100+", label: "Active Affiliates" },
-    { number: "₹5k+", label: "Avg. Monthly Earnings" },
-    { number: "30-Day", label: "Cookie Duration" },
-  ];
-
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── Injected CSS — only depends on isDarkMode ───
+  // T.shadowLift inlined as isDarkMode ternary to satisfy exhaustive-deps.
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-affiliate-styles="true"]')
@@ -296,6 +469,10 @@ const AffiliateProgram = () => {
         from { opacity: 0; transform: translateY(-4px); }
         to { opacity: 1; transform: translateY(0); }
       }
+      @keyframes afSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
 
       .af-orb-1 { animation: afFloat1 16s ease-in-out infinite; }
       .af-orb-2 { animation: afFloat2 20s ease-in-out infinite; }
@@ -319,8 +496,16 @@ const AffiliateProgram = () => {
       .af-input::placeholder {
         color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
       }
+      .af-input[aria-invalid="true"] {
+        border-color: #f44336 !important;
+      }
+      .af-input[aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15) !important;
+      }
       select.af-input option {
-        background-color: ${isDarkMode ? brandColors.darkSlate : "#ffffff"} !important;
+        background-color: ${
+          isDarkMode ? brandColors.darkSlate : "#ffffff"
+        } !important;
         color: ${isDarkMode ? "#ffffff" : brandColors.earthLight} !important;
       }
 
@@ -330,7 +515,11 @@ const AffiliateProgram = () => {
       }
       .af-benefit-card:hover {
         transform: translateY(-8px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.4)"
@@ -350,7 +539,11 @@ const AffiliateProgram = () => {
       }
       .af-stat-card:hover {
         transform: translateY(-5px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.4)"
@@ -364,7 +557,11 @@ const AffiliateProgram = () => {
       }
       .af-platform-card:hover {
         transform: translateY(-6px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.4)"
@@ -384,7 +581,11 @@ const AffiliateProgram = () => {
       }
       .af-step-card:hover {
         transform: translateY(-6px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.4)"
@@ -402,32 +603,59 @@ const AffiliateProgram = () => {
       .af-cta-primary {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .af-cta-primary:hover {
+      .af-cta-primary:hover,
+      .af-cta-primary:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 16px 42px rgba(245, 52, 107, 0.5);
         gap: 0.75rem;
+        outline: none;
       }
 
       .af-cta-secondary {
         transition: transform 0.3s ease, border-color 0.3s ease,
                     color 0.3s ease, gap 0.3s ease;
       }
-      .af-cta-secondary:hover {
+      .af-cta-secondary:hover,
+      .af-cta-secondary:focus-visible {
         transform: translateY(-3px);
         border-color: ${brandColors.primary} !important;
         color: ${brandColors.primary} !important;
         gap: 0.65rem;
+        outline: none;
       }
 
-      .af-faq-header {
+      /* FAQ toggle — real button */
+      .af-faq-btn {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
+        padding: 1.35rem 1.6rem;
+        background: transparent;
+        border: none;
+        text-align: left;
+        font-family: inherit;
+        cursor: pointer;
+        color: inherit;
         transition: background-color 0.25s ease;
       }
-      .af-faq-header:hover {
+      .af-faq-btn:hover,
+      .af-faq-btn:focus-visible {
         background-color: ${
           isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(62,39,35,0.04)"
         } !important;
+        outline: none;
       }
-
+      .af-faq-btn:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: -2px;
+      }
+      .af-faq-icon {
+        transition: transform 0.3s ease;
+      }
       .af-faq-answer {
         animation: afFade 0.3s ease;
       }
@@ -435,9 +663,48 @@ const AffiliateProgram = () => {
       .af-submit-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .af-submit-btn:hover:not(:disabled) {
+      .af-submit-btn:hover:not(:disabled),
+      .af-submit-btn:focus-visible:not(:disabled) {
         transform: translateY(-3px);
         box-shadow: 0 16px 42px rgba(245, 52, 107, 0.5);
+        outline: none;
+      }
+      .af-submit-btn:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: 2px;
+      }
+
+      /* Related / citation links */
+      .af-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .af-related-link:hover,
+      .af-related-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        gap: 0.6rem;
+        outline: none;
+      }
+      .af-citation-link:hover,
+      .af-citation-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .af-orb-1, .af-orb-2, .af-orb-3 { animation: none !important; }
+        .af-benefit-card, .af-benefit-icon, .af-stat-card,
+        .af-platform-card, .af-platform-icon, .af-step-card,
+        .af-step-number, .af-cta-primary, .af-cta-secondary,
+        .af-faq-btn, .af-faq-icon, .af-submit-btn,
+        .af-related-link, .af-citation-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -447,11 +714,9 @@ const AffiliateProgram = () => {
         .querySelectorAll('style[data-affiliate-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -462,8 +727,6 @@ const AffiliateProgram = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -533,7 +796,6 @@ const AffiliateProgram = () => {
       opacity: isDarkMode ? 0.38 : 0.28,
     },
 
-    // ─── Hero ───
     hero: {
       position: "relative",
       zIndex: 1,
@@ -573,7 +835,6 @@ const AffiliateProgram = () => {
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
     },
-    // ✅ Solid title + gradient underline
     heroTitle: {
       fontSize: isMobile ? "2rem" : isNarrow ? "2.5rem" : "3.4rem",
       fontWeight: "900",
@@ -642,7 +903,6 @@ const AffiliateProgram = () => {
       cursor: "pointer",
     },
 
-    // ─── Section ───
     section: {
       position: "relative",
       zIndex: 1,
@@ -686,7 +946,6 @@ const AffiliateProgram = () => {
       lineHeight: "1.7",
     },
 
-    // ─── Stats ───
     statsGrid: {
       position: "relative",
       zIndex: 1,
@@ -735,7 +994,6 @@ const AffiliateProgram = () => {
       letterSpacing: "0.2px",
     },
 
-    // ─── Benefits grid ───
     benefitsGrid: {
       display: "grid",
       gridTemplateColumns: isMobile
@@ -798,7 +1056,6 @@ const AffiliateProgram = () => {
       margin: 0,
     },
 
-    // ─── Platforms ───
     platformsGrid: {
       display: "grid",
       gridTemplateColumns: isMobile
@@ -853,7 +1110,6 @@ const AffiliateProgram = () => {
       lineHeight: "1.7",
     },
 
-    // ─── Steps ───
     stepsGrid: {
       display: "grid",
       gridTemplateColumns: isMobile
@@ -925,16 +1181,6 @@ const AffiliateProgram = () => {
       backdropFilter: "blur(10px)",
       WebkitBackdropFilter: "blur(10px)",
     },
-    faqHeader: {
-      padding: isMobile ? "1.15rem 1.25rem" : "1.35rem 1.6rem",
-      cursor: "pointer",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: "1rem",
-      background: "transparent",
-      userSelect: "none",
-    },
     faqQuestion: {
       fontSize: isMobile ? "0.95rem" : "1.05rem",
       fontWeight: "800",
@@ -942,6 +1188,7 @@ const AffiliateProgram = () => {
       flex: 1,
       lineHeight: "1.5",
       letterSpacing: "-0.1px",
+      textAlign: "left",
     },
     faqIconWrap: {
       width: "34px",
@@ -956,10 +1203,11 @@ const AffiliateProgram = () => {
       color: isDarkMode ? T.gold : brandColors.primary,
       fontSize: "0.8rem",
       flexShrink: 0,
-      transition: "transform 0.3s ease",
     },
     faqAnswer: {
-      padding: isMobile ? "0 1.25rem 1.25rem 1.25rem" : "0 1.6rem 1.5rem 1.6rem",
+      padding: isMobile
+        ? "0 1.25rem 1.25rem 1.25rem"
+        : "0 1.6rem 1.5rem 1.6rem",
       color: T.textMuted,
       fontSize: isMobile ? "0.88rem" : "0.95rem",
       lineHeight: "1.75",
@@ -993,7 +1241,9 @@ const AffiliateProgram = () => {
     },
     formGrid: {
       display: "grid",
-      gridTemplateColumns: isNarrow ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+      gridTemplateColumns: isNarrow
+        ? "minmax(0, 1fr)"
+        : "repeat(2, minmax(0, 1fr))",
       gap: isMobile ? "1rem" : "1.25rem",
     },
     formGroup: {
@@ -1057,6 +1307,28 @@ const AffiliateProgram = () => {
       fontWeight: "600",
       lineHeight: "1.6",
     },
+    fieldError: {
+      fontSize: "0.75rem",
+      color: T.errorText,
+      fontWeight: "700",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      marginTop: "0.4rem",
+    },
+    formError: {
+      marginTop: "1rem",
+      padding: "0.85rem 1.15rem",
+      backgroundColor: T.errorBg,
+      color: T.errorText,
+      borderRadius: "14px",
+      border: `1px solid ${T.errorBorder}`,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.6rem",
+      fontWeight: "600",
+      fontSize: "0.9rem",
+    },
     submitButton: {
       width: "100%",
       padding: isMobile ? "0.95rem" : "1.1rem",
@@ -1079,15 +1351,11 @@ const AffiliateProgram = () => {
     successMessage: {
       marginTop: "1.5rem",
       padding: "1rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(76, 175, 80, 0.15)"
-        : "rgba(76, 175, 80, 0.1)",
-      color: isDarkMode ? "#a5d6a7" : "#2e7d32",
+      backgroundColor: T.successBg,
+      color: T.successText,
       borderRadius: "14px",
       textAlign: "center",
-      border: `1px solid ${
-        isDarkMode ? "rgba(76, 175, 80, 0.25)" : "rgba(76, 175, 80, 0.2)"
-      }`,
+      border: `1px solid ${T.successBorder}`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -1153,43 +1421,141 @@ const AffiliateProgram = () => {
       justifyContent: "center",
       flexWrap: "wrap",
     },
+
+    // ─── Related pages ───
+    relatedCard: {
+      backgroundColor: T.card,
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      padding: isMobile ? "1.5rem" : "2rem",
+      marginTop: "2rem",
+      boxSizing: "border-box",
+      width: "100%",
+    },
+    relatedTitle: {
+      fontSize: "1.05rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.15rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "10px",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+
+    // ─── Citations ───
+    citationCard: {
+      marginTop: "1.5rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+      boxSizing: "border-box",
+      width: "100%",
+    },
+    citationTitle: {
+      fontSize: "0.88rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
   };
 
   return (
     <div style={themeStyles.container}>
+      {/* ─── SEO: meta + JSON-LD (no breadcrumb per request) ─── */}
       <SEO
-        title="Affiliate Program | ASudha Beauty"
-        description="Join the ASudha Beauty affiliate program and earn up to 10% commission by sharing our 100% natural Ayurvedic skincare and haircare powders."
-        keywords="affiliate program, earn commission, Ayurvedic beauty affiliate, natural skincare affiliate, influencer program"
-        url="/affiliate-program"
+        title="Affiliate Program | ASudha Beauty — Earn 10% Commission"
+        description="Join the ASudha Beauty affiliate program and earn up to 10% commission by sharing our 100% natural Ayurvedic skincare and haircare powders. Free samples, real-time analytics, monthly payouts."
+        keywords="affiliate program india, earn commission ayurvedic, natural skincare affiliate, influencer program, earn money promoting skincare, ayurvedic beauty affiliate india, asudha beauty affiliate"
+        url="/affiliate"
+        citations={citations}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(affiliateJsonLd),
+        }}
       />
 
       {/* Animated background */}
-      <div style={themeStyles.bgLayer}>
+      <div style={themeStyles.bgLayer} aria-hidden="true">
         <div style={themeStyles.bgGradient} />
         <div style={themeStyles.bgGrid} />
-        <div
-          className="af-orb-1"
-          style={themeStyles.bgOrb1}
-          aria-hidden="true"
-        />
-        <div
-          className="af-orb-2"
-          style={themeStyles.bgOrb2}
-          aria-hidden="true"
-        />
-        <div
-          className="af-orb-3"
-          style={themeStyles.bgOrb3}
-          aria-hidden="true"
-        />
+        <div className="af-orb-1" style={themeStyles.bgOrb1} />
+        <div className="af-orb-2" style={themeStyles.bgOrb2} />
+        <div className="af-orb-3" style={themeStyles.bgOrb3} />
       </div>
 
       {/* Hero */}
-      <div style={themeStyles.hero}>
+      <section style={themeStyles.hero}>
         <div style={themeStyles.heroContent}>
           <div style={themeStyles.heroBadge}>
-            <FaHandshake style={{ fontSize: "0.75rem" }} />
+            <FaHandshake aria-hidden="true" style={{ fontSize: "0.75rem" }} />
             Affiliate Program
           </div>
           <h1 style={themeStyles.heroTitle}>
@@ -1208,56 +1574,76 @@ const AffiliateProgram = () => {
               style={themeStyles.ctaButton}
               className="af-cta-primary"
             >
-              Join Now <FaHeart />
+              Join Now <FaHeart aria-hidden="true" />
             </a>
             <a
               href="#benefits"
               style={themeStyles.secondaryButton}
               className="af-cta-secondary"
             >
-              Learn More <FaArrowRight />
+              Learn More <FaArrowRight aria-hidden="true" />
             </a>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Stats */}
-      <div style={themeStyles.section}>
+      <section
+        style={themeStyles.section}
+        aria-label="Program statistics"
+      >
         <div style={themeStyles.statsGrid}>
-          {stats.map((stat, idx) => (
-            <div key={idx} style={themeStyles.statCard} className="af-stat-card">
-              <div style={themeStyles.statCardAccent} />
+          {STATS.map((stat) => (
+            <div
+              key={stat.label}
+              style={themeStyles.statCard}
+              className="af-stat-card"
+            >
+              <div style={themeStyles.statCardAccent} aria-hidden="true" />
               <div style={themeStyles.statNumber}>{stat.number}</div>
               <div style={themeStyles.statLabel}>{stat.label}</div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Benefits */}
-      <div id="benefits" style={themeStyles.section}>
+      <section
+        id="benefits"
+        style={themeStyles.section}
+        aria-labelledby="benefits-title"
+      >
         <div style={themeStyles.sectionTitleRow}>
-          <h2 style={themeStyles.sectionTitle}>Why Partner With Us?</h2>
-          <div style={themeStyles.sectionTitleUnderline} />
+          <h2 id="benefits-title" style={themeStyles.sectionTitle}>
+            Why Partner With Us?
+          </h2>
+          <div
+            style={themeStyles.sectionTitleUnderline}
+            aria-hidden="true"
+          />
         </div>
         <p style={themeStyles.sectionSubtitle}>
           Grow your income while spreading the joy of pure, chemical-free
           Ayurvedic beauty.
         </p>
         <div style={themeStyles.benefitsGrid}>
-          {benefits.map((benefit, index) => (
-            <div
-              key={index}
+          {BENEFITS.map((benefit) => (
+            <article
+              key={benefit.title}
               style={themeStyles.benefitCard}
               className="af-benefit-card"
             >
-              <div style={themeStyles.benefitCardAccent} />
+              <div
+                style={themeStyles.benefitCardAccent}
+                aria-hidden="true"
+              />
               <div
                 style={{
                   ...themeStyles.benefitIconWrap,
                   background: `linear-gradient(135deg, ${benefit.color}, ${benefit.color}dd)`,
                 }}
                 className="af-benefit-icon"
+                aria-hidden="true"
               >
                 {benefit.icon}
               </div>
@@ -1265,25 +1651,33 @@ const AffiliateProgram = () => {
               <p style={themeStyles.benefitDescription}>
                 {benefit.description}
               </p>
-            </div>
+            </article>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Ideal For */}
-      <div style={themeStyles.section}>
+      {/* Platforms */}
+      <section
+        style={themeStyles.section}
+        aria-labelledby="platforms-title"
+      >
         <div style={themeStyles.sectionTitleRow}>
-          <h2 style={themeStyles.sectionTitle}>Perfect For</h2>
-          <div style={themeStyles.sectionTitleUnderline} />
+          <h2 id="platforms-title" style={themeStyles.sectionTitle}>
+            Perfect For
+          </h2>
+          <div
+            style={themeStyles.sectionTitleUnderline}
+            aria-hidden="true"
+          />
         </div>
         <p style={themeStyles.sectionSubtitle}>
           Whether you&apos;re a content creator, blogger, or beauty enthusiast
           — we&apos;d love to work with you.
         </p>
         <div style={themeStyles.platformsGrid}>
-          {platforms.map((platform, index) => (
-            <div
-              key={index}
+          {PLATFORMS.map((platform) => (
+            <article
+              key={platform.name}
               style={themeStyles.platformCard}
               className="af-platform-card"
             >
@@ -1292,6 +1686,7 @@ const AffiliateProgram = () => {
                   ...themeStyles.platformCardAccent,
                   background: platform.color,
                 }}
+                aria-hidden="true"
               />
               <div
                 style={{
@@ -1299,6 +1694,7 @@ const AffiliateProgram = () => {
                   color: platform.color,
                 }}
                 className="af-platform-icon"
+                aria-hidden="true"
               >
                 {platform.icon}
               </div>
@@ -1306,69 +1702,82 @@ const AffiliateProgram = () => {
               <div style={themeStyles.platformFollowers}>
                 {platform.followers} followers
               </div>
-            </div>
+            </article>
           ))}
         </div>
         <p style={themeStyles.platformsNote}>
           + Lifestyle Bloggers, Clean Beauty Enthusiasts, Herbalists, and more!
         </p>
-      </div>
+      </section>
 
-      {/* How It Works */}
-      <div style={themeStyles.section}>
+      {/* Steps */}
+      <section
+        style={themeStyles.section}
+        aria-labelledby="how-it-works-title"
+      >
         <div style={themeStyles.sectionTitleRow}>
-          <h2 style={themeStyles.sectionTitle}>How It Works</h2>
-          <div style={themeStyles.sectionTitleUnderline} />
+          <h2 id="how-it-works-title" style={themeStyles.sectionTitle}>
+            How It Works
+          </h2>
+          <div
+            style={themeStyles.sectionTitleUnderline}
+            aria-hidden="true"
+          />
         </div>
         <p style={themeStyles.sectionSubtitle}>
           Getting started is simple. Follow these four easy steps to begin your
           journey with us.
         </p>
         <div style={themeStyles.stepsGrid}>
-          {steps.map((item, index) => (
-            <div
-              key={index}
+          {STEPS.map((item) => (
+            <article
+              key={item.step}
               style={themeStyles.stepCard}
               className="af-step-card"
             >
-              <div style={themeStyles.stepCardAccent} />
-              <div style={themeStyles.stepNumber} className="af-step-number">
+              <div style={themeStyles.stepCardAccent} aria-hidden="true" />
+              <div
+                style={themeStyles.stepNumber}
+                className="af-step-number"
+              >
                 {item.step}
               </div>
               <h3 style={themeStyles.stepTitle}>{item.title}</h3>
               <p style={themeStyles.stepDescription}>{item.description}</p>
-            </div>
+            </article>
           ))}
         </div>
-      </div>
+      </section>
 
       {/* FAQs */}
-      <div style={themeStyles.section}>
+      <section
+        style={themeStyles.section}
+        aria-labelledby="affiliate-faq-title"
+      >
         <div style={themeStyles.sectionTitleRow}>
-          <h2 style={themeStyles.sectionTitle}>Frequently Asked Questions</h2>
-          <div style={themeStyles.sectionTitleUnderline} />
+          <h2 id="affiliate-faq-title" style={themeStyles.sectionTitle}>
+            Frequently Asked Questions
+          </h2>
+          <div
+            style={themeStyles.sectionTitleUnderline}
+            aria-hidden="true"
+          />
         </div>
         <p style={themeStyles.sectionSubtitle}>
           Everything you need to know about the ASudha Beauty affiliate
           program.
         </p>
-        {faqs.map((faq, index) => {
+        {AFFILIATE_FAQS.map((faq, index) => {
           const isOpen = activeFaq === index;
+          const answerId = `affiliate-faq-answer-${index}`;
           return (
-            <div key={index} style={themeStyles.faqItem}>
-              <div
-                style={themeStyles.faqHeader}
-                className="af-faq-header"
+            <div key={faq.q} style={themeStyles.faqItem}>
+              <button
+                type="button"
+                className="af-faq-btn"
                 onClick={() => toggleFaq(index)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleFaq(index);
-                  }
-                }}
                 aria-expanded={isOpen}
+                aria-controls={answerId}
               >
                 <span style={themeStyles.faqQuestion}>{faq.q}</span>
                 <span
@@ -1376,37 +1785,57 @@ const AffiliateProgram = () => {
                     ...themeStyles.faqIconWrap,
                     transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                   }}
+                  className="af-faq-icon"
+                  aria-hidden="true"
                 >
                   <FaChevronDown />
                 </span>
-              </div>
+              </button>
               {isOpen && (
-                <div style={themeStyles.faqAnswer} className="af-faq-answer">
+                <div
+                  id={answerId}
+                  style={themeStyles.faqAnswer}
+                  className="af-faq-answer"
+                  role="region"
+                  aria-label={faq.q}
+                >
                   {faq.a}
                 </div>
               )}
             </div>
           );
         })}
-      </div>
+      </section>
 
       {/* Application Form */}
-      <div id="apply" style={themeStyles.section}>
+      <section
+        id="apply"
+        style={themeStyles.section}
+        aria-labelledby="apply-title"
+      >
         <div style={themeStyles.sectionTitleRow}>
-          <h2 style={themeStyles.sectionTitle}>Become an ASudha Affiliate</h2>
-          <div style={themeStyles.sectionTitleUnderline} />
+          <h2 id="apply-title" style={themeStyles.sectionTitle}>
+            Become an ASudha Affiliate
+          </h2>
+          <div
+            style={themeStyles.sectionTitleUnderline}
+            aria-hidden="true"
+          />
         </div>
         <p style={themeStyles.sectionSubtitle}>
           Ready to share the power of nature? Fill out the form below and our
           team will get back to you within 48 hours.
         </p>
         <div style={themeStyles.formContainer}>
-          <div style={themeStyles.formAccentBar} />
-          <form onSubmit={handleSubmit}>
+          <div style={themeStyles.formAccentBar} aria-hidden="true" />
+          <form onSubmit={handleSubmit} noValidate>
             <div style={themeStyles.formGrid}>
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>Full Name *</label>
+                <label style={themeStyles.label} htmlFor="af-name">
+                  Full Name *
+                </label>
                 <input
+                  id="af-name"
                   type="text"
                   name="name"
                   style={themeStyles.input}
@@ -1415,11 +1844,29 @@ const AffiliateProgram = () => {
                   onChange={handleInputChange}
                   placeholder="Your full name"
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.name ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.name ? "af-name-error" : undefined
+                  }
+                  autoComplete="name"
                 />
+                {fieldErrors.name && (
+                  <div
+                    id="af-name-error"
+                    style={themeStyles.fieldError}
+                    role="alert"
+                  >
+                    <FaTimesCircle aria-hidden="true" /> {fieldErrors.name}
+                  </div>
+                )}
               </div>
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>Email Address *</label>
+                <label style={themeStyles.label} htmlFor="af-email">
+                  Email Address *
+                </label>
                 <input
+                  id="af-email"
                   type="email"
                   name="email"
                   style={themeStyles.input}
@@ -1428,15 +1875,31 @@ const AffiliateProgram = () => {
                   onChange={handleInputChange}
                   placeholder="you@email.com"
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.email ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.email ? "af-email-error" : undefined
+                  }
+                  autoComplete="email"
                 />
+                {fieldErrors.email && (
+                  <div
+                    id="af-email-error"
+                    style={themeStyles.fieldError}
+                    role="alert"
+                  >
+                    <FaTimesCircle aria-hidden="true" /> {fieldErrors.email}
+                  </div>
+                )}
               </div>
             </div>
 
             <div style={themeStyles.formGroupFull}>
-              <label style={themeStyles.label}>
+              <label style={themeStyles.label} htmlFor="af-website">
                 Website / Social Media Profile *
               </label>
               <input
+                id="af-website"
                 type="url"
                 name="website"
                 style={themeStyles.input}
@@ -1445,19 +1908,42 @@ const AffiliateProgram = () => {
                 onChange={handleInputChange}
                 placeholder="https://..."
                 required
+                aria-required="true"
+                aria-invalid={fieldErrors.website ? "true" : "false"}
+                aria-describedby={
+                  fieldErrors.website ? "af-website-error" : undefined
+                }
+                autoComplete="url"
               />
+              {fieldErrors.website && (
+                <div
+                  id="af-website-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" /> {fieldErrors.website}
+                </div>
+              )}
             </div>
 
             <div style={themeStyles.formGrid}>
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>Primary Platform *</label>
+                <label style={themeStyles.label} htmlFor="af-platform">
+                  Primary Platform *
+                </label>
                 <select
+                  id="af-platform"
                   name="platform"
                   style={themeStyles.select}
                   className="af-input"
                   value={formData.platform}
                   onChange={handleInputChange}
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.platform ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.platform ? "af-platform-error" : undefined
+                  }
                 >
                   <option value="">Select your platform</option>
                   <option value="instagram">Instagram</option>
@@ -1466,31 +1952,62 @@ const AffiliateProgram = () => {
                   <option value="blog">Blog / Website</option>
                   <option value="other">Other</option>
                 </select>
+                {fieldErrors.platform && (
+                  <div
+                    id="af-platform-error"
+                    style={themeStyles.fieldError}
+                    role="alert"
+                  >
+                    <FaTimesCircle aria-hidden="true" />{" "}
+                    {fieldErrors.platform}
+                  </div>
+                )}
               </div>
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>Audience Size *</label>
+                <label style={themeStyles.label} htmlFor="af-audienceSize">
+                  Audience Size *
+                </label>
                 <select
+                  id="af-audienceSize"
                   name="audienceSize"
                   style={themeStyles.select}
                   className="af-input"
                   value={formData.audienceSize}
                   onChange={handleInputChange}
                   required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.audienceSize ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.audienceSize
+                      ? "af-audienceSize-error"
+                      : undefined
+                  }
                 >
                   <option value="">Select audience size</option>
-                  <option value="100-500">100 - 500 followers</option>
-                  <option value="500-1k">500 - 1K followers</option>
-                  <option value="1k-5k">1K - 5K followers</option>
+                  <option value="100-500">100 – 500 followers</option>
+                  <option value="500-1k">500 – 1K followers</option>
+                  <option value="1k-5k">1K – 5K followers</option>
                   <option value="5k+">5K+ followers</option>
                 </select>
+                {fieldErrors.audienceSize && (
+                  <div
+                    id="af-audienceSize-error"
+                    style={themeStyles.fieldError}
+                    role="alert"
+                  >
+                    <FaTimesCircle aria-hidden="true" />{" "}
+                    {fieldErrors.audienceSize}
+                  </div>
+                )}
               </div>
             </div>
 
             <div style={themeStyles.formGroupFull}>
-              <label style={themeStyles.label}>
+              <label style={themeStyles.label} htmlFor="af-reason">
                 Why do you want to join? *
               </label>
               <textarea
+                id="af-reason"
                 name="reason"
                 style={themeStyles.textarea}
                 className="af-input"
@@ -1498,7 +2015,21 @@ const AffiliateProgram = () => {
                 onChange={handleInputChange}
                 placeholder="Tell us your passion for Ayurveda and how you plan to promote ASudha Beauty..."
                 required
+                aria-required="true"
+                aria-invalid={fieldErrors.reason ? "true" : "false"}
+                aria-describedby={
+                  fieldErrors.reason ? "af-reason-error" : undefined
+                }
               />
+              {fieldErrors.reason && (
+                <div
+                  id="af-reason-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" /> {fieldErrors.reason}
+                </div>
+              )}
             </div>
 
             <button
@@ -1506,29 +2037,43 @@ const AffiliateProgram = () => {
               style={themeStyles.submitButton}
               className="af-submit-btn"
             >
-              <FaPenNib /> Submit Application
+              <FaPenNib aria-hidden="true" /> Submit Application
             </button>
 
+            {formError && (
+              <div
+                style={themeStyles.formError}
+                role="alert"
+                aria-live="assertive"
+              >
+                <FaExclamationTriangle aria-hidden="true" /> {formError}
+              </div>
+            )}
+
             {formSubmitted && (
-              <div style={themeStyles.successMessage}>
-                <FaCheckCircle /> Application submitted successfully!
-                We&apos;ll contact you within 48 hours.
+              <div
+                style={themeStyles.successMessage}
+                role="status"
+                aria-live="polite"
+              >
+                <FaCheckCircle aria-hidden="true" /> Application submitted
+                successfully! We&apos;ll contact you within 48 hours.
               </div>
             )}
           </form>
         </div>
-      </div>
+      </section>
 
       {/* Contact */}
-      <div style={themeStyles.section}>
+      <section style={themeStyles.section} aria-labelledby="contact-title">
         <div style={themeStyles.contactSection}>
-          <div style={themeStyles.contactAccentBar} />
-          <div style={themeStyles.contactIconWrap}>
+          <div style={themeStyles.contactAccentBar} aria-hidden="true" />
+          <div style={themeStyles.contactIconWrap} aria-hidden="true">
             <FaHandshake />
           </div>
-          <h3 style={themeStyles.contactTitle}>
+          <h2 id="contact-title" style={themeStyles.contactTitle}>
             Questions About the Program?
-          </h3>
+          </h2>
           <p style={themeStyles.contactText}>
             Our affiliate team is here to help! Reach out anytime.
           </p>
@@ -1538,7 +2083,7 @@ const AffiliateProgram = () => {
               style={themeStyles.ctaButton}
               className="af-cta-primary"
             >
-              <FaEnvelope /> asudhabeauty@gmail.com
+              <FaEnvelope aria-hidden="true" /> asudhabeauty@gmail.com
             </a>
             <a
               href="https://wa.me/917518217726"
@@ -1547,11 +2092,89 @@ const AffiliateProgram = () => {
               style={themeStyles.secondaryButton}
               className="af-cta-secondary"
             >
-              <FaWhatsapp /> WhatsApp
+              <FaWhatsapp aria-hidden="true" /> WhatsApp
             </a>
           </div>
         </div>
-      </div>
+
+        {/* ─── Related pages (internal backlinks) ─── */}
+        <div style={themeStyles.relatedCard}>
+          <h2 style={themeStyles.relatedTitle}>
+            <FaBookOpen aria-hidden="true" /> Related Pages
+          </h2>
+          <ul style={themeStyles.relatedList}>
+            {RELATED_PAGES.map((item) => (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  style={themeStyles.relatedLink}
+                  className="af-related-link"
+                  aria-label={item.label}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.6rem",
+                    }}
+                  >
+                    <span
+                      style={themeStyles.relatedIcon}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </span>
+                  <FaArrowRight
+                    aria-hidden="true"
+                    style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* ─── Sources & References (external hyperlinks / E-E-A-T) ─── */}
+        <div style={themeStyles.citationCard}>
+          <h2 style={themeStyles.citationTitle}>
+            <FaShieldAlt aria-hidden="true" /> Compliance &amp; Legal Framework
+          </h2>
+          <ul style={themeStyles.citationList}>
+            {TRUSTED_SOURCES.map((source) => (
+              <li key={source.href}>
+                <a
+                  href={source.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.citationLink}
+                  className="af-citation-link"
+                  aria-label={`${source.label} — opens in new tab`}
+                >
+                  <FaExternalLinkAlt
+                    aria-hidden="true"
+                    style={{
+                      fontSize: "0.65rem",
+                      marginTop: "0.2rem",
+                      flexShrink: 0,
+                      color: isDarkMode
+                        ? brandColors.gold
+                        : brandColors.bronze,
+                    }}
+                  />
+                  <span>
+                    {source.label}
+                    <div style={themeStyles.citationDomain}>
+                      {source.domain}
+                    </div>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
     </div>
   );
 };

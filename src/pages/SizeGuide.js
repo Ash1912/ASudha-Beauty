@@ -1,5 +1,12 @@
-// src/pages/SizeGuide.js
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/SizeGuide.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import SEO from "../components/SEO";
 import {
@@ -11,9 +18,17 @@ import {
   FaDownload,
   FaCheckCircle,
   FaMagic,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaArrowRight,
+  FaShieldAlt,
+  FaShoppingBag,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -33,12 +48,272 @@ const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
+// ─── Tab config (module scope) ───
+const TABS = [
+  { id: "facepack", label: "Face Packs", icon: <FaFlask /> },
+  { id: "haircare", label: "Hair Care", icon: <FaSpa /> },
+  { id: "ingredients", label: "Key Ingredients", icon: <FaGem /> },
+  { id: "howtouse", label: "How to Use", icon: <FaInfoCircle /> },
+];
+
+// ─── Size guide data (module scope) ───
+const SIZEGUIDE_DATA = {
+  facepack: {
+    title: "Natural Face Pack Guide",
+    description:
+      "Unlock the secret to glowing skin with our 100% pure Ayurvedic face packs.",
+    sizes: [
+      {
+        name: "Multani Mitti Powder",
+        description:
+          "Deep cleansing, removes excess oil & impurities. Makes your skin glow naturally.",
+        skinType: "Oily/Combination",
+        howToUse: "Mix 2 tbsp with rose water or milk. Apply for 10–15 mins.",
+      },
+      {
+        name: "Ubtan Powder",
+        description:
+          "Traditional glow & radiance. Nourishes, cleanses, and revitalizes your natural glow.",
+        skinType: "All Skin Types",
+        howToUse:
+          "Mix 2 tbsp with curd or honey. Gently scrub while washing off.",
+      },
+    ],
+    tips: [
+      "Always do a patch test on your inner arm before applying any new powder.",
+      "Use rose water or milk instead of water for extra hydration.",
+      "Apply evenly and let it dry for 10–15 minutes, then rinse with lukewarm water.",
+      "Use 2–3 times a week for best results.",
+    ],
+  },
+  haircare: {
+    title: "Herbal Hair Care Guide",
+    description:
+      "Strengthen your hair naturally with our chemical-free herbal powders.",
+    sizes: [
+      {
+        name: "Amla Powder",
+        description:
+          "Rich in Vitamin C, strengthens roots, reduces hair fall, and adds natural shine.",
+        hairType: "All Hair Types",
+        howToUse: "Mix 2–3 tbsp with water or oil. Apply for 20–30 mins.",
+      },
+      {
+        name: "Reetha Powder",
+        description:
+          "Natural cleanser, removes dirt without stripping oils. Gives soft, silky hair.",
+        hairType: "All Hair Types",
+        howToUse: "Soak overnight, blend into paste. Use as shampoo.",
+      },
+      {
+        name: "Shikakai Powder",
+        description:
+          "Promotes hair growth, adds shine & softness. Strengthens from the roots.",
+        hairType: "All Hair Types",
+        howToUse: "Mix with water or curd. Massage gently for 5–10 mins.",
+      },
+      {
+        name: "Herbal Mix Hair Pack",
+        description:
+          "A unique blend of Bhringraj, Amla, Shikakai, Hibiscus & Fenugreek for deep nourishment.",
+        hairType: "All Hair Types",
+        howToUse:
+          "Mix 2–3 tbsp with water or aloe vera juice. Leave for 30–45 mins.",
+      },
+    ],
+    tips: [
+      "Mix herbal powders in a glass or plastic bowl, never metal.",
+      "Leave the hair mask on for 30–45 minutes for deep conditioning.",
+      "Apply to damp hair for better absorption.",
+      "For best results, use Reetha + Shikakai + Amla together as a hair pack.",
+    ],
+  },
+  ingredients: {
+    title: "Key Ayurvedic Ingredients",
+    description: "Know your ingredients and their superpowers.",
+    ingredientsList: [
+      {
+        name: "Multani Mitti (Fuller's Earth)",
+        benefits: "Oil control, deep cleansing, removes blackheads",
+      },
+      {
+        name: "Ubtan Blend",
+        benefits:
+          "Turmeric, Sandalwood, & Gram Flour for brightening and glow",
+      },
+      {
+        name: "Amla (Indian Gooseberry)",
+        benefits: "Vitamin C, hair growth, anti-aging",
+      },
+      {
+        name: "Reetha (Soapnut)",
+        benefits: "Natural soap, dandruff control, shine",
+      },
+      {
+        name: "Shikakai (Acacia concinna)",
+        benefits: "Detangles, boosts hair volume, scalp health",
+      },
+      {
+        name: "Herbal Mix",
+        benefits: "Bhringraj, Hibiscus, Fenugreek for deep hair nourishment",
+      },
+    ],
+    tips: [
+      "Our products are 100% pure and contain no synthetic chemicals.",
+      "Store in an airtight container away from direct sunlight.",
+      "Check the 'How to Use' label on the back of each pack for exact proportions.",
+      "Always consult a dermatologist if you have severe skin issues.",
+    ],
+  },
+  howtouse: {
+    title: "General Usage Instructions",
+    description:
+      "Follow these simple steps to get the maximum benefit from your ASudha Beauty powders.",
+    steps: [
+      {
+        step: "01",
+        title: "Cleanse",
+        description:
+          "Always start with a clean face or hair to allow the powders to penetrate effectively.",
+      },
+      {
+        step: "02",
+        title: "Mix",
+        description:
+          "Mix the powder with rose water, milk, curd, or plain water as per the product label.",
+      },
+      {
+        step: "03",
+        title: "Apply",
+        description:
+          "Apply evenly using a brush or your fingers. Avoid the eye and lip area.",
+      },
+      {
+        step: "04",
+        title: "Rinse",
+        description:
+          "Let it dry for 10–30 minutes (depending on the product), then rinse with lukewarm water.",
+      },
+    ],
+    tips: [
+      "Always follow up with a moisturizer or hair oil to lock in hydration.",
+      "Do not use metal bowls to mix your powders.",
+      "Use 1–2 times a week for the best natural results.",
+      "Our products are gentle but always consult a doctor if you have allergies.",
+    ],
+  },
+};
+
+// ─── Internal blog backlinks ───
+const RELATED_BLOGS = [
+  {
+    to: "/blog/1",
+    label: "Complete Multani Mitti benefits guide",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/2",
+    label: "Ubtan for glowing skin — the Ayurvedic ritual",
+    icon: <FaSpa />,
+  },
+  {
+    to: "/blog/3",
+    label: "Amla-Reetha-Shikakai hair care science",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/6",
+    label: "Herbal face packs for every skin type",
+    icon: <FaFlask />,
+  },
+  {
+    to: "/blog/7",
+    label: "The science behind Ayurvedic herbs",
+    icon: <FaFlask />,
+  },
+  {
+    to: "/shop",
+    label: "Shop the full Ayurvedic collection",
+    icon: <FaShoppingBag />,
+  },
+];
+
+// ─── Authoritative external citations (E-E-A-T) ───
+const TRUSTED_SOURCES = [
+  {
+    label:
+      "MDPI Cosmetics 2025 — Multi-Target Anti-Aging Mechanisms of Multani Mitti",
+    href: "https://www.mdpi.com/2079-9284/12/3/124",
+    domain: "mdpi.com",
+  },
+  {
+    label: "PubMed — Multani Mitti (Fuller's Earth) skin research",
+    href: "https://pubmed.ncbi.nlm.nih.gov/?term=multani+mitti+fuller%27s+earth+skin",
+    domain: "pubmed.ncbi.nlm.nih.gov",
+  },
+  {
+    label: "NIH NCCIH — Ayurvedic Medicine: In Depth",
+    href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth",
+    domain: "nccih.nih.gov",
+  },
+  {
+    label: "Ministry of AYUSH — Government of India",
+    href: "https://ayush.gov.in/",
+    domain: "ayush.gov.in",
+  },
+];
+
+// ─── FAQ for schema ───
+const SIZEGUIDE_FAQS = [
+  {
+    q: "How do I use Multani Mitti powder for oily skin?",
+    a: "Mix 2 tablespoons of Multani Mitti with rose water or plain water to form a smooth paste. Apply evenly on your face and neck, leave for 10–15 minutes until dry, and rinse with lukewarm water. Use 2–3 times per week for best results.",
+  },
+  {
+    q: "Can I use Ubtan powder every day?",
+    a: "Ubtan is gentle enough to use 2–3 times per week. Daily use may over-exfoliate sensitive skin, so we recommend starting twice a week and adjusting to your skin's response.",
+  },
+  {
+    q: "What is the correct way to use Amla, Reetha, and Shikakai powder together?",
+    a: "Mix equal parts Amla, Reetha, and Shikakai powder with water to form a paste. Apply to damp hair, massage into the scalp, leave for 20–30 minutes, and rinse thoroughly. Use as a natural shampoo alternative 1–2 times per week.",
+  },
+  {
+    q: "Should I use a metal bowl to mix herbal powders?",
+    a: "No. Always use a glass, ceramic, or wooden bowl — metal can react with the active compounds in Ayurvedic herbs and reduce their effectiveness.",
+  },
+  {
+    q: "Are ASudha Beauty powders safe for sensitive skin?",
+    a: "Yes — all powders are 100% natural and chemical-free. However, we recommend a patch test on your inner arm 24 hours before first use, especially if you have sensitive skin or known allergies.",
+  },
+];
+
+// ─── How-to steps for HowTo schema ───
+const HOWTO_STEPS = [
+  {
+    name: "Cleanse",
+    text: "Always start with a clean face or hair to allow the powders to penetrate effectively.",
+  },
+  {
+    name: "Mix",
+    text: "Mix the powder with rose water, milk, curd, or plain water as per the product label.",
+  },
+  {
+    name: "Apply",
+    text: "Apply evenly using a brush or your fingers. Avoid the eye and lip area.",
+  },
+  {
+    name: "Rinse",
+    text: "Let it dry for 10–30 minutes (depending on the product), then rinse with lukewarm water.",
+  },
+];
+
 const SizeGuide = () => {
   const { isDarkMode } = useTheme();
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
   const [activeTab, setActiveTab] = useState("facepack");
+  const tabRefs = useRef([]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -89,165 +364,101 @@ const SizeGuide = () => {
   const isNarrow = windowWidth <= 768;
   const useCardLayout = windowWidth <= 720;
 
-  // Tabs
-  const tabs = [
-    { id: "facepack", label: "Face Packs", icon: <FaFlask /> },
-    { id: "haircare", label: "Hair Care", icon: <FaSpa /> },
-    { id: "ingredients", label: "Key Ingredients", icon: <FaGem /> },
-    { id: "howtouse", label: "How to Use", icon: <FaInfoCircle /> },
-  ];
+  const currentData = SIZEGUIDE_DATA[activeTab];
 
-  // Data (unchanged)
-  const sizeData = {
-    facepack: {
-      title: "Natural Face Pack Guide",
-      description:
-        "Unlock the secret to glowing skin with our 100% pure Ayurvedic face packs.",
-      sizes: [
+  // ─── JSON-LD: HowTo + FAQPage + BreadcrumbList + WebPage ───
+  const sizeGuideJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
         {
-          name: "Multani Mitti Powder",
+          "@type": "HowTo",
+          "@id": `${SITE_URL}/size-guide#howto`,
+          name: "How to Use ASudha Beauty Ayurvedic Powders",
           description:
-            "Deep cleansing, removes excess oil & impurities. Makes your skin glow naturally.",
-          skinType: "Oily/Combination",
-          howToUse: "Mix 2 tbsp with rose water or milk. Apply for 10-15 mins.",
+            "Step-by-step guide to using ASudha Beauty's 100% natural Ayurvedic powders — Multani Mitti, Ubtan, Amla, Reetha, Shikakai — for glowing skin and healthy hair.",
+          image: `${SITE_URL}/assets/images/og-size-guide.png`,
+          totalTime: "PT30M",
+          estimatedCost: {
+            "@type": "MonetaryAmount",
+            currency: "INR",
+            value: "0",
+          },
+          supply: [
+            { "@type": "HowToSupply", name: "ASudha Ayurvedic powder" },
+            { "@type": "HowToSupply", name: "Rose water or milk" },
+            { "@type": "HowToSupply", name: "Glass mixing bowl" },
+          ],
+          tool: [
+            { "@type": "HowToTool", name: "Face brush (optional)" },
+          ],
+          step: HOWTO_STEPS.map((s, i) => ({
+            "@type": "HowToStep",
+            position: i + 1,
+            name: s.name,
+            text: s.text,
+            url: `${SITE_URL}/size-guide#panel-howtouse`,
+          })),
         },
         {
-          name: "Ubtan Powder",
+          "@type": "FAQPage",
+          "@id": `${SITE_URL}/size-guide#faq`,
+          mainEntity: SIZEGUIDE_FAQS.map((faq) => ({
+            "@type": "Question",
+            name: faq.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: faq.a,
+            },
+          })),
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${SITE_URL}/size-guide#breadcrumb`,
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Ayurvedic Usage Guide",
+              item: `${SITE_URL}/size-guide`,
+            },
+          ],
+        },
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/size-guide#webpage`,
+          url: `${SITE_URL}/size-guide`,
+          name: "Ayurvedic Usage Guide | ASudha Beauty",
           description:
-            "Traditional glow & radiance. Nourishes, cleanses, and revitalizes your natural glow.",
-          skinType: "All Skin Types",
-          howToUse:
-            "Mix 2 tbsp with curd or honey. Gently scrub while washing off.",
+            "Learn how to use ASudha Beauty's 100% natural Ayurvedic face packs and hair care powders. Detailed ingredient, usage, and pro-tip guide.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          about: {
+            "@type": "Thing",
+            name: "How to use Ayurvedic skincare and hair care powders — Multani Mitti, Ubtan, Amla, Reetha, Shikakai",
+          },
+          breadcrumb: { "@id": `${SITE_URL}/size-guide#breadcrumb` },
         },
       ],
-      tips: [
-        "Always do a patch test on your inner arm before applying any new powder.",
-        "Use Rose Water or Milk instead of water for extra hydration.",
-        "Apply evenly and let it dry for 10-15 minutes, then rinse with lukewarm water.",
-        "Use 2-3 times a week for best results.",
-      ],
-    },
-    haircare: {
-      title: "Herbal Hair Care Guide",
-      description:
-        "Strengthen your hair naturally with our chemical-free herbal powders.",
-      sizes: [
-        {
-          name: "Amla Powder",
-          description:
-            "Rich in Vitamin C, strengthens roots, reduces hair fall, and adds natural shine.",
-          hairType: "All Hair Types",
-          howToUse: "Mix 2-3 tbsp with water or oil. Apply for 20-30 mins.",
-        },
-        {
-          name: "Reetha Powder",
-          description:
-            "Natural cleanser, removes dirt without stripping oils. Gives soft, silky hair.",
-          hairType: "All Hair Types",
-          howToUse: "Soak overnight, blend into paste. Use as shampoo.",
-        },
-        {
-          name: "Shikakai Powder",
-          description:
-            "Promotes hair growth, adds shine & softness. Strengthens from the roots.",
-          hairType: "All Hair Types",
-          howToUse: "Mix with water or curd. Massage gently for 5-10 mins.",
-        },
-        {
-          name: "Herbal Mix Hair Pack",
-          description:
-            "A unique blend of Bhringraj, Amla, Shikakai, Hibiscus & Fenugreek for deep nourishment.",
-          hairType: "All Hair Types",
-          howToUse:
-            "Mix 2-3 tbsp with water or aloe vera juice. Leave for 30-45 mins.",
-        },
-      ],
-      tips: [
-        "Mix herbal powders in a glass or plastic bowl, never metal.",
-        "Leave the hair mask on for 30-45 minutes for deep conditioning.",
-        "Apply to damp hair for better absorption.",
-        "For best results, use Reetha + Shikakai + Amla together as a hair pack.",
-      ],
-    },
-    ingredients: {
-      title: "Key Ayurvedic Ingredients",
-      description: "Know your ingredients and their superpowers.",
-      ingredientsList: [
-        {
-          name: "Multani Mitti (Fuller's Earth)",
-          benefits: "Oil control, deep cleansing, removes blackheads",
-        },
-        {
-          name: "Ubtan Blend",
-          benefits:
-            "Turmeric, Sandalwood, & Gram Flour for brightening and glow",
-        },
-        {
-          name: "Amla (Indian Gooseberry)",
-          benefits: "Vitamin C, hair growth, anti-aging",
-        },
-        {
-          name: "Reetha (Soapnut)",
-          benefits: "Natural soap, dandruff control, shine",
-        },
-        {
-          name: "Shikakai (Acacia concinna)",
-          benefits: "Detangles, boosts hair volume, scalp health",
-        },
-        {
-          name: "Herbal Mix",
-          benefits: "Bhringraj, Hibiscus, Fenugreek for deep hair nourishment",
-        },
-      ],
-      tips: [
-        "Our products are 100% pure and contain no synthetic chemicals.",
-        "Store in an airtight container away from direct sunlight.",
-        "Check the 'How to Use' label on the back of each pack for exact proportions.",
-        "Always consult a dermatologist if you have severe skin issues.",
-      ],
-    },
-    howtouse: {
-      title: "General Usage Instructions",
-      description:
-        "Follow these simple steps to get the maximum benefit from your ASudha Beauty powders.",
-      steps: [
-        {
-          step: "01",
-          title: "Cleanse",
-          description:
-            "Always start with a clean face or hair to allow the powders to penetrate effectively.",
-        },
-        {
-          step: "02",
-          title: "Mix",
-          description:
-            "Mix the powder with rose water, milk, curd, or plain water as per the product label.",
-        },
-        {
-          step: "03",
-          title: "Apply",
-          description:
-            "Apply evenly using a brush or your fingers. Avoid the eye and lip area.",
-        },
-        {
-          step: "04",
-          title: "Rinse",
-          description:
-            "Let it dry for 10-30 minutes (depending on the product), then rinse with lukewarm water.",
-        },
-      ],
-      tips: [
-        "Always follow up with a moisturizer or hair oil to lock in hydration.",
-        "Do not use metal bowls to mix your powders.",
-        "Use 1-2 times a week for the best natural results.",
-        "Our products are gentle but always consult a doctor if you have allergies.",
-      ],
-    },
-  };
+    }),
+    []
+  );
 
-  const currentData = sizeData[activeTab];
+  const breadcrumb = useMemo(
+    () => [
+      { name: "Home", url: "/" },
+      { name: "Ayurvedic Usage Guide", url: "/size-guide" },
+    ],
+    []
+  );
 
-  // ─── Download handler (unchanged) ───
+  const citations = useMemo(
+    () =>
+      TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    []
+  );
+
+  // ─── Download handler ───
   const handleDownload = () => {
     const rows = (currentData.sizes || currentData.ingredientsList || [])
       .map((item) => {
@@ -268,7 +479,7 @@ const SizeGuide = () => {
     const tipsHtml = currentData.tips.map((t) => `<li>${t}</li>`).join("");
 
     const html = `<!DOCTYPE html>
-<html>
+<html lang="en-IN">
 <head>
 <meta charset="utf-8" />
 <title>${currentData.title} — ASudha Beauty</title>
@@ -304,7 +515,26 @@ const SizeGuide = () => {
     URL.revokeObjectURL(url);
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── Keyboard navigation for tabs ───
+  const handleTabKeyDown = (e, index) => {
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      nextIndex = (index + 1) % TABS.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (index - 1 + TABS.length) % TABS.length;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = TABS.length - 1;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    setActiveTab(TABS[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
+
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-sizeguide-styles="true"]')
@@ -337,7 +567,11 @@ const SizeGuide = () => {
       }
       .sg-tab:hover {
         transform: translateY(-3px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.4)"
@@ -345,14 +579,22 @@ const SizeGuide = () => {
         };
         color: ${isDarkMode ? brandColors.gold : brandColors.primary};
       }
+      .sg-tab:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: 2px;
+      }
 
       .sg-download-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .sg-download-btn:hover {
+      .sg-download-btn:hover,
+      .sg-download-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 16px 42px rgba(245, 52, 107, 0.5);
         gap: 0.75rem;
+        outline: none;
       }
 
       .sg-ingredient-card,
@@ -365,7 +607,11 @@ const SizeGuide = () => {
       .sg-step-card:hover,
       .sg-product-card:hover {
         transform: translateY(-5px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.35)"
@@ -385,6 +631,38 @@ const SizeGuide = () => {
       .sg-tip-row:hover {
         transform: translateX(3px);
       }
+
+      /* Related / citation links */
+      .sg-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .sg-related-link:hover,
+      .sg-related-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        gap: 0.6rem;
+        outline: none;
+      }
+      .sg-citation-link:hover,
+      .sg-citation-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+      .sg-breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .sg-orb-1, .sg-orb-2, .sg-orb-3 { animation: none !important; }
+        .sg-tab, .sg-download-btn, .sg-ingredient-card,
+        .sg-step-card, .sg-product-card, .sg-tip-row,
+        .sg-related-link, .sg-citation-link {
+          transition: none !important;
+          transform: none !important;
+        }
+      }
     `;
     document.head.appendChild(style);
 
@@ -393,11 +671,9 @@ const SizeGuide = () => {
         .querySelectorAll('style[data-sizeguide-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -408,8 +684,6 @@ const SizeGuide = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -479,41 +753,40 @@ const SizeGuide = () => {
       opacity: isDarkMode ? 0.38 : 0.28,
     },
 
+    // ─── Breadcrumb ───
+    breadcrumb: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: isMobile ? "1rem 1rem 0" : "1.5rem 2rem 0",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.78rem",
+      color: T.textDim,
+      flexWrap: "wrap",
+      fontWeight: "600",
+    },
+    breadcrumbLink: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      fontWeight: "700",
+    },
+
     // ─── Header ───
     header: {
       position: "relative",
       zIndex: 1,
       textAlign: "center",
       padding: isMobile
-        ? "2rem 1rem 1.5rem"
+        ? "1.5rem 1rem 1.5rem"
         : isNarrow
-        ? "2.5rem 1.5rem 1.5rem"
-        : "3.5rem 2rem 2rem",
+        ? "2rem 1.5rem 1.5rem"
+        : "2.5rem 2rem 2rem",
       maxWidth: "900px",
       margin: "0 auto",
     },
-    headerBadge: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.45rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.1)",
-      borderRadius: "50px",
-      fontSize: "0.72rem",
-      fontWeight: "800",
-      color: isDarkMode ? T.gold : brandColors.bronze,
-      marginBottom: "1.25rem",
-      border: `1px solid ${
-        isDarkMode ? "rgba(212, 175, 55, 0.3)" : "rgba(199, 125, 66, 0.2)"
-      }`,
-      letterSpacing: "1px",
-      textTransform: "uppercase",
-      backdropFilter: "blur(8px)",
-      WebkitBackdropFilter: "blur(8px)",
-    },
-    // ✅ Solid title + gradient underline accent
     title: {
       fontSize: isMobile ? "2rem" : isNarrow ? "2.4rem" : "3rem",
       fontWeight: "900",
@@ -609,6 +882,7 @@ const SizeGuide = () => {
       width: "100%",
       position: "relative",
       overflow: "hidden",
+      outline: "none",
     },
     cardAccentBar: {
       position: "absolute",
@@ -911,65 +1185,175 @@ const SizeGuide = () => {
       maxWidth: "100%",
       boxSizing: "border-box",
     },
+
+    // ─── Related Reading (internal backlinks) ───
+    relatedSection: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: isMobile ? "0 1rem 3rem" : "0 2rem 4rem",
+      boxSizing: "border-box",
+      width: "100%",
+    },
+    relatedCard: {
+      backgroundColor: T.card,
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      padding: isMobile ? "1.5rem" : "2rem",
+      marginBottom: "1.5rem",
+    },
+    relatedTitle: {
+      fontSize: "1.1rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.25rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "10px",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+
+    // ─── Citations ───
+    citationSection: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "0 auto 3rem",
+      padding: isMobile ? "1.5rem 1rem" : "1.75rem 2rem",
+      boxSizing: "border-box",
+      width: "100%",
+    },
+    citationCard: {
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    citationTitle: {
+      fontSize: "0.88rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
   };
 
   return (
     <div style={themeStyles.container}>
+      {/* ─── SEO: meta + JSON-LD + breadcrumb + citations ─── */}
       <SEO
-        title="Ayurvedic Usage Guide | ASudha Beauty"
-        description="Learn how to use ASudha Beauty's 100% natural Ayurvedic face packs and hair care powders. Detailed ingredient, usage, and pro-tip guide."
-        keywords="Ayurvedic guide, face pack usage, hair care powders, Multani Mitti, Ubtan, Shikakai, Reetha, Amla"
+        title="Ayurvedic Usage Guide — How to Use Multani Mitti, Ubtan, Amla | ASudha"
+        description="Learn how to use ASudha Beauty's 100% natural Ayurvedic face packs and hair care powders. Detailed ingredient, usage, and pro-tip guide for Multani Mitti, Ubtan, Amla, Reetha, and Shikakai."
+        keywords="how to use multani mitti, how to use ubtan powder, how to use amla reetha shikakai, ayurvedic skincare guide, natural face pack usage, herbal hair care routine, ayurvedic usage guide, multani mitti face pack instructions"
         url="/size-guide"
+        breadcrumb={breadcrumb}
+        citations={citations}
+      />
+
+      {/* Extra JSON-LD graph: HowTo + FAQPage + BreadcrumbList + WebPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(sizeGuideJsonLd) }}
       />
 
       {/* Animated background */}
-      <div style={themeStyles.bgLayer}>
+      <div style={themeStyles.bgLayer} aria-hidden="true">
         <div style={themeStyles.bgGradient} />
         <div style={themeStyles.bgGrid} />
-        <div
-          className="sg-orb-1"
-          style={themeStyles.bgOrb1}
-          aria-hidden="true"
-        />
-        <div
-          className="sg-orb-2"
-          style={themeStyles.bgOrb2}
-          aria-hidden="true"
-        />
-        <div
-          className="sg-orb-3"
-          style={themeStyles.bgOrb3}
-          aria-hidden="true"
-        />
+        <div className="sg-orb-1" style={themeStyles.bgOrb1} />
+        <div className="sg-orb-2" style={themeStyles.bgOrb2} />
+        <div className="sg-orb-3" style={themeStyles.bgOrb3} />
       </div>
 
       {/* Header */}
-      <div style={themeStyles.header}>
-        {/* <div style={themeStyles.headerBadge}>
-          <FaLeaf style={{ fontSize: "0.7rem" }} />
-          Pure. Natural. Timeless.
-        </div> */}
+      <header style={themeStyles.header}>
         <h1 style={themeStyles.title}>
           Ayurvedic Usage Guide
           <span style={themeStyles.titleAccent} aria-hidden="true" />
         </h1>
         <p style={themeStyles.subtitle}>
-          Understand the perfect way to use our 100% natural, herbal powders for
-          skin and hair.
+          Understand the perfect way to use our 100% natural, herbal powders
+          for skin and hair.
         </p>
-      </div>
+      </header>
 
       {/* Tabs */}
       <div
         style={themeStyles.tabsContainer}
         role="tablist"
         aria-label="Usage guide sections"
+        aria-orientation="horizontal"
       >
-        {tabs.map((tab) => {
+        {TABS.map((tab, index) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              ref={(el) => (tabRefs.current[index] = el)}
+              type="button"
               style={{
                 ...themeStyles.tab,
                 ...(isActive ? themeStyles.activeTab : {}),
@@ -977,26 +1361,30 @@ const SizeGuide = () => {
               className="sg-tab"
               onClick={() => setActiveTab(tab.id)}
               role="tab"
+              id={`tab-${tab.id}`}
               aria-selected={isActive}
               aria-controls={`panel-${tab.id}`}
-              type="button"
+              tabIndex={isActive ? 0 : -1}
+              onKeyDown={(e) => handleTabKeyDown(e, index)}
             >
-              {tab.icon} {tab.label}
+              <span aria-hidden="true">{tab.icon}</span> {tab.label}
             </button>
           );
         })}
       </div>
 
       {/* Content */}
-      <div
+      <main
         style={themeStyles.content}
         id={`panel-${activeTab}`}
         role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        tabIndex={0}
       >
         <div style={themeStyles.card}>
-          <div style={themeStyles.cardAccentBar} />
+          <div style={themeStyles.cardAccentBar} aria-hidden="true" />
           <div style={themeStyles.sectionTitleRow}>
-            <span style={themeStyles.sectionTitleIcon}>
+            <span style={themeStyles.sectionTitleIcon} aria-hidden="true">
               <FaCheckCircle />
             </span>
             <h2 style={themeStyles.sectionTitle}>{currentData.title}</h2>
@@ -1017,8 +1405,8 @@ const SizeGuide = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {currentData.sizes.map((item, idx) => (
-                      <tr key={idx}>
+                    {currentData.sizes.map((item) => (
+                      <tr key={item.name}>
                         <td style={themeStyles.td}>
                           <strong style={themeStyles.tdStrong}>
                             {item.name}
@@ -1035,9 +1423,9 @@ const SizeGuide = () => {
                 </table>
               ) : (
                 <div style={{ marginBottom: "2rem" }}>
-                  {currentData.sizes.map((item, idx) => (
+                  {currentData.sizes.map((item) => (
                     <div
-                      key={idx}
+                      key={item.name}
                       style={themeStyles.productCardMobile}
                       className="sg-product-card"
                     >
@@ -1069,21 +1457,25 @@ const SizeGuide = () => {
           {/* Ingredients */}
           {activeTab === "ingredients" && (
             <div style={themeStyles.ingredientsGrid}>
-              {currentData.ingredientsList.map((item, idx) => (
+              {currentData.ingredientsList.map((item) => (
                 <div
-                  key={idx}
+                  key={item.name}
                   style={themeStyles.ingredientCard}
                   className="sg-ingredient-card"
                 >
-                  <div style={themeStyles.ingredientCardAccent} />
+                  <div
+                    style={themeStyles.ingredientCardAccent}
+                    aria-hidden="true"
+                  />
                   <div
                     style={themeStyles.ingredientIconWrap}
                     className="sg-ingredient-icon"
+                    aria-hidden="true"
                   >
                     <FaMagic />
                   </div>
                   <div>
-                    <h4 style={themeStyles.ingredientName}>{item.name}</h4>
+                    <h3 style={themeStyles.ingredientName}>{item.name}</h3>
                     <p style={themeStyles.ingredientBenefits}>
                       {item.benefits}
                     </p>
@@ -1096,13 +1488,16 @@ const SizeGuide = () => {
           {/* How to Use steps */}
           {activeTab === "howtouse" && (
             <div style={themeStyles.stepsGrid}>
-              {currentData.steps.map((item, idx) => (
+              {currentData.steps.map((item) => (
                 <div
-                  key={idx}
+                  key={item.step}
                   style={themeStyles.stepCard}
                   className="sg-step-card"
                 >
-                  <div style={themeStyles.stepCardAccent} />
+                  <div
+                    style={themeStyles.stepCardAccent}
+                    aria-hidden="true"
+                  />
                   <div style={themeStyles.stepNumber}>{item.step}</div>
                   <h3 style={themeStyles.stepTitle}>{item.title}</h3>
                   <p style={themeStyles.stepDescription}>{item.description}</p>
@@ -1113,17 +1508,20 @@ const SizeGuide = () => {
 
           {/* Tips */}
           <div style={themeStyles.tipsSection}>
-            <div style={themeStyles.tipsAccent} />
+            <div style={themeStyles.tipsAccent} aria-hidden="true" />
             <h3 style={themeStyles.tipsTitle}>
-              <FaLeaf /> Pro Tips for Best Results
+              <FaLeaf aria-hidden="true" /> Pro Tips for Best Results
             </h3>
-            {currentData.tips.map((tip, idx) => (
+            {currentData.tips.map((tip) => (
               <div
-                key={idx}
+                key={tip}
                 style={themeStyles.tipItem}
                 className="sg-tip-row"
               >
-                <FaLeaf style={themeStyles.tipIcon} />
+                <FaLeaf
+                  aria-hidden="true"
+                  style={themeStyles.tipIcon}
+                />
                 <span>{tip}</span>
               </div>
             ))}
@@ -1132,17 +1530,108 @@ const SizeGuide = () => {
           {/* Download */}
           <div style={themeStyles.downloadWrapper}>
             <button
+              type="button"
               style={themeStyles.downloadButton}
               className="sg-download-btn"
               onClick={handleDownload}
-              aria-label="Download this guide"
-              type="button"
+              aria-label="Download this guide as an HTML file"
             >
-              <FaDownload /> Download Guide
+              <FaDownload aria-hidden="true" /> Download Guide
             </button>
           </div>
         </div>
-      </div>
+      </main>
+
+      {/* ─── Related Reading (internal backlinks) ─── */}
+      <section
+        style={themeStyles.relatedSection}
+        aria-labelledby="size-guide-related-title"
+      >
+        <div style={themeStyles.relatedCard}>
+          <h2
+            id="size-guide-related-title"
+            style={themeStyles.relatedTitle}
+          >
+            <FaBookOpen aria-hidden="true" /> Related Reading
+          </h2>
+          <ul style={themeStyles.relatedList}>
+            {RELATED_BLOGS.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
+                  style={themeStyles.relatedLink}
+                  className="sg-related-link"
+                  aria-label={`Read: ${link.label}`}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.6rem",
+                    }}
+                  >
+                    <span style={themeStyles.relatedIcon} aria-hidden="true">
+                      {link.icon}
+                    </span>
+                    {link.label}
+                  </span>
+                  <FaArrowRight
+                    aria-hidden="true"
+                    style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ─── Sources & References (external hyperlinks / E-E-A-T) ─── */}
+      <section
+        style={themeStyles.citationSection}
+        aria-labelledby="size-guide-sources-title"
+      >
+        <div style={themeStyles.citationCard}>
+          <h2
+            id="size-guide-sources-title"
+            style={themeStyles.citationTitle}
+          >
+            <FaShieldAlt aria-hidden="true" /> Sources &amp; Further Reading
+          </h2>
+          <ul style={themeStyles.citationList}>
+            {TRUSTED_SOURCES.map((source) => (
+              <li key={source.href}>
+                <a
+                  href={source.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.citationLink}
+                  className="sg-citation-link"
+                  aria-label={`${source.label} — opens in new tab`}
+                >
+                  <FaExternalLinkAlt
+                    aria-hidden="true"
+                    style={{
+                      fontSize: "0.65rem",
+                      marginTop: "0.2rem",
+                      flexShrink: 0,
+                      color: isDarkMode
+                        ? brandColors.gold
+                        : brandColors.bronze,
+                    }}
+                  />
+                  <span>
+                    {source.label}
+                    <div style={themeStyles.citationDomain}>
+                      {source.domain}
+                    </div>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
     </div>
   );
 };

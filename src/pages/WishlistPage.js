@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/WishlistPage.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useWishlist } from "../context/WishlistContext";
@@ -12,9 +18,16 @@ import {
   FaRegHeart,
   FaArrowRight,
   FaShoppingBag,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaShieldAlt,
+  FaFlask,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -33,6 +46,54 @@ const DARK_SHADOW = "0 10px 30px rgba(0, 0, 0, 0.55)";
 const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
+
+// ─── Related blog guides (internal backlinks) ───
+const RELATED_GUIDES = [
+  {
+    to: "/blog/1",
+    label: "Multani Mitti benefits for oily skin",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/2",
+    label: "Ubtan for glowing skin — the Ayurvedic ritual",
+    icon: <FaSpa />,
+  },
+  {
+    to: "/blog/3",
+    label: "Amla-Reetha-Shikakai hair care science",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/6",
+    label: "Herbal face packs for every skin type",
+    icon: <FaFlask />,
+  },
+  {
+    to: "/shop",
+    label: "Browse the full Ayurvedic collection",
+    icon: <FaShoppingBag />,
+  },
+];
+
+// ─── Authoritative external hyperlinks (E-E-A-T) ───
+const TRUSTED_SOURCES = [
+  {
+    label: "NIH NCCIH — Ayurvedic Medicine: In Depth",
+    href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth",
+    domain: "nccih.nih.gov",
+  },
+  {
+    label: "PubMed — Multani Mitti (Fuller's Earth) skin research",
+    href: "https://pubmed.ncbi.nlm.nih.gov/?term=multani+mitti+fuller%27s+earth+skin",
+    domain: "pubmed.ncbi.nlm.nih.gov",
+  },
+  {
+    label: "Ministry of AYUSH — Government of India",
+    href: "https://ayush.gov.in/",
+    domain: "ayush.gov.in",
+  },
+];
 
 const WishlistPage = () => {
   const { isDarkMode } = useTheme();
@@ -91,7 +152,7 @@ const WishlistPage = () => {
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
 
-  // ✅ Keep items in wishlist after adding to cart (do NOT auto-remove)
+  // ─── Add to cart (keep item in wishlist) ───
   const handleAddToCart = (product) => {
     addToCart(
       product,
@@ -102,15 +163,100 @@ const WishlistPage = () => {
     );
   };
 
-  // ✅ Count BOTH Skincare and Hair Care
+  // ─── Derived wishlist data ───
   const naturalCount = wishlistItems.filter(
     (p) => p.category === "Skincare" || p.category === "Hair Care"
   ).length;
 
-  // ✅ Show the user's actual wishlist names as chips (first 4 + "more")
   const wishlistNames = wishlistItems.map((p) => p.name);
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── JSON-LD: WebPage + BreadcrumbList + ItemList of wishlist items ───
+  const wishlistJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/wishlist#webpage`,
+          url: `${SITE_URL}/wishlist`,
+          name: "My Wishlist | ASudha Beauty",
+          description:
+            "Your saved natural skincare and hair care favorites at ASudha Beauty. Save Ayurvedic products for later.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          inLanguage: "en-IN",
+          breadcrumb: { "@id": `${SITE_URL}/wishlist#breadcrumb` },
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/assets/images/og-default.png`,
+          },
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${SITE_URL}/wishlist#breadcrumb`,
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "My Wishlist",
+              item: `${SITE_URL}/wishlist`,
+            },
+          ],
+        },
+        ...(wishlistItems.length > 0
+          ? [
+              {
+                "@type": "ItemList",
+                "@id": `${SITE_URL}/wishlist#items`,
+                name: "Saved Ayurvedic products",
+                numberOfItems: wishlistItems.length,
+                itemListElement: wishlistItems.map((p, i) => ({
+                  "@type": "ListItem",
+                  position: i + 1,
+                  item: {
+                    "@type": "Product",
+                    name: p.name,
+                    image: `${SITE_URL}${p.image}`,
+                    url: `${SITE_URL}/product/${p.id}`,
+                    category: p.category,
+                    ...(p.price > 0 && {
+                      offers: {
+                        "@type": "Offer",
+                        price: String(p.price),
+                        priceCurrency: "INR",
+                        availability:
+                          p.inStock !== false
+                            ? "https://schema.org/InStock"
+                            : "https://schema.org/OutOfStock",
+                        url: `${SITE_URL}/product/${p.id}`,
+                      },
+                    }),
+                  },
+                })),
+              },
+            ]
+          : []),
+      ],
+    }),
+    [wishlistItems]
+  );
+
+  const breadcrumb = useMemo(
+    () => [
+      { name: "Home", url: "/" },
+      { name: "My Wishlist", url: "/wishlist" },
+    ],
+    []
+  );
+
+  const citations = useMemo(
+    () => TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    []
+  );
+
+  // ─── Injected CSS — only depends on isDarkMode ───
+  // T.shadowLift and T.border are inlined as isDarkMode ternaries to satisfy
+  // react-hooks/exhaustive-deps without eslint-disable comments.
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-wishlist-styles="true"]')
@@ -147,20 +293,24 @@ const WishlistPage = () => {
       .wl-cta-primary {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .wl-cta-primary:hover {
+      .wl-cta-primary:hover,
+      .wl-cta-primary:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 16px 40px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
       }
 
       .wl-cta-secondary {
         transition: transform 0.3s ease, border-color 0.3s ease,
                     color 0.3s ease;
       }
-      .wl-cta-secondary:hover {
+      .wl-cta-secondary:hover,
+      .wl-cta-secondary:focus-visible {
         border-color: ${brandColors.primary} !important;
         color: ${brandColors.primary} !important;
         transform: translateY(-3px);
+        outline: none;
       }
 
       .wl-chip {
@@ -183,12 +333,49 @@ const WishlistPage = () => {
       }
       .wl-cta-card:hover {
         transform: translateY(-3px);
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.35)"
             : "rgba(199, 125, 66, 0.25)"
         } !important;
+      }
+
+      /* Related / citation links */
+      .wl-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .wl-related-link:hover,
+      .wl-related-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        gap: 0.6rem;
+        outline: none;
+      }
+      .wl-citation-link:hover,
+      .wl-citation-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+      .wl-breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .wl-orb-1, .wl-orb-2, .wl-orb-3, .wl-heart-pulse {
+          animation: none !important;
+        }
+        .wl-cta-primary, .wl-cta-secondary, .wl-chip, .wl-cta-card,
+        .wl-related-link, .wl-citation-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -198,11 +385,9 @@ const WishlistPage = () => {
         .querySelectorAll('style[data-wishlist-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -213,8 +398,6 @@ const WishlistPage = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -284,7 +467,25 @@ const WishlistPage = () => {
       opacity: isDarkMode ? 0.38 : 0.28,
     },
 
-    // ─── Content wrapper ───
+    // ─── Breadcrumb ───
+    breadcrumb: {
+      position: "relative",
+      zIndex: 2,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.78rem",
+      color: T.textDim,
+      marginBottom: "1.5rem",
+      flexWrap: "wrap",
+      fontWeight: "600",
+    },
+    breadcrumbLink: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      fontWeight: "700",
+    },
+
     content: {
       position: "relative",
       zIndex: 1,
@@ -496,7 +697,7 @@ const WishlistPage = () => {
       width: "100%",
     },
 
-    // ─── Continue shopping CTA card ───
+    // ─── CTA card ───
     ctaCard: {
       position: "relative",
       zIndex: 1,
@@ -551,51 +752,246 @@ const WishlistPage = () => {
       boxShadow: "0 12px 30px rgba(245,52,107,0.35)",
       letterSpacing: "0.2px",
     },
+
+    // ─── Related Reading (internal backlinks) ───
+    relatedCard: {
+      position: "relative",
+      zIndex: 1,
+      marginTop: "2rem",
+      padding: isMobile ? "1.5rem" : "2rem",
+      backgroundColor: T.card,
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      boxSizing: "border-box",
+      width: "100%",
+    },
+    relatedTitle: {
+      fontSize: "1.05rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.15rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "10px",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+
+    // ─── Sources ───
+    citationCard: {
+      position: "relative",
+      zIndex: 1,
+      marginTop: "1.5rem",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+      boxSizing: "border-box",
+      width: "100%",
+    },
+    citationTitle: {
+      fontSize: "0.88rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
   };
 
-  // ─── Shared background ───
-  const BackgroundLayer = () => (
-    <div style={themeStyles.bgLayer}>
+  // ─── Shared background JSX (inline, not a component — avoids remounts) ───
+  const backgroundJSX = (
+    <div style={themeStyles.bgLayer} aria-hidden="true">
       <div style={themeStyles.bgGradient} />
       <div style={themeStyles.bgGrid} />
-      <div
-        className="wl-orb-1"
-        style={themeStyles.bgOrb1}
-        aria-hidden="true"
-      />
-      <div
-        className="wl-orb-2"
-        style={themeStyles.bgOrb2}
-        aria-hidden="true"
-      />
-      <div
-        className="wl-orb-3"
-        style={themeStyles.bgOrb3}
-        aria-hidden="true"
-      />
+      <div className="wl-orb-1" style={themeStyles.bgOrb1} />
+      <div className="wl-orb-2" style={themeStyles.bgOrb2} />
+      <div className="wl-orb-3" style={themeStyles.bgOrb3} />
     </div>
   );
 
-  // ─── EMPTY STATE ─────────────────────────────────────────────────
+  // ─── Shared "Related Reading" + "Sources" sections ───
+  const auxiliarySectionsJSX = (
+    <>
+      <section
+        style={themeStyles.relatedCard}
+        aria-labelledby="wishlist-related-title"
+      >
+        <h2
+          id="wishlist-related-title"
+          style={themeStyles.relatedTitle}
+        >
+          <FaBookOpen aria-hidden="true" /> Learn About the Products
+        </h2>
+        <ul style={themeStyles.relatedList}>
+          {RELATED_GUIDES.map((guide) => (
+            <li key={guide.to}>
+              <Link
+                to={guide.to}
+                style={themeStyles.relatedLink}
+                className="wl-related-link"
+                aria-label={`Read: ${guide.label}`}
+              >
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                  }}
+                >
+                  <span style={themeStyles.relatedIcon} aria-hidden="true">
+                    {guide.icon}
+                  </span>
+                  {guide.label}
+                </span>
+                <FaArrowRight
+                  aria-hidden="true"
+                  style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section
+        style={themeStyles.citationCard}
+        aria-labelledby="wishlist-sources-title"
+      >
+        <h2
+          id="wishlist-sources-title"
+          style={themeStyles.citationTitle}
+        >
+          <FaShieldAlt aria-hidden="true" /> Sources &amp; Further Reading
+        </h2>
+        <ul style={themeStyles.citationList}>
+          {TRUSTED_SOURCES.map((source) => (
+            <li key={source.href}>
+              <a
+                href={source.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={themeStyles.citationLink}
+                className="wl-citation-link"
+                aria-label={`${source.label} — opens in new tab`}
+              >
+                <FaExternalLinkAlt
+                  aria-hidden="true"
+                  style={{
+                    fontSize: "0.65rem",
+                    marginTop: "0.2rem",
+                    flexShrink: 0,
+                    color: isDarkMode
+                      ? brandColors.gold
+                      : brandColors.bronze,
+                  }}
+                />
+                <span>
+                  {source.label}
+                  <div style={themeStyles.citationDomain}>
+                    {source.domain}
+                  </div>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+
+  // ─── EMPTY STATE ───
   if (wishlistItems.length === 0) {
     return (
       <div style={themeStyles.container}>
-        <BackgroundLayer />
-        <div style={themeStyles.content}>
-          <SEO
-            title="My Wishlist | ASudha Beauty"
-            description="Your saved natural skincare and hair care favorites at ASudha Beauty. Save Ayurvedic products for later."
-            url="/wishlist"
-          />
+        <SEO
+          title="My Wishlist | ASudha Beauty — Save Ayurvedic Favorites"
+          description="Your saved natural skincare and hair care favorites at ASudha Beauty. Save 100% natural Ayurvedic products — Multani Mitti, Ubtan, Amla, Reetha, Shikakai — for later."
+          keywords="wishlist, saved products, natural skincare favorites, ayurvedic wishlist, asudha beauty wishlist"
+          url="/wishlist"
+          breadcrumb={breadcrumb}
+          citations={citations}
+        />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(wishlistJsonLd),
+          }}
+        />
+
+        {backgroundJSX}
+
+        <main style={themeStyles.content}>
 
           <h1 style={themeStyles.title}>
-            <FaHeart style={themeStyles.titleIcon} />
+            <FaHeart aria-hidden="true" style={themeStyles.titleIcon} />
             My Natural Wishlist
           </h1>
 
           <div style={themeStyles.emptyWishlist}>
-            <div style={themeStyles.emptyAccentBar} />
-            <div style={themeStyles.emptyIconWrapper}>
+            <div style={themeStyles.emptyAccentBar} aria-hidden="true" />
+            <div style={themeStyles.emptyIconWrapper} aria-hidden="true">
               <FaRegHeart className="wl-heart-pulse" />
             </div>
             <h2 style={themeStyles.emptyTitle}>Your wishlist is empty</h2>
@@ -609,65 +1005,92 @@ const WishlistPage = () => {
                 style={themeStyles.shopButton}
                 className="wl-cta-primary"
               >
-                <FaLeaf /> Explore Skincare
+                <FaLeaf aria-hidden="true" /> Explore Skincare
               </Link>
               <Link
                 to="/shop?category=Hair Care"
                 style={themeStyles.browseButton}
                 className="wl-cta-secondary"
               >
-                <FaSpa /> Explore Hair Care{" "}
-                <FaArrowRight style={{ fontSize: "0.75em" }} />
+                <FaSpa aria-hidden="true" /> Explore Hair Care{" "}
+                <FaArrowRight
+                  aria-hidden="true"
+                  style={{ fontSize: "0.75em" }}
+                />
               </Link>
             </div>
           </div>
-        </div>
+
+          {auxiliarySectionsJSX}
+        </main>
       </div>
     );
   }
 
-  // ─── WISHLIST WITH ITEMS ─────────────────────────────────────────
+  // ─── WISHLIST WITH ITEMS ───
   return (
     <div style={themeStyles.container}>
-      <BackgroundLayer />
-      <div style={themeStyles.content}>
-        <SEO
-          title={`My Wishlist (${wishlistItems.length}) | ASudha Beauty`}
-          description={`You have ${wishlistItems.length} natural Ayurvedic products saved in your wishlist.`}
-          url="/wishlist"
-        />
+      <SEO
+        title={`My Wishlist (${wishlistItems.length}) | ASudha Beauty`}
+        description={`You have ${wishlistItems.length} natural Ayurvedic products saved in your wishlist at ASudha Beauty — Multani Mitti, Ubtan, Amla, Reetha, and Shikakai.`}
+        keywords="wishlist, saved products, natural skincare favorites, ayurvedic wishlist, asudha beauty wishlist"
+        url="/wishlist"
+        breadcrumb={breadcrumb}
+        citations={citations}
+      />
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(wishlistJsonLd),
+        }}
+      />
+
+      {backgroundJSX}
+
+      <main style={themeStyles.content}>
         <h1 style={themeStyles.title}>
-          <FaHeart style={themeStyles.titleIcon} />
+          <FaHeart aria-hidden="true" style={themeStyles.titleIcon} />
           My Natural Wishlist
         </h1>
 
         <div style={themeStyles.subtitle}>
-          <span>
+          <span
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {wishlistItems.length} item
             {wishlistItems.length !== 1 ? "s" : ""} saved
           </span>
           {naturalCount > 0 && (
             <span style={themeStyles.naturalBadge}>
-              <FaLeaf /> {naturalCount} Natural Product
+              <FaLeaf aria-hidden="true" /> {naturalCount} Natural Product
               {naturalCount !== 1 ? "s" : ""}
             </span>
           )}
         </div>
 
-        {/* ✅ Real wishlist items as chips */}
+        {/* Wishlist collection chips */}
         {wishlistNames.length > 0 && (
           <div style={themeStyles.naturalCollection}>
-            <div style={themeStyles.collectionAccentBar} />
-            <FaSpa style={{ color: brandColors.green, fontSize: "1.25rem" }} />
+            <div
+              style={themeStyles.collectionAccentBar}
+              aria-hidden="true"
+            />
+            <FaSpa
+              aria-hidden="true"
+              style={{ color: brandColors.green, fontSize: "1.25rem" }}
+            />
             <span style={themeStyles.collectionLabel}>Your Collection:</span>
-            {wishlistNames.slice(0, 4).map((name, idx) => (
+            {wishlistNames.slice(0, 4).map((name) => (
               <span
-                key={idx}
+                key={name}
                 style={themeStyles.collectionItem}
                 className="wl-chip"
               >
                 <FaLeaf
+                  aria-hidden="true"
                   style={{ color: brandColors.green, fontSize: "0.7rem" }}
                 />
                 {name}
@@ -684,7 +1107,11 @@ const WishlistPage = () => {
           </div>
         )}
 
-        <div style={themeStyles.wishlistGrid}>
+        {/* Products grid */}
+        <section
+          style={themeStyles.wishlistGrid}
+          aria-label={`${wishlistItems.length} saved products`}
+        >
           {wishlistItems.map((product) => (
             <ProductCard
               key={`${product.id}-${product.selectedShade || "default"}`}
@@ -700,36 +1127,40 @@ const WishlistPage = () => {
               badgeText={
                 product.category === "Skincare" ||
                 product.category === "Hair Care"
-                  ? "🌿 Natural"
+                  ? "Natural"
                   : ""
               }
             />
           ))}
-        </div>
+        </section>
 
         {/* Continue shopping CTA */}
         <div style={themeStyles.ctaCard} className="wl-cta-card">
-          <div style={themeStyles.ctaAccentBar} />
-          <h3 style={themeStyles.ctaTitle}>Looking for more?</h3>
+          <div style={themeStyles.ctaAccentBar} aria-hidden="true" />
+          <h2 style={themeStyles.ctaTitle}>Looking for more?</h2>
           <p style={themeStyles.ctaText}>
             <FaLeaf
+              aria-hidden="true"
               style={{
                 color: brandColors.green,
                 marginRight: "0.4rem",
               }}
             />
-            Explore our full collection of 100% natural, Ayurvedic skincare and
-            hair care powders.
+            Explore our full collection of 100% natural, Ayurvedic skincare
+            and hair care powders.
           </p>
           <Link
             to="/shop"
             style={themeStyles.ctaButton}
             className="wl-cta-primary"
           >
-            <FaShoppingBag /> Continue Shopping <FaArrowRight />
+            <FaShoppingBag aria-hidden="true" /> Continue Shopping{" "}
+            <FaArrowRight aria-hidden="true" />
           </Link>
         </div>
-      </div>
+
+        {auxiliarySectionsJSX}
+      </main>
     </div>
   );
 };

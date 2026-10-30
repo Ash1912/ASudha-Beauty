@@ -1,5 +1,11 @@
-// src/pages/TermsConditions.js
-import React, { useEffect, useState, useLayoutEffect } from "react";
+// src/pages/TermsConditions.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import SEO from "../components/SEO";
 import {
@@ -15,9 +21,16 @@ import {
   FaEnvelope,
   FaListUl,
   FaArrowRight,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaQuestionCircle,
+  FaHeadset,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -37,17 +50,177 @@ const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
+// ─── Sections (module scope: stable for scrollspy observer) ───
+const SECTIONS = [
+  {
+    id: "acceptance",
+    icon: <FaFileContract />,
+    title: "Acceptance of Terms",
+    content:
+      "By accessing and using the ASudha Beauty website, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our website. These terms apply to all visitors, users, and others who access or use the service.",
+  },
+  {
+    id: "products",
+    icon: <FaShoppingBag />,
+    title: "Products and Pricing",
+    content:
+      "All products displayed on our website are subject to availability. We reserve the right to modify or discontinue any product without prior notice. Prices are subject to change without notice. We make every effort to display accurate product information, but we do not warrant that product descriptions, colors, or other content is accurate, complete, or error-free.",
+  },
+  {
+    id: "orders",
+    icon: <FaCreditCard />,
+    title: "Order Acceptance",
+    content:
+      "We reserve the right to refuse or cancel any order for any reason including but not limited to product availability, errors in product information, or suspected fraud. If we cancel an order, we will notify you and issue a full refund. Once an order is placed, you will receive an order confirmation via email.",
+  },
+  {
+    id: "shipping",
+    icon: <FaTruck />,
+    title: "Shipping and Delivery",
+    content:
+      "We ship to addresses within India. Delivery times are estimates and not guaranteed. We are not responsible for delays caused by customs clearance, carrier issues, or force majeure events. Shipping costs are calculated at checkout and may vary based on location and order value.",
+  },
+  {
+    id: "returns",
+    icon: <FaUndo />,
+    title: "Returns and Refunds",
+    content:
+      "We offer a 30-day return policy for unused products in original packaging. To initiate a return, please contact our customer service. Refunds will be processed within 7–10 business days after we receive and inspect the returned product. Certain items such as opened cosmetics are non-returnable for hygiene reasons.",
+  },
+  {
+    id: "payment",
+    icon: <FaCreditCard />,
+    title: "Payment Terms",
+    content:
+      "We accept various payment methods including credit/debit cards, UPI, net banking, and digital wallets. All payments are processed through secure payment gateways. We do not store your payment information. By placing an order, you authorize us to charge your chosen payment method for the total amount.",
+  },
+  {
+    id: "privacy",
+    icon: <FaUserSecret />,
+    title: "Privacy Policy",
+    content:
+      "Your privacy is important to us. We collect and process personal information in accordance with our Privacy Policy. By using our website, you consent to such processing and warrant that all data provided by you is accurate. We use secure SSL encryption to protect your data.",
+  },
+  {
+    id: "intellectual",
+    icon: <FaGavel />,
+    title: "Intellectual Property",
+    content:
+      "All content on this website including text, graphics, logos, images, and software is the property of ASudha Beauty and protected by copyright laws. You may not reproduce, distribute, or create derivative works without our express written permission.",
+  },
+  {
+    id: "liability",
+    icon: <FaShieldAlt />,
+    title: "Limitation of Liability",
+    content:
+      "ASudha Beauty shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website. Our total liability shall not exceed the amount paid for the product giving rise to the claim.",
+  },
+  {
+    id: "modifications",
+    icon: <FaInfoCircle />,
+    title: "Modifications to Terms",
+    content:
+      "We reserve the right to update these terms at any time. Continued use of the website after changes constitutes acceptance of the new terms. We encourage you to review these terms periodically for any updates.",
+  },
+];
+
+// ─── Related policy pages (internal backlinks) ───
+const RELATED_POLICIES = [
+  {
+    to: "/returns",
+    label: "Returns & Exchanges Policy",
+    icon: <FaUndo />,
+  },
+  {
+    to: "/shipping",
+    label: "Shipping Information",
+    icon: <FaTruck />,
+  },
+  {
+    to: "/faqs",
+    label: "Frequently Asked Questions",
+    icon: <FaQuestionCircle />,
+  },
+  {
+    to: "/contact",
+    label: "Contact Customer Support",
+    icon: <FaHeadset />,
+  },
+  {
+    to: "/shop",
+    label: "Browse 100% Natural Products",
+    icon: <FaShoppingBag />,
+  },
+];
+
+// ─── Authoritative external hyperlinks (E-E-A-T + legal references) ───
+const TRUSTED_SOURCES = [
+  {
+    label:
+      "Consumer Protection Act, 2019 — Department of Consumer Affairs, Government of India",
+    href: "https://consumeraffairs.nic.in/",
+    domain: "consumeraffairs.nic.in",
+  },
+  {
+    label:
+      "National Consumer Helpline — Government of India",
+    href: "https://consumerhelpline.gov.in/",
+    domain: "consumerhelpline.gov.in",
+  },
+  {
+    label:
+      "Information Technology Act, 2000 — Ministry of Electronics & IT",
+    href: "https://www.meity.gov.in/",
+    domain: "meity.gov.in",
+  },
+  {
+    label:
+      "Reserve Bank of India — Payment & Digital Commerce",
+    href: "https://www.rbi.org.in/",
+    domain: "rbi.org.in",
+  },
+];
+
 const TermsConditions = () => {
   const { isDarkMode } = useTheme();
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
   const [lastUpdated] = useState("January 15, 2026");
+  const [activeSection, setActiveSection] = useState("acceptance");
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // ─── Scrollspy: highlight the TOC link for the visible section ───
+  useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      {
+        rootMargin: "-120px 0px -60% 0px",
+        threshold: 0,
+      }
+    );
+
+    SECTIONS.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   // ─── Theme tokens ───
@@ -92,70 +265,65 @@ const TermsConditions = () => {
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 900;
 
-  const sections = [
-    {
-      id: "acceptance",
-      icon: <FaFileContract />,
-      title: "Acceptance of Terms",
-      content: `By accessing and using the ASudha Beauty website, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our website. These terms apply to all visitors, users, and others who access or use the service.`,
-    },
-    {
-      id: "products",
-      icon: <FaShoppingBag />,
-      title: "Products and Pricing",
-      content: `All products displayed on our website are subject to availability. We reserve the right to modify or discontinue any product without prior notice. Prices are subject to change without notice. We make every effort to display accurate product information, but we do not warrant that product descriptions, colors, or other content is accurate, complete, or error-free.`,
-    },
-    {
-      id: "orders",
-      icon: <FaCreditCard />,
-      title: "Order Acceptance",
-      content: `We reserve the right to refuse or cancel any order for any reason including but not limited to product availability, errors in product information, or suspected fraud. If we cancel an order, we will notify you and issue a full refund. Once an order is placed, you will receive an order confirmation via email.`,
-    },
-    {
-      id: "shipping",
-      icon: <FaTruck />,
-      title: "Shipping and Delivery",
-      content: `We ship to addresses within India. Delivery times are estimates and not guaranteed. We are not responsible for delays caused by customs clearance, carrier issues, or force majeure events. Shipping costs are calculated at checkout and may vary based on location and order value.`,
-    },
-    {
-      id: "returns",
-      icon: <FaUndo />,
-      title: "Returns and Refunds",
-      content: `We offer a 30-day return policy for unused products in original packaging. To initiate a return, please contact our customer service. Refunds will be processed within 7-10 business days after we receive and inspect the returned product. Certain items such as opened cosmetics are non-returnable for hygiene reasons.`,
-    },
-    {
-      id: "payment",
-      icon: <FaCreditCard />,
-      title: "Payment Terms",
-      content: `We accept various payment methods including credit/debit cards, UPI, net banking, and digital wallets. All payments are processed through secure payment gateways. We do not store your payment information. By placing an order, you authorize us to charge your chosen payment method for the total amount.`,
-    },
-    {
-      id: "privacy",
-      icon: <FaUserSecret />,
-      title: "Privacy Policy",
-      content: `Your privacy is important to us. We collect and process personal information in accordance with our Privacy Policy. By using our website, you consent to such processing and warrant that all data provided by you is accurate. We use secure SSL encryption to protect your data.`,
-    },
-    {
-      id: "intellectual",
-      icon: <FaGavel />,
-      title: "Intellectual Property",
-      content: `All content on this website including text, graphics, logos, images, and software is the property of ASudha Beauty and protected by copyright laws. You may not reproduce, distribute, or create derivative works without our express written permission.`,
-    },
-    {
-      id: "liability",
-      icon: <FaShieldAlt />,
-      title: "Limitation of Liability",
-      content: `ASudha Beauty shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website. Our total liability shall not exceed the amount paid for the product giving rise to the claim.`,
-    },
-    {
-      id: "modifications",
-      icon: <FaInfoCircle />,
-      title: "Modifications to Terms",
-      content: `We reserve the right to update these terms at any time. Continued use of the website after changes constitutes acceptance of the new terms. We encourage you to review these terms periodically for any updates.`,
-    },
-  ];
+  // ─── JSON-LD: WebPage + BreadcrumbList ───
+  const termsJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/terms#webpage`,
+          url: `${SITE_URL}/terms`,
+          name: "Terms & Conditions | ASudha Beauty",
+          description:
+            "ASudha Beauty's Terms & Conditions covering orders, shipping, returns, payments, privacy, and intellectual property. Read before placing an order.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          inLanguage: "en-IN",
+          datePublished: "2025-04-01",
+          dateModified: "2026-01-15",
+          breadcrumb: { "@id": `${SITE_URL}/terms#breadcrumb` },
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/assets/images/og-default.png`,
+          },
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${SITE_URL}/terms#breadcrumb`,
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Home",
+              item: SITE_URL,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Terms & Conditions",
+              item: `${SITE_URL}/terms`,
+            },
+          ],
+        },
+      ],
+    }),
+    []
+  );
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  const breadcrumb = useMemo(
+    () => [
+      { name: "Home", url: "/" },
+      { name: "Terms & Conditions", url: "/terms" },
+    ],
+    []
+  );
+
+  const citations = useMemo(
+    () => TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    []
+  );
+
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-terms-styles="true"]')
@@ -175,10 +343,6 @@ const TermsConditions = () => {
       @keyframes tcFloat3 {
         0%, 100% { transform: translate(0, 0) scale(1); }
         50% { transform: translate(28px, 40px) scale(1.1); }
-      }
-      @keyframes tcScrollIndicate {
-        0%, 100% { transform: translateX(0); opacity: 0.5; }
-        50% { transform: translateX(4px); opacity: 1; }
       }
 
       .tc-orb-1 { animation: tcFloat1 16s ease-in-out infinite; }
@@ -205,7 +369,8 @@ const TermsConditions = () => {
         border-radius: 0 3px 3px 0;
         transition: height 0.3s ease;
       }
-      .tc-toc-link:hover {
+      .tc-toc-link:hover,
+      .tc-toc-link:focus-visible {
         background: ${
           isDarkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(62, 39, 35, 0.04)"
         } !important;
@@ -213,11 +378,14 @@ const TermsConditions = () => {
           isDarkMode ? brandColors.gold : brandColors.primary
         } !important;
         padding-left: 1rem;
+        outline: none;
       }
-      .tc-toc-link:hover::before {
+      .tc-toc-link:hover::before,
+      .tc-toc-link:focus-visible::before {
         height: 60%;
       }
-      .tc-toc-link:hover .tc-toc-arrow {
+      .tc-toc-link:hover .tc-toc-arrow,
+      .tc-toc-link:focus-visible .tc-toc-arrow {
         opacity: 1;
         transform: translateX(0);
       }
@@ -230,12 +398,34 @@ const TermsConditions = () => {
         flex-shrink: 0;
       }
 
+      /* Active TOC link (scrollspy) */
+      .tc-toc-link.tc-toc-active {
+        color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        background: ${
+          isDarkMode ? "rgba(212, 175, 55, 0.08)" : "rgba(245, 52, 107, 0.06)"
+        } !important;
+        font-weight: 800;
+      }
+      .tc-toc-link.tc-toc-active::before {
+        height: 60%;
+      }
+      .tc-toc-link.tc-toc-active .tc-toc-arrow {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
       .tc-section {
         transition: box-shadow 0.35s ease, border-color 0.3s ease,
                     transform 0.3s ease;
       }
       .tc-section:hover {
-        box-shadow: ${T.shadowLift};
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
         border-color: ${
           isDarkMode
             ? "rgba(212, 175, 55, 0.4)"
@@ -254,10 +444,43 @@ const TermsConditions = () => {
       .tc-contact-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .tc-contact-btn:hover {
+      .tc-contact-btn:hover,
+      .tc-contact-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 14px 36px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
+      }
+
+      /* Related policy / citation links */
+      .tc-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .tc-related-link:hover,
+      .tc-related-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        gap: 0.6rem;
+        outline: none;
+      }
+      .tc-citation-link:hover,
+      .tc-citation-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+      .tc-breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .tc-orb-1, .tc-orb-2, .tc-orb-3 { animation: none !important; }
+        .tc-toc-link, .tc-section, .tc-section-icon, .tc-contact-btn,
+        .tc-related-link, .tc-citation-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -267,11 +490,9 @@ const TermsConditions = () => {
         .querySelectorAll('style[data-terms-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -282,8 +503,6 @@ const TermsConditions = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -353,39 +572,39 @@ const TermsConditions = () => {
       opacity: isDarkMode ? 0.36 : 0.26,
     },
 
+    // ─── Breadcrumb ───
+    breadcrumb: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1180px",
+      margin: "0 auto",
+      padding: isMobile ? "1rem 1rem 0" : "1.5rem 2.5rem 0",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.78rem",
+      color: T.textDim,
+      flexWrap: "wrap",
+      fontWeight: "600",
+    },
+    breadcrumbLink: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      fontWeight: "700",
+    },
+
     // ─── Header ───
     header: {
       position: "relative",
       zIndex: 1,
       textAlign: "center",
       padding: isMobile
-        ? "2rem 1rem 1.5rem"
+        ? "1.5rem 1rem 1.5rem"
         : isNarrow
-        ? "2.5rem 1.5rem 1.5rem"
-        : "3.5rem 2rem 2rem",
+        ? "2rem 1.5rem 1.5rem"
+        : "2.5rem 2rem 2rem",
       maxWidth: "900px",
       margin: "0 auto",
-    },
-    headerBadge: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.45rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.1)",
-      borderRadius: "50px",
-      fontSize: "0.72rem",
-      fontWeight: "800",
-      color: isDarkMode ? T.gold : brandColors.bronze,
-      marginBottom: "1.25rem",
-      border: `1px solid ${
-        isDarkMode ? "rgba(212, 175, 55, 0.3)" : "rgba(199, 125, 66, 0.2)"
-      }`,
-      letterSpacing: "1px",
-      textTransform: "uppercase",
-      backdropFilter: "blur(8px)",
-      WebkitBackdropFilter: "blur(8px)",
     },
     title: {
       fontSize: isMobile ? "2rem" : isNarrow ? "2.4rem" : "3rem",
@@ -433,7 +652,6 @@ const TermsConditions = () => {
     },
 
     // ─── Layout ───
-    // ✅ Wider sidebar (280px) and wider gap so TOC titles don't wrap badly
     layout: {
       position: "relative",
       zIndex: 1,
@@ -452,11 +670,11 @@ const TermsConditions = () => {
       width: "100%",
     },
 
-    // ─── Table of contents (redesigned) ───
+    // ─── TOC ───
     toc: {
       position: isNarrow ? "relative" : "sticky",
       top: isNarrow ? "auto" : "2rem",
-      order: isNarrow ? 2 : 2, // TOC on the right side
+      order: 2,
       backgroundColor: T.card,
       borderRadius: "20px",
       padding: "1.5rem 1.25rem 1.75rem",
@@ -524,7 +742,6 @@ const TermsConditions = () => {
       flexShrink: 0,
       color: isDarkMode ? T.gold : brandColors.primary,
     },
-    // Sticky "Contact" card inside TOC — fills the empty space
     tocContact: {
       marginTop: "1.5rem",
       paddingTop: "1.25rem",
@@ -561,11 +778,10 @@ const TermsConditions = () => {
 
     // ─── Sections ───
     sectionsContainer: {
-      order: isNarrow ? 1 : 1, // Sections on the left
+      order: 1,
       minWidth: 0,
       width: "100%",
     },
-    // Group sections into a single cohesive panel to prevent the "floating cards" look
     sectionsPanel: {
       backgroundColor: T.card,
       borderRadius: "22px",
@@ -699,50 +915,145 @@ const TermsConditions = () => {
       lineHeight: "1.7",
       fontWeight: "600",
     },
+
+    // ─── Related Policies (internal backlinks) ───
+    relatedCard: {
+      backgroundColor: T.card,
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      padding: isMobile ? "1.5rem" : "2rem",
+      marginTop: "2rem",
+    },
+    relatedTitle: {
+      fontSize: "1.05rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.15rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "10px",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+
+    // ─── Sources (external hyperlinks) ───
+    citationCard: {
+      marginTop: "1.5rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    citationTitle: {
+      fontSize: "0.88rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
   };
 
   return (
     <div style={themeStyles.container}>
+      {/* ─── SEO: meta + JSON-LD + breadcrumb + citations ─── */}
       <SEO
-        title="Terms & Conditions | ASudha Beauty"
-        description="Read ASudha Beauty's Terms & Conditions covering orders, shipping, returns, payments, privacy, and intellectual property."
-        keywords="terms and conditions, terms of service, ASudha Beauty, policy, user agreement"
-        url="/terms-conditions"
+        title="Terms & Conditions | ASudha Beauty — Returns, Shipping & Payments"
+        description="Read ASudha Beauty's Terms & Conditions covering order acceptance, shipping, returns, payments, privacy, and intellectual property. Last updated January 15, 2026."
+        keywords="terms and conditions, terms of service india, ecommerce terms and conditions, return policy india, refund policy, shipping policy, privacy policy, online purchase terms, consumer protection act"
+        url="/terms"
+        breadcrumb={breadcrumb}
+        citations={citations}
+      />
+
+      {/* Separate JSON-LD graph for WebPage + BreadcrumbList */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(termsJsonLd) }}
       />
 
       {/* Animated background */}
-      <div style={themeStyles.bgLayer}>
+      <div style={themeStyles.bgLayer} aria-hidden="true">
         <div style={themeStyles.bgGradient} />
         <div style={themeStyles.bgGrid} />
-        <div
-          className="tc-orb-1"
-          style={themeStyles.bgOrb1}
-          aria-hidden="true"
-        />
-        <div
-          className="tc-orb-2"
-          style={themeStyles.bgOrb2}
-          aria-hidden="true"
-        />
-        <div
-          className="tc-orb-3"
-          style={themeStyles.bgOrb3}
-          aria-hidden="true"
-        />
+        <div className="tc-orb-1" style={themeStyles.bgOrb1} />
+        <div className="tc-orb-2" style={themeStyles.bgOrb2} />
+        <div className="tc-orb-3" style={themeStyles.bgOrb3} />
       </div>
 
       {/* Header */}
-      <div style={themeStyles.header}>
+      <header style={themeStyles.header}>
         <h1 style={themeStyles.title}>
           Terms &amp; Conditions
           <span style={themeStyles.titleAccent} aria-hidden="true" />
         </h1>
         <p style={themeStyles.subtitle}>
-          Please read these terms carefully before using our website or placing
-          an order.
+          Please read these terms carefully before using our website or
+          placing an order.
         </p>
         <div style={themeStyles.lastUpdated}>
           <FaInfoCircle
+            aria-hidden="true"
             style={{
               fontSize: "0.75rem",
               color: isDarkMode ? T.gold : brandColors.bronze,
@@ -750,16 +1061,19 @@ const TermsConditions = () => {
           />
           Last Updated: {lastUpdated}
         </div>
-      </div>
+      </header>
 
       {/* Layout with sticky TOC + sections */}
       <div style={themeStyles.layout}>
-        {/* Content — grouped into one cohesive panel */}
+        {/* Content */}
         <div style={themeStyles.sectionsContainer}>
           <div style={themeStyles.sectionsPanel}>
-            <div style={themeStyles.sectionsPanelAccent} />
-            {sections.map((section, idx) => {
-              const isLast = idx === sections.length - 1;
+            <div
+              style={themeStyles.sectionsPanelAccent}
+              aria-hidden="true"
+            />
+            {SECTIONS.map((section, idx) => {
+              const isLast = idx === SECTIONS.length - 1;
               return (
                 <section
                   key={section.id}
@@ -769,68 +1083,173 @@ const TermsConditions = () => {
                     ...(isLast ? themeStyles.sectionLast : {}),
                   }}
                   className="tc-section"
+                  aria-labelledby={`${section.id}-title`}
                 >
                   <div style={themeStyles.sectionHeader}>
                     <div
                       style={themeStyles.sectionIconWrapper}
                       className="tc-section-icon"
+                      aria-hidden="true"
                     >
                       {section.icon}
                     </div>
-                    <h2 style={themeStyles.sectionTitle}>{section.title}</h2>
+                    <h2
+                      id={`${section.id}-title`}
+                      style={themeStyles.sectionTitle}
+                    >
+                      {section.title}
+                    </h2>
                   </div>
-                  <p style={themeStyles.sectionContent}>
-                    {section.content}
-                  </p>
+                  <p style={themeStyles.sectionContent}>{section.content}</p>
                 </section>
               );
             })}
           </div>
 
-          {/* Contact */}
-          <div style={themeStyles.contactSection}>
-            <div style={themeStyles.contactAccentBar} />
-            <h3 style={themeStyles.contactTitle}>Questions About Terms?</h3>
+          {/* ─── Related Policies (internal backlinks) ─── */}
+          <section
+            style={themeStyles.relatedCard}
+            aria-labelledby="related-policies-title"
+          >
+            <h2
+              id="related-policies-title"
+              style={themeStyles.relatedTitle}
+            >
+              <FaBookOpen aria-hidden="true" /> Related Policies
+            </h2>
+            <ul style={themeStyles.relatedList}>
+              {RELATED_POLICIES.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    style={themeStyles.relatedLink}
+                    className="tc-related-link"
+                    aria-label={`Read: ${item.label}`}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.6rem",
+                      }}
+                    >
+                      <span style={themeStyles.relatedIcon} aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </span>
+                    <FaArrowRight
+                      aria-hidden="true"
+                      style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* ─── Sources & References (external hyperlinks) ─── */}
+          <section
+            style={themeStyles.citationCard}
+            aria-labelledby="terms-sources-title"
+          >
+            <h2
+              id="terms-sources-title"
+              style={themeStyles.citationTitle}
+            >
+              <FaShieldAlt aria-hidden="true" /> Legal Framework &amp; References
+            </h2>
+            <ul style={themeStyles.citationList}>
+              {TRUSTED_SOURCES.map((source) => (
+                <li key={source.href}>
+                  <a
+                    href={source.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={themeStyles.citationLink}
+                    className="tc-citation-link"
+                    aria-label={`${source.label} — opens in new tab`}
+                  >
+                    <FaExternalLinkAlt
+                      aria-hidden="true"
+                      style={{
+                        fontSize: "0.65rem",
+                        marginTop: "0.2rem",
+                        flexShrink: 0,
+                        color: isDarkMode
+                          ? brandColors.gold
+                          : brandColors.bronze,
+                      }}
+                    />
+                    <span>
+                      {source.label}
+                      <div style={themeStyles.citationDomain}>
+                        {source.domain}
+                      </div>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* ─── Contact ─── */}
+          <section
+            style={themeStyles.contactSection}
+            aria-labelledby="terms-contact-title"
+          >
+            <div style={themeStyles.contactAccentBar} aria-hidden="true" />
+            <h2 id="terms-contact-title" style={themeStyles.contactTitle}>
+              Questions About Terms?
+            </h2>
             <p style={themeStyles.contactText}>
-              If you have any questions about our Terms &amp; Conditions, please
-              reach out to our legal team.
+              If you have any questions about our Terms &amp; Conditions,
+              please reach out to our legal team.
             </p>
             <a
               href="mailto:asudhabeauty@gmail.com"
               style={themeStyles.contactButton}
               className="tc-contact-btn"
             >
-              <FaEnvelope /> Contact Legal Team
+              <FaEnvelope aria-hidden="true" /> Contact Legal Team
             </a>
-          </div>
-
+          </section>
         </div>
 
         {/* Table of Contents — right sidebar */}
-        <aside style={themeStyles.toc}>
-          <div style={themeStyles.tocAccentBar} />
+        <aside
+          style={themeStyles.toc}
+          aria-label="Table of contents"
+        >
+          <div style={themeStyles.tocAccentBar} aria-hidden="true" />
           <div style={themeStyles.tocTitle}>
-            <FaListUl /> On This Page
+            <FaListUl aria-hidden="true" /> On This Page
           </div>
           <ul style={themeStyles.tocList}>
-            {sections.map((s) => (
-              <li key={s.id} style={themeStyles.tocItem}>
-                <a
-                  href={`#${s.id}`}
-                  style={themeStyles.tocLink}
-                  className="tc-toc-link"
-                >
-                  {s.title}
-                  <FaArrowRight
-                    style={themeStyles.tocArrow}
-                    className="tc-toc-arrow"
-                  />
-                </a>
-              </li>
-            ))}
+            {SECTIONS.map((s) => {
+              const isActive = activeSection === s.id;
+              return (
+                <li key={s.id} style={themeStyles.tocItem}>
+                  <a
+                    href={`#${s.id}`}
+                    style={themeStyles.tocLink}
+                    className={`tc-toc-link${
+                      isActive ? " tc-toc-active" : ""
+                    }`}
+                    aria-current={isActive ? "true" : undefined}
+                  >
+                    {s.title}
+                    <FaArrowRight
+                      aria-hidden="true"
+                      style={themeStyles.tocArrow}
+                      className="tc-toc-arrow"
+                    />
+                  </a>
+                </li>
+              );
+            })}
           </ul>
 
-          {/* Quick-contact block inside TOC — fills the empty space below the list */}
           <div style={themeStyles.tocContact}>
             <div style={themeStyles.tocContactTitle}>Need help faster?</div>
             <p style={themeStyles.tocContactText}>
@@ -842,7 +1261,8 @@ const TermsConditions = () => {
               style={themeStyles.tocContactBtn}
               className="tc-contact-btn"
             >
-              <FaEnvelope style={{ fontSize: "0.7rem" }} /> Email Us
+              <FaEnvelope aria-hidden="true" style={{ fontSize: "0.7rem" }} />{" "}
+              Email Us
             </a>
           </div>
         </aside>

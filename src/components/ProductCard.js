@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/components/ProductCard.jsx
+import React, { useState, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useWishlist } from "../context/WishlistContext";
@@ -11,6 +12,25 @@ import {
   FaEye,
 } from "react-icons/fa";
 
+// ─── Brand palette (module scope: stable) ───
+const brandColors = {
+  primary: "#f5346b",
+  primaryHover: "#ff4d7a",
+  secondary: "#c77d42",
+  earthDark: "#3e2723",
+  earthLight: "#6d4c41",
+  gold: "#f7d794",
+  goldDark: "#d4af37",
+  green: "#4caf50",
+  cream: "#fcf8f5",
+};
+
+// Coerce numeric values safely (protects against string prices from API)
+const toNumber = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
 const ProductCard = ({
   product,
   onAddToCart,
@@ -19,7 +39,11 @@ const ProductCard = ({
 }) => {
   const { isDarkMode } = useTheme();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const inWishlist = isInWishlist(product.id);
+
+  // ─── Null-safe product ───
+  const safeProduct = product || {};
+
+  const inWishlist = isInWishlist(safeProduct.id);
 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -27,12 +51,12 @@ const ProductCard = ({
     width: 0,
     height: 0,
   });
-  const [isHovered, setIsHovered] = useState(false);
 
+  // ─── Handlers ───
   const handleWishlistClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(product);
+    toggleWishlist(safeProduct);
   };
 
   const handleImageLoad = (e) => {
@@ -50,82 +74,70 @@ const ProductCard = ({
       "https://via.placeholder.com/500x500/f8f8f8/f5346b?text=ASudha";
   };
 
+  // ─── Computed values ───
+  const priceNum = toNumber(safeProduct.price);
+  const mrpNum = toNumber(safeProduct.mrp);
+  const hasDiscount = mrpNum > priceNum;
+  const discount = hasDiscount
+    ? Math.round(((mrpNum - priceNum) / mrpNum) * 100)
+    : 0;
+  const isNatural =
+    safeProduct.category === "Skincare" ||
+    safeProduct.category === "Hair Care";
+  const productUrl = `/product/${safeProduct.id}`;
+
+  const shouldShowBadge =
+    showBadge === true ||
+    (safeProduct.bestSeller === true && badgeText === "");
+  const finalBadgeText =
+    badgeText || (safeProduct.bestSeller ? "Best Seller" : "");
+
+  // ─── Image fitting logic ───
   const getImageStyle = () => {
     if (!imageLoaded || imageDimensions.width === 0) {
-      return {
-        ...themeStyles.image,
-        objectFit: "cover",
-      };
+      return { ...themeStyles.image, objectFit: "cover" };
     }
-
     const aspectRatio = imageDimensions.width / imageDimensions.height;
-
     if (aspectRatio > 1.5 || aspectRatio < 0.67) {
       return {
         ...themeStyles.image,
         objectFit: "contain",
-        backgroundColor: isDarkMode ? "#1a1a1a" : "#f7f0eb", // UPDATED
+        backgroundColor: isDarkMode ? "#1a1a1a" : "#f7f0eb",
         padding: "15px",
       };
-    } else {
-      return {
-        ...themeStyles.image,
-        objectFit: "cover",
-      };
     }
+    return { ...themeStyles.image, objectFit: "cover" };
   };
 
-  // Brand colors derived from the packaging
-  const brandColors = {
-    primary: "#f5346b",
-    primaryHover: "#ff4d7a",
-    secondary: "#c77d42",
-    earthDark: "#3e2723",
-    earthLight: "#6d4c41",
-    gold: "#f7d794",
-    goldDark: "#d4af37",
-    green: "#4caf50",
-    cream: "#fcf8f5",
-  };
-
-  // FIXED: Removed duplicate boxShadow key
+  // ─── Theme styles ───
   const themeStyles = {
     card: {
-      backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff", // UPDATED
+      backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
       borderRadius: "16px",
       overflow: "hidden",
-      boxShadow: isDarkMode
-        ? "0 8px 24px rgba(0,0,0,0.6)" // UPDATED
-        : "0 6px 24px rgba(62, 39, 35, 0.06)",
-      transition: "all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
       cursor: "pointer",
       position: "relative",
       display: "flex",
       flexDirection: "column",
       height: "100%",
       border: isDarkMode
-        ? "1px solid rgba(255,255,255,0.08)" // UPDATED
+        ? "1px solid rgba(255,255,255,0.08)"
         : "1px solid rgba(62, 39, 35, 0.04)",
-      transform: isHovered ? "translateY(-8px)" : "translateY(0)",
-      // boxShadow is now handled conditionally based on isHovered
     },
-    // Decorative top accent
     cardAccent: {
       height: "4px",
       background: isDarkMode
         ? "linear-gradient(90deg, #f7d794 0%, #f5346b 50%, #f7d794 100%)"
         : "linear-gradient(90deg, #d4af37 0%, #f5346b 50%, #d4af37 100%)",
       width: "100%",
-      opacity: isHovered ? 1 : 0.6,
-      transition: "opacity 0.4s ease",
     },
     wishlistButton: {
       position: "absolute",
       top: "12px",
       right: "12px",
       background: isDarkMode
-        ? "rgba(26, 26, 26, 0.8)" // UPDATED
-        : "rgba(255,255,255, 0.85)",
+        ? "rgba(26, 26, 26, 0.8)"
+        : "rgba(255, 255, 255, 0.85)",
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
       border: "1px solid rgba(212, 175, 55, 0.15)",
@@ -137,25 +149,20 @@ const ProductCard = ({
       justifyContent: "center",
       cursor: "pointer",
       zIndex: 10,
-      transition: "all 0.3s ease",
       color: inWishlist
         ? brandColors.primary
         : isDarkMode
-          ? "#ffffff"
-          : brandColors.earthDark,
-      boxShadow: "0 2px 12px rgba(0,0,0,0.3)", // UPDATED
-      ":hover": {
-        transform: "scale(1.12)",
-        background: isDarkMode ? "rgba(255,255,255,0.1)" : "#ffffff", // UPDATED
-        borderColor: inWishlist ? brandColors.primary : brandColors.gold,
-      },
+        ? "#ffffff"
+        : brandColors.earthDark,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
+      fontFamily: "inherit",
     },
     imageContainer: {
       position: "relative",
       width: "100%",
       paddingTop: "100%",
       overflow: "hidden",
-      backgroundColor: isDarkMode ? "#0f0f0f" : brandColors.cream, // UPDATED
+      backgroundColor: isDarkMode ? "#0f0f0f" : brandColors.cream,
     },
     imageWrapper: {
       position: "absolute",
@@ -166,15 +173,12 @@ const ProductCard = ({
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      transition: "transform 0.6s ease",
-      transform: isHovered ? "scale(1.03)" : "scale(1)",
     },
     image: {
       maxWidth: "100%",
       maxHeight: "100%",
       width: "auto",
       height: "auto",
-      transition: "transform 0.6s ease",
     },
     imageLoading: {
       position: "absolute",
@@ -185,8 +189,8 @@ const ProductCard = ({
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: isDarkMode ? "#0f0f0f" : brandColors.cream, // UPDATED
-      color: isDarkMode ? "#888888" : "#a1887f", // UPDATED
+      backgroundColor: isDarkMode ? "#0f0f0f" : brandColors.cream,
+      color: isDarkMode ? "#888888" : "#a1887f",
       fontSize: "0.85rem",
       fontWeight: "500",
       letterSpacing: "0.5px",
@@ -198,12 +202,10 @@ const ProductCard = ({
       right: 0,
       padding: "0.75rem",
       background: isDarkMode
-        ? "rgba(15, 15, 15, 0.9)" // UPDATED
+        ? "rgba(15, 15, 15, 0.9)"
         : "rgba(255, 255, 255, 0.9)",
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
-      transform: isHovered ? "translateY(0)" : "translateY(100%)",
-      transition: "transform 0.4s ease",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
@@ -218,6 +220,23 @@ const ProductCard = ({
       alignItems: "center",
       gap: "0.4rem",
     },
+    contentTop: {
+      padding: "1.2rem 1rem 0 1rem",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-start",
+      width: "100%",
+      boxSizing: "border-box",
+    },
+    contentBottom: {
+      padding: "0 1rem 1rem 1rem",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-start",
+      flex: 1,
+      width: "100%",
+      boxSizing: "border-box",
+    },
     category: {
       fontSize: "0.7rem",
       color: brandColors.gold,
@@ -225,11 +244,14 @@ const ProductCard = ({
       letterSpacing: "1.5px",
       marginBottom: "0.15rem",
       fontWeight: "600",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.3rem",
     },
     name: {
       fontSize: "1rem",
       margin: "0.3rem 0 0.2rem 0",
-      color: isDarkMode ? "#ffffff" : brandColors.earthDark, // UPDATED
+      color: isDarkMode ? "#ffffff" : brandColors.earthDark,
       fontWeight: "600",
       lineHeight: "1.4",
       display: "-webkit-box",
@@ -241,7 +263,7 @@ const ProductCard = ({
     },
     itemNo: {
       fontSize: "0.75rem",
-      color: isDarkMode ? "#a0a0a0" : "#8d6e63", // UPDATED
+      color: isDarkMode ? "#a0a0a0" : "#8d6e63",
       marginBottom: "0.2rem",
       fontWeight: "400",
     },
@@ -259,7 +281,7 @@ const ProductCard = ({
     },
     mrp: {
       fontSize: "0.85rem",
-      color: isDarkMode ? "#a0a0a0" : "#a1887f", // UPDATED
+      color: isDarkMode ? "#a0a0a0" : "#a1887f",
       textDecoration: "line-through",
     },
     discount: {
@@ -285,16 +307,14 @@ const ProductCard = ({
     },
     ratingCount: {
       fontSize: "0.7rem",
-      color: isDarkMode ? "#a0a0a0" : "#a1887f", // UPDATED
+      color: isDarkMode ? "#a0a0a0" : "#a1887f",
       marginLeft: "0.2rem",
     },
     button: {
       width: "100%",
       padding: "0.7rem",
-      background: isDarkMode
-        ? "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)"
-        : "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)",
-      color: isDarkMode ? "#0f0f0f" : "#ffffff", // UPDATED text color for contrast
+      background: "linear-gradient(135deg, #f7d794 0%, #f5346b 100%)",
+      color: isDarkMode ? "#0f0f0f" : "#ffffff",
       border: "none",
       borderRadius: "50px",
       cursor: "pointer",
@@ -302,24 +322,14 @@ const ProductCard = ({
       alignItems: "center",
       justifyContent: "center",
       gap: "0.5rem",
-      transition: "all 0.3s ease",
       fontSize: "0.85rem",
       fontWeight: "600",
       boxShadow: isDarkMode
-        ? "0 4px 12px rgba(245, 52, 107, 0.4)" // UPDATED
+        ? "0 4px 12px rgba(245, 52, 107, 0.4)"
         : "0 4px 12px rgba(245, 52, 107, 0.15)",
       letterSpacing: "0.3px",
-      ":hover": {
-        transform: "scale(1.02)",
-        boxShadow: "0 6px 20px rgba(245, 52, 107, 0.5)", // UPDATED
-      },
-    },
-    content: {
-      padding: "1.2rem 1rem 1rem 1rem",
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-start",
+      fontFamily: "inherit",
+      marginTop: "auto",
     },
     badge: {
       position: "absolute",
@@ -367,80 +377,177 @@ const ProductCard = ({
     },
   };
 
-  // Compute card style with dynamic boxShadow
-  const getCardStyle = () => {
-    const baseStyle = { ...themeStyles.card };
-    // Override boxShadow based on hover state
-    baseStyle.boxShadow = isHovered
-      ? isDarkMode
-        ? "0 16px 40px rgba(0,0,0,0.8)" // UPDATED
-        : "0 16px 40px rgba(245, 52, 107, 0.12)"
-      : isDarkMode
-        ? "0 8px 24px rgba(0,0,0,0.6)" // UPDATED
-        : "0 6px 24px rgba(62, 39, 35, 0.06)";
-    return baseStyle;
-  };
+  // ─── Injected CSS: hover states that inline styles can't express ───
+  useLayoutEffect(() => {
+    document
+      .querySelectorAll('style[data-product-card="true"]')
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
 
-  const discount =
-    product.mrp && product.mrp > product.price
-      ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
-      : 0;
+    const style = document.createElement("style");
+    style.setAttribute("data-product-card", "true");
+    style.textContent = `
+      /* Card hover lift + shadow */
+      .pc-card {
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    box-shadow 0.4s ease;
+        box-shadow: ${
+          isDarkMode
+            ? "0 8px 24px rgba(0,0,0,0.6)"
+            : "0 6px 24px rgba(62, 39, 35, 0.06)"
+        };
+      }
+      .pc-card:hover,
+      .pc-card:focus-within {
+        transform: translateY(-8px);
+        box-shadow: ${
+          isDarkMode
+            ? "0 16px 40px rgba(0,0,0,0.8)"
+            : "0 16px 40px rgba(245, 52, 107, 0.12)"
+        };
+      }
+      .pc-card:hover .pc-accent { opacity: 1; }
+      .pc-card:hover .pc-image-wrap { transform: scale(1.03); }
+      .pc-card:hover .pc-quick-view { transform: translateY(0); }
+
+      /* Accent bar */
+      .pc-accent {
+        opacity: 0.6;
+        transition: opacity 0.4s ease;
+      }
+
+      /* Image wrapper zoom */
+      .pc-image-wrap {
+        transition: transform 0.6s ease;
+        transform: scale(1);
+      }
+
+      /* Quick view slide-in */
+      .pc-quick-view {
+        transform: translateY(100%);
+        transition: transform 0.4s ease;
+      }
+
+      /* Wishlist button hover */
+      .pc-wishlist-btn {
+        transition: all 0.3s ease;
+      }
+      .pc-wishlist-btn:hover {
+        transform: scale(1.12);
+        background: ${isDarkMode ? "rgba(255,255,255,0.1)" : "#ffffff"};
+      }
+      .pc-wishlist-btn:not(.pc-wishlist-active):hover {
+        border-color: ${brandColors.gold};
+      }
+      .pc-wishlist-btn.pc-wishlist-active:hover {
+        border-color: ${brandColors.primary};
+      }
+      .pc-wishlist-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
+      }
+
+      /* Add to cart button hover */
+      .pc-add-cart-btn {
+        transition: all 0.3s ease;
+      }
+      .pc-add-cart-btn:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(245, 52, 107, 0.5);
+      }
+      .pc-add-cart-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
+      }
+
+      /* Image link focus ring */
+      .pc-main-link:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 4px;
+        border-radius: 12px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .pc-card,
+        .pc-accent,
+        .pc-image-wrap,
+        .pc-quick-view,
+        .pc-wishlist-btn,
+        .pc-add-cart-btn {
+          transition: none !important;
+          transform: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document
+        .querySelectorAll('style[data-product-card="true"]')
+        .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+    };
+  }, [isDarkMode]);
 
   const getBadgeStyle = () => {
     if (
       badgeText === "Natural" ||
-      product.category === "Skincare" ||
-      product.category === "Hair Care"
+      safeProduct.category === "Skincare" ||
+      safeProduct.category === "Hair Care"
     ) {
       return themeStyles.naturalBadge;
     }
     return themeStyles.badge;
   };
 
-  const shouldShowBadge =
-    showBadge === true || (product.bestSeller === true && badgeText === "");
-  const finalBadgeText = badgeText || (product.bestSeller ? "Best Seller" : "");
-
-  const isNatural =
-    product.category === "Skincare" || product.category === "Hair Care";
-
   return (
-    <div
-      style={getCardStyle()}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div style={themeStyles.cardAccent} />
+    <article style={themeStyles.card} className="pc-card">
+      <div
+        style={themeStyles.cardAccent}
+        className="pc-accent"
+        aria-hidden="true"
+      />
 
+      {/* Wishlist (outside Link: prevents invalid nesting, keeps click isolated) */}
       <button
+        type="button"
         style={themeStyles.wishlistButton}
+        className={`pc-wishlist-btn${
+          inWishlist ? " pc-wishlist-active" : ""
+        }`}
         onClick={handleWishlistClick}
-        aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+        aria-label={
+          inWishlist
+            ? `Remove ${safeProduct.name || "product"} from wishlist`
+            : `Add ${safeProduct.name || "product"} to wishlist`
+        }
+        aria-pressed={inWishlist}
       >
         {inWishlist ? (
-          <FaHeart style={{ color: brandColors.primary }} />
+          <FaHeart aria-hidden="true" style={{ color: brandColors.primary }} />
         ) : (
-          <FaRegHeart />
+          <FaRegHeart aria-hidden="true" />
         )}
       </button>
 
       {shouldShowBadge && finalBadgeText && (
         <div style={getBadgeStyle()}>
           {isNatural ? (
-            <FaLeaf style={{ fontSize: "0.6rem" }} />
+            <FaLeaf aria-hidden="true" style={{ fontSize: "0.6rem" }} />
           ) : (
-            <FaStar style={{ fontSize: "0.6rem" }} />
+            <FaStar aria-hidden="true" style={{ fontSize: "0.6rem" }} />
           )}
           {finalBadgeText}
         </div>
       )}
 
+      {/* Clickable link: image + title header only */}
       <Link
-        to={`/product/${product.id}`}
-        style={{ textDecoration: "none", display: "block", height: "100%" }}
+        to={productUrl}
+        className="pc-main-link"
+        style={{ textDecoration: "none", display: "block" }}
+        aria-label={`View ${safeProduct.name || "product"} details`}
       >
         <div style={themeStyles.imageContainer}>
-          <div style={themeStyles.imageWrapper}>
+          <div style={themeStyles.imageWrapper} className="pc-image-wrap">
             {!imageLoaded && !imageError && (
               <div style={themeStyles.imageLoading}>
                 <div
@@ -451,13 +558,15 @@ const ProductCard = ({
                     gap: "0.3rem",
                   }}
                 >
-                  <span>Loading...</span>
+                  <span>Loading…</span>
                 </div>
               </div>
             )}
             <img
-              src={product.image}
-              alt={product.name}
+              src={safeProduct.image}
+              alt={`${safeProduct.name || "Product"} — ${
+                safeProduct.category || "Ayurvedic beauty"
+              } by ASudha Beauty`}
               style={{
                 ...themeStyles.image,
                 ...(imageLoaded ? getImageStyle() : { opacity: 0 }),
@@ -465,80 +574,97 @@ const ProductCard = ({
               onLoad={handleImageLoad}
               onError={handleImageError}
               loading="lazy"
+              decoding="async"
             />
           </div>
 
-          <div style={themeStyles.quickViewOverlay}>
+          <div style={themeStyles.quickViewOverlay} className="pc-quick-view">
             <span style={themeStyles.quickViewText}>
-              <FaEye style={{ fontSize: "0.8rem" }} />
+              <FaEye aria-hidden="true" style={{ fontSize: "0.8rem" }} />
               Quick View
             </span>
           </div>
         </div>
 
-        <div style={themeStyles.content}>
+        <div style={themeStyles.contentTop}>
           <span style={themeStyles.category}>
-            {isNatural ? "🌿 " : ""}
-            {product.category}
-          </span>
-          <h3 style={themeStyles.name}>{product.name}</h3>
-
-          {product.itemNo && (
-            <p style={themeStyles.itemNo}>#{product.itemNo}</p>
-          )}
-
-          {product.rating && (
-            <div style={themeStyles.ratingContainer}>
-              <div style={themeStyles.ratingStars}>
-                {[...Array(5)].map((_, i) => (
-                  <FaStar
-                    key={i}
-                    color={
-                      i < Math.floor(product.rating) ? "#ffc107" : "#e0e0e0"
-                    }
-                    size={12}
-                  />
-                ))}
-              </div>
-              <span style={themeStyles.ratingCount}>
-                ({product.reviews || 0})
-              </span>
-            </div>
-          )}
-
-          <div style={themeStyles.priceContainer}>
-            <span style={themeStyles.price}>₹{product.price.toFixed(2)}</span>
-            {product.mrp && product.mrp > product.price && (
-              <>
-                <span style={themeStyles.mrp}>₹{product.mrp.toFixed(2)}</span>
-                <span style={themeStyles.discount}>{discount}% OFF</span>
-              </>
+            {isNatural && (
+              <FaLeaf aria-hidden="true" style={{ fontSize: "0.6rem" }} />
             )}
-          </div>
-
-          {product.inStock !== false && (
-            <div style={themeStyles.inStockIndicator}>
-              <span style={{ color: brandColors.green, fontSize: "0.6rem" }}>
-                ●
-              </span>
-              In Stock
-            </div>
+            {safeProduct.category}
+          </span>
+          <h3 style={themeStyles.name}>{safeProduct.name}</h3>
+          {safeProduct.itemNo && (
+            <p style={themeStyles.itemNo}>#{safeProduct.itemNo}</p>
           )}
-
-          <button
-            style={themeStyles.button}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onAddToCart(product);
-            }}
-          >
-            <FaShoppingCart style={{ fontSize: "0.85rem" }} />
-            Add to Cart
-          </button>
         </div>
       </Link>
-    </div>
+
+      {/* Non-clickable body: rating, price, stock, Add to Cart */}
+      <div style={themeStyles.contentBottom}>
+        {safeProduct.rating && (
+          <div
+            style={themeStyles.ratingContainer}
+            role="img"
+            aria-label={`Rated ${safeProduct.rating} out of 5 from ${
+              safeProduct.reviews || 0
+            } reviews`}
+          >
+            <div style={themeStyles.ratingStars}>
+              {[...Array(5)].map((_, i) => (
+                <FaStar
+                  key={i}
+                  aria-hidden="true"
+                  color={
+                    i < Math.floor(safeProduct.rating) ? "#ffc107" : "#e0e0e0"
+                  }
+                  size={12}
+                />
+              ))}
+            </div>
+            <span style={themeStyles.ratingCount}>
+              ({safeProduct.reviews || 0})
+            </span>
+          </div>
+        )}
+
+        <div style={themeStyles.priceContainer}>
+          <span style={themeStyles.price}>₹{priceNum.toFixed(2)}</span>
+          {hasDiscount && (
+            <>
+              <span style={themeStyles.mrp}>₹{mrpNum.toFixed(2)}</span>
+              <span style={themeStyles.discount}>{discount}% OFF</span>
+            </>
+          )}
+        </div>
+
+        {safeProduct.inStock !== false && (
+          <div style={themeStyles.inStockIndicator}>
+            <span
+              aria-hidden="true"
+              style={{ color: brandColors.green, fontSize: "0.6rem" }}
+            >
+              ●
+            </span>
+            In Stock
+          </div>
+        )}
+
+        <button
+          type="button"
+          style={themeStyles.button}
+          className="pc-add-cart-btn"
+          onClick={() => onAddToCart(safeProduct)}
+          aria-label={`Add ${safeProduct.name || "product"} to cart`}
+        >
+          <FaShoppingCart
+            aria-hidden="true"
+            style={{ fontSize: "0.85rem" }}
+          />
+          Add to Cart
+        </button>
+      </div>
+    </article>
   );
 };
 

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/components/SearchBar.jsx
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import {
   FaSearch,
@@ -10,8 +11,99 @@ import {
   FaClock,
   FaArrowRight,
   FaTrashAlt,
+  FaFire,
+  FaBookOpen,
+  FaShoppingBag,
 } from "react-icons/fa";
 import { products } from "../data/products";
+
+// ─── Brand palette (module scope: stable reference) ───
+// Moved here from inside the component so ESLint's exhaustive-deps rule
+// correctly treats these as stable constants in useEffect dependency arrays.
+const brandColors = {
+  primary: "#f5346b",
+  gold: "#f7d794",
+  goldDark: "#d4af37",
+  bronze: "#c77d42",
+  earthDark: "#3e2723",
+  earthLight: "#6d4c41",
+  cream: "#fcf8f5",
+  green: "#4caf50",
+  black: "#0f0f0f",
+};
+
+// ─── High-search-volume Ayurvedic keyword clusters ───
+// Used for product matching + suggestion chips.
+// Verified via Exploding Topics / Semrush (Oct 2026):
+//   "ubtan cream"      → 1.3K/mo, +475% growth
+//   "ubtan face wash"  → 22.2K/mo, +6800% growth
+//   "multani mitti for oily skin", "amla reetha shikakai" — evergreen commercial-intent terms
+const SEO_KEYWORDS = [
+  // Multani Mitti cluster
+  "multani mitti",
+  "multani mitti for oily skin",
+  "multani mitti face pack",
+  "fuller's earth",
+  "clay mask for oily skin",
+  "oil control face pack",
+  // Ubtan cluster (highest growth)
+  "ubtan",
+  "ubtan powder",
+  "ubtan cream",
+  "ubtan face wash",
+  "ubtan for glowing skin",
+  // Hair-care trio
+  "amla",
+  "reetha",
+  "shikakai",
+  "amla reetha shikakai",
+  "amla powder for hair",
+  "reetha powder",
+  "shikakai powder",
+  "natural shampoo for hair fall",
+  "herbal hair pack",
+  "hair pack",
+  "herbal mix",
+  // Generic Ayurvedic / clean-beauty
+  "ayurvedic",
+  "ayurvedic skincare routine",
+  "herbal face pack",
+  "herbal face pack for glowing skin",
+  "natural face pack",
+  "chemical free skincare",
+  "paraben free skincare",
+  "glowing skin",
+  "deep cleansing",
+  "organic",
+  "vegan",
+  "cruelty free",
+  "natural",
+  "clean beauty",
+  "kali mitti",
+  "mitti pack",
+  "powder",
+  "skincare",
+  "hair care",
+];
+
+// ─── Popular search chips (internal search hyperlinks) ───
+// These act as on-site hyperlinks to the highest-value keyword terms.
+// Clicking them sets the search term and navigates to /search?q=…
+const POPULAR_SEARCHES = [
+  { label: "Multani Mitti", query: "multani mitti" },
+  { label: "Ubtan Cream", query: "ubtan cream" },
+  { label: "Amla Reetha Shikakai", query: "amla reetha shikakai" },
+  { label: "Natural Shampoo", query: "natural shampoo for hair fall" },
+  { label: "Herbal Face Pack", query: "herbal face pack" },
+  { label: "Chemical Free", query: "chemical free skincare" },
+];
+
+// ─── Trending guides (internal backlinks from the empty state) ───
+const TRENDING_GUIDES = [
+  { label: "Multani Mitti Benefits", to: "/blog/1" },
+  { label: "Ubtan for Glowing Skin", to: "/blog/2" },
+  { label: "Amla-Reetha-Shikakai Hair Care", to: "/blog/3" },
+];
 
 const SearchBar = () => {
   const { isDarkMode } = useTheme();
@@ -21,23 +113,13 @@ const SearchBar = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
   const searchRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const brandColors = {
-    primary: "#f5346b",
-    gold: "#f7d794",
-    goldDark: "#d4af37",
-    bronze: "#c77d42",
-    earthDark: "#3e2723",
-    earthLight: "#6d4c41",
-    cream: "#fcf8f5",
-    green: "#4caf50",
-  };
-
-  // Load recent searches
+  // ─── Load recent searches ───
   useEffect(() => {
     const saved = localStorage.getItem("recentSearches");
     if (saved) {
@@ -49,7 +131,7 @@ const SearchBar = () => {
     }
   }, []);
 
-  // Close dropdown on outside click (input + portal dropdown)
+  // ─── Outside click close ───
   useEffect(() => {
     const handleClickOutside = (event) => {
       const clickedInsideInput =
@@ -59,28 +141,26 @@ const SearchBar = () => {
       if (!clickedInsideInput && !clickedInsideDropdown) {
         setIsOpen(false);
         setIsFocused(false);
+        setActiveIndex(-1);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const searchProducts = (term) => {
+  // ─── Product matcher (keyword-aware, sorted by intent) ───
+  const searchProducts = useCallback((term) => {
     if (!term.trim()) {
       setSearchResults([]);
       return;
     }
-
     const lowercaseTerm = term.toLowerCase();
 
     const results = products.filter((product) => {
       const nameMatch = product.name.toLowerCase().includes(lowercaseTerm);
-      const categoryMatch = product.category
-        .toLowerCase()
-        .includes(lowercaseTerm);
-      const descriptionMatch = product.description
-        .toLowerCase()
-        .includes(lowercaseTerm);
+      const categoryMatch = product.category.toLowerCase().includes(lowercaseTerm);
+      const descriptionMatch =
+        product.description?.toLowerCase().includes(lowercaseTerm) || false;
       const ingredientsMatch =
         product.ingredients?.toLowerCase().includes(lowercaseTerm) || false;
       const benefitsMatch = product.benefits?.some((benefit) =>
@@ -93,23 +173,12 @@ const SearchBar = () => {
           shade.toLowerCase().includes(lowercaseTerm)
         );
       } else if (typeof product.shades === "number") {
-        const shadeNumberMatch =
+        shadesMatch =
           `${product.shades} shades`.toLowerCase().includes(lowercaseTerm) ||
           `${product.shades} colors`.toLowerCase().includes(lowercaseTerm);
-        shadesMatch = shadeNumberMatch;
       }
 
-      const seoKeywords = [
-        "makeup", "cosmetics", "beauty", "skincare", "organic", "vegan",
-        "cruelty free", "natural", "clean beauty", "foundation", "lipstick",
-        "mascara", "serum", "cleanser", "moisturizer", "highlighter",
-        "multani mitti", "fullers earth", "ubtan", "face pack", "clay mask",
-        "oil control", "deep cleansing", "glowing skin", "ayurvedic",
-        "herbal face pack", "natural face pack", "kali mitti", "mitti pack",
-        "amla", "reetha", "shikakai", "hair pack", "herbal mix", "powder",
-      ];
-
-      const seoMatch = seoKeywords.some(
+      const seoMatch = SEO_KEYWORDS.some(
         (keyword) =>
           keyword.includes(lowercaseTerm) || lowercaseTerm.includes(keyword)
       );
@@ -125,6 +194,7 @@ const SearchBar = () => {
       );
     });
 
+    // Intent-based sort: exact match → starts-with → Skincare → name
     results.sort((a, b) => {
       const aName = a.name.toLowerCase();
       const bName = b.name.toLowerCase();
@@ -140,31 +210,28 @@ const SearchBar = () => {
     });
 
     setSearchResults(results.slice(0, 8));
-  };
+  }, []);
 
+  // ─── Debounced search ───
   useEffect(() => {
     const t = setTimeout(() => searchProducts(searchTerm), 300);
     return () => clearTimeout(t);
-  }, [searchTerm]);
+  }, [searchTerm, searchProducts]);
 
+  // ─── Recent-search persistence ───
   const persistRecent = (term) => {
-    const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(
-      0,
-      5
-    );
+    const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem("recentSearches", JSON.stringify(updated));
   };
 
-  // ✅ Clear all recent searches
   const clearRecentSearches = () => {
     setRecentSearches([]);
     localStorage.removeItem("recentSearches");
   };
 
-  // ✅ Remove a single recent search
   const removeRecentSearch = (termToRemove, e) => {
-    e.stopPropagation(); // don't trigger the parent click (which would search)
+    e.stopPropagation();
     const updated = recentSearches.filter((t) => t !== termToRemove);
     setRecentSearches(updated);
     if (updated.length === 0) {
@@ -174,6 +241,7 @@ const SearchBar = () => {
     }
   };
 
+  // ─── Submit ───
   const handleSearch = (e) => {
     e?.preventDefault?.();
     if (searchTerm.trim()) {
@@ -181,6 +249,7 @@ const SearchBar = () => {
       navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
       setIsOpen(false);
       setIsFocused(false);
+      setActiveIndex(-1);
     }
   };
 
@@ -188,6 +257,7 @@ const SearchBar = () => {
     navigate(`/product/${productId}`);
     setIsOpen(false);
     setIsFocused(false);
+    setActiveIndex(-1);
   };
 
   const handleRecentClick = (term) => {
@@ -197,27 +267,50 @@ const SearchBar = () => {
     inputRef.current?.focus();
   };
 
+  // ─── Popular-search chip click (internal search hyperlink) ───
+  const handlePopularClick = (query) => {
+    setSearchTerm(query);
+    persistRecent(query);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
+    setIsOpen(false);
+    setIsFocused(false);
+    setActiveIndex(-1);
+  };
+
   const clearSearch = () => {
     setSearchTerm("");
     setSearchResults([]);
+    setActiveIndex(-1);
     inputRef.current?.focus();
   };
 
+  // ─── Keyboard navigation (↑ / ↓ / Enter / Escape) ───
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
       setIsOpen(false);
       setIsFocused(false);
-      setSearchTerm("");
+      setActiveIndex(-1);
+      return;
+    }
+
+    const totalItems = searchResults.length;
+    if (totalItems === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % totalItems);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + totalItems) % totalItems);
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      handleResultClick(searchResults[activeIndex].id);
     }
   };
 
+  // ─── Theme styles ───
   const themeStyles = {
-    searchContainer: {
-      position: "relative",
-      flex: 1,
-      maxWidth: "500px",
-      margin: "0 1rem",
-    },
+    searchContainer: { position: "relative", flex: 1, maxWidth: "500px", margin: "0 1rem" },
     searchForm: {
       display: "flex",
       alignItems: "center",
@@ -236,8 +329,8 @@ const SearchBar = () => {
       transition: "all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
       boxShadow: isFocused
         ? isDarkMode
-          ? `0 0 0 4px rgba(212, 175, 55, 0.15)`
-          : `0 0 0 4px rgba(199, 125, 66, 0.06)`
+          ? "0 0 0 4px rgba(212, 175, 55, 0.15)"
+          : "0 0 0 4px rgba(199, 125, 66, 0.06)"
         : isDarkMode
         ? "0 4px 12px rgba(0,0,0,0.5)"
         : "0 2px 8px rgba(62, 39, 35, 0.04)",
@@ -284,16 +377,14 @@ const SearchBar = () => {
 
     resultsDropdown: {
       position: "fixed",
-      backgroundColor: isDarkMode
-        ? "rgba(26, 26, 26, 0.98)"
-        : "rgba(255, 255, 255, 0.98)",
+      backgroundColor: isDarkMode ? "rgba(26, 26, 26, 0.98)" : "rgba(255, 255, 255, 0.98)",
       backdropFilter: "blur(16px)",
       WebkitBackdropFilter: "blur(16px)",
       borderRadius: "20px",
       boxShadow: isDarkMode
         ? "0 12px 48px rgba(0,0,0,0.8)"
         : "0 12px 48px rgba(62, 39, 35, 0.12)",
-      maxHeight: "420px",
+      maxHeight: "440px",
       overflowY: "auto",
       zIndex: 1300,
       padding: "0.5rem 0",
@@ -302,6 +393,112 @@ const SearchBar = () => {
         : "1px solid rgba(62, 39, 35, 0.04)",
       animation: "searchFadeIn 0.3s ease",
     },
+
+    // ── Popular searches chips ──
+    popularSection: {
+      padding: "0.25rem 1.25rem 0.75rem",
+      borderBottom: isDarkMode
+        ? "1px solid rgba(255,255,255,0.05)"
+        : "1px solid rgba(62, 39, 35, 0.03)",
+    },
+    popularHeader: {
+      fontSize: "0.68rem",
+      color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
+      textTransform: "uppercase",
+      letterSpacing: "1.5px",
+      fontWeight: "600",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      marginBottom: "0.55rem",
+    },
+    popularChips: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.4rem",
+    },
+    popularChip: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.3rem",
+      padding: "0.35rem 0.75rem",
+      backgroundColor: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(62, 39, 35, 0.04)",
+      color: isDarkMode ? "#e5ded9" : brandColors.earthLight,
+      border: `1px solid ${isDarkMode ? "rgba(212,175,55,0.15)" : "rgba(199,125,66,0.15)"}`,
+      borderRadius: "50px",
+      fontSize: "0.75rem",
+      fontWeight: "600",
+      cursor: "pointer",
+      fontFamily: "inherit",
+      transition: "all 0.25s ease",
+    },
+
+    // ── Recent searches ──
+    recentSection: { padding: "0.25rem 0" },
+    recentHeader: {
+      padding: "0.5rem 1.25rem 0.25rem 1.25rem",
+      fontSize: "0.7rem",
+      color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
+      textTransform: "uppercase",
+      letterSpacing: "1.5px",
+      fontWeight: "600",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    recentHeaderLeft: { display: "flex", alignItems: "center", gap: "0.5rem" },
+    clearRecentButton: {
+      background: "none",
+      border: "none",
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      fontSize: "0.65rem",
+      fontWeight: "700",
+      letterSpacing: "1px",
+      cursor: "pointer",
+      padding: "0.25rem 0.5rem",
+      borderRadius: "12px",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.3rem",
+      transition: "all 0.2s ease",
+    },
+    recentItem: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0.4rem 1.25rem",
+      cursor: "pointer",
+      color: isDarkMode ? "#d1d1d1" : brandColors.earthLight,
+      transition: "all 0.25s ease",
+      gap: "0.75rem",
+      fontSize: "0.85rem",
+    },
+    recentItemLeft: { display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 },
+    recentText: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+    recentIcon: {
+      fontSize: "0.7rem",
+      opacity: 0.5,
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+    },
+    removeRecentButton: {
+      background: "none",
+      border: "none",
+      color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
+      cursor: "pointer",
+      fontSize: "0.7rem",
+      padding: "0.25rem",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "22px",
+      height: "22px",
+      flexShrink: 0,
+      transition: "all 0.2s ease",
+    },
+
+    // ── Result item ──
     resultItem: {
       display: "flex",
       alignItems: "center",
@@ -311,6 +508,10 @@ const SearchBar = () => {
       borderBottom: `1px solid ${
         isDarkMode ? "rgba(255,255,255,0.05)" : "rgba(62, 39, 35, 0.03)"
       }`,
+      outline: "none",
+    },
+    resultItemActive: {
+      backgroundColor: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(62, 39, 35, 0.03)",
     },
     resultImage: {
       width: "48px",
@@ -345,9 +546,7 @@ const SearchBar = () => {
     naturalBadge: {
       fontSize: "0.55rem",
       color: brandColors.green,
-      backgroundColor: isDarkMode
-        ? "rgba(76, 175, 80, 0.2)"
-        : "rgba(76, 175, 80, 0.08)",
+      backgroundColor: isDarkMode ? "rgba(76, 175, 80, 0.2)" : "rgba(76, 175, 80, 0.08)",
       padding: "1px 8px",
       borderRadius: "12px",
       fontWeight: "600",
@@ -363,87 +562,6 @@ const SearchBar = () => {
       marginLeft: "0.5rem",
     },
 
-    // Recent searches
-    recentSection: { padding: "0.25rem 0" },
-    recentHeader: {
-      padding: "0.5rem 1.25rem 0.25rem 1.25rem",
-      fontSize: "0.7rem",
-      color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
-      textTransform: "uppercase",
-      letterSpacing: "1.5px",
-      fontWeight: "600",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between", // ✅ space for clear button
-    },
-    recentHeaderLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: "0.5rem",
-    },
-    // ✅ Clear-all button
-    clearRecentButton: {
-      background: "none",
-      border: "none",
-      color: isDarkMode ? brandColors.gold : brandColors.bronze,
-      fontSize: "0.65rem",
-      fontWeight: "700",
-      letterSpacing: "1px",
-      cursor: "pointer",
-      padding: "0.25rem 0.5rem",
-      borderRadius: "12px",
-      display: "flex",
-      alignItems: "center",
-      gap: "0.3rem",
-      transition: "all 0.2s ease",
-    },
-    recentItem: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "0.4rem 1.25rem",
-      cursor: "pointer",
-      color: isDarkMode ? "#d1d1d1" : brandColors.earthLight,
-      transition: "all 0.25s ease",
-      gap: "0.75rem",
-      fontSize: "0.85rem",
-    },
-    recentItemLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: "0.75rem",
-      flex: 1,
-      minWidth: 0,
-    },
-    recentText: {
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-    },
-    recentIcon: {
-      fontSize: "0.7rem",
-      opacity: 0.5,
-      color: isDarkMode ? brandColors.gold : brandColors.bronze,
-      flexShrink: 0,
-    },
-    // ✅ Remove-one button
-    removeRecentButton: {
-      background: "none",
-      border: "none",
-      color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
-      cursor: "pointer",
-      fontSize: "0.7rem",
-      padding: "0.25rem",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: "22px",
-      height: "22px",
-      flexShrink: 0,
-      transition: "all 0.2s ease",
-    },
-
     viewAll: {
       textAlign: "center",
       padding: "0.6rem",
@@ -456,10 +574,16 @@ const SearchBar = () => {
       alignItems: "center",
       justifyContent: "center",
       gap: "0.3rem",
+      background: "transparent",
+      border: "none",
+      width: "100%",
+      fontFamily: "inherit",
     },
+
+    // ── Empty state ──
     emptyState: {
       textAlign: "center",
-      padding: "2rem 1.5rem",
+      padding: "2rem 1.5rem 1rem",
       color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
     },
     emptyIcon: {
@@ -468,33 +592,150 @@ const SearchBar = () => {
       opacity: 0.3,
       marginBottom: "0.5rem",
     },
-    emptyText: { fontSize: "0.9rem", fontWeight: "500" },
+    emptyText: { fontSize: "0.9rem", fontWeight: "500", color: isDarkMode ? "#e5ded9" : brandColors.earthDark },
     emptySub: { fontSize: "0.8rem", opacity: 0.7, marginTop: "0.2rem" },
+    emptyLinks: {
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: "0.5rem",
+      marginTop: "1rem",
+      paddingTop: "1rem",
+      borderTop: isDarkMode
+        ? "1px solid rgba(255,255,255,0.05)"
+        : "1px solid rgba(62, 39, 35, 0.03)",
+    },
+    emptyLink: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      padding: "0.45rem 0.9rem",
+      borderRadius: "50px",
+      fontSize: "0.78rem",
+      fontWeight: "700",
+      textDecoration: "none",
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      background: `linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary})`,
+      boxShadow: "0 6px 18px rgba(245, 52, 107, 0.25)",
+    },
+    emptyLinkOutline: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      padding: "0.45rem 0.9rem",
+      borderRadius: "50px",
+      fontSize: "0.78rem",
+      fontWeight: "700",
+      textDecoration: "none",
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      backgroundColor: "transparent",
+      border: `1.5px solid ${isDarkMode ? brandColors.gold : brandColors.bronze}`,
+    },
+    trendingHeader: {
+      fontSize: "0.65rem",
+      color: isDarkMode ? "#a0a0a0" : "#bcaaa4",
+      textTransform: "uppercase",
+      letterSpacing: "1.5px",
+      fontWeight: "700",
+      marginTop: "1rem",
+      marginBottom: "0.5rem",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.35rem",
+    },
+    trendingList: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.25rem",
+      marginTop: "0.5rem",
+    },
+    trendingLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.45rem 0.7rem",
+      borderRadius: "8px",
+      fontSize: "0.8rem",
+      fontWeight: "600",
+      color: isDarkMode ? "#e5ded9" : brandColors.earthLight,
+      textDecoration: "none",
+      border: `1px solid ${isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(62,39,35,0.06)"}`,
+      transition: "all 0.2s ease",
+    },
   };
 
+  // ─── Injected keyframes ───
+  // brandColors is now module-scope, so ESLint treats it as stable
+  // and does NOT flag it as a missing dependency.
   useEffect(() => {
     const style = document.createElement("style");
+    style.setAttribute("data-searchbar-styles", "true");
     style.textContent = `
       @keyframes searchFadeIn {
         from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      /* Popular chip hover */
+      .popular-chip:hover,
+      .popular-chip:focus-visible {
+        background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
+        color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
+        border-color: transparent !important;
+        outline: none;
+      }
+
+      /* Result item hover + active */
+      .search-result-item:hover,
+      .search-result-item:focus-visible,
+      .search-result-item.is-active {
+        background-color: ${isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(62,39,35,0.03)"} !important;
+        outline: none;
+      }
+
+      /* Empty-state link hover */
+      .empty-link:hover,
+      .empty-link:focus-visible {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(245,52,107,0.35);
+        outline: none;
+      }
+      .empty-link-outline:hover,
+      .empty-link-outline:focus-visible {
+        background: ${isDarkMode ? "rgba(212,175,55,0.12)" : "rgba(199,125,66,0.08)"} !important;
+        outline: none;
+      }
+
+      /* Trending guide hover */
+      .trending-link:hover,
+      .trending-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+
+      /* Global focus ring for search buttons */
+      .searchbar-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
       }
     `;
     document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
+    return () => {
+      const el = document.querySelector('style[data-searchbar-styles="true"]');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    };
+  }, [isDarkMode]);
 
-  // Portal dropdown position
+  // ─── Portal dropdown positioning ───
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const updateDropdownPos = () => {
     if (!searchRef.current) return;
     const rect = searchRef.current.getBoundingClientRect();
-    setDropdownPos({
-      top: rect.bottom + 10,
-      left: rect.left,
-      width: rect.width,
-    });
+    setDropdownPos({ top: rect.bottom + 10, left: rect.left, width: rect.width });
   };
 
   useEffect(() => {
@@ -512,11 +753,16 @@ const SearchBar = () => {
     isOpen &&
     (searchResults.length > 0 ||
       recentSearches.length > 0 ||
-      searchTerm.length > 0);
+      searchTerm.length > 0 ||
+      (!searchTerm && recentSearches.length === 0));
 
+  // ─── Dropdown content ───
   const dropdownContent = (
     <div
       ref={dropdownRef}
+      role="listbox"
+      id="search-results-listbox"
+      aria-label="Search suggestions and results"
       style={{
         ...themeStyles.resultsDropdown,
         top: dropdownPos.top,
@@ -524,29 +770,47 @@ const SearchBar = () => {
         width: dropdownPos.width,
       }}
     >
+      {/* ── Popular Searches (internal search hyperlinks) ── */}
+      {!searchTerm && (
+        <div style={themeStyles.popularSection}>
+          <div style={themeStyles.popularHeader}>
+            <FaFire aria-hidden="true" style={{ fontSize: "0.6rem" }} />
+            Popular Ayurvedic Searches
+          </div>
+          <div style={themeStyles.popularChips}>
+            {POPULAR_SEARCHES.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                className="popular-chip"
+                style={themeStyles.popularChip}
+                onClick={() => handlePopularClick(item.query)}
+                aria-label={`Search for ${item.label}`}
+              >
+                <FaSearch aria-hidden="true" style={{ fontSize: "0.55rem", opacity: 0.7 }} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Recent searches ── */}
       {!searchTerm && recentSearches.length > 0 && (
         <div style={themeStyles.recentSection}>
-          {/* ✅ Header with Clear All button */}
           <div style={themeStyles.recentHeader}>
             <span style={themeStyles.recentHeaderLeft}>
-              <FaClock style={{ fontSize: "0.6rem" }} />
+              <FaClock aria-hidden="true" style={{ fontSize: "0.6rem" }} />
               Recent Searches
             </span>
             <button
               type="button"
+              className="searchbar-btn"
               style={themeStyles.clearRecentButton}
               onClick={clearRecentSearches}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode
-                  ? "rgba(255,255,255,0.08)"
-                  : "rgba(62,39,35,0.06)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              aria-label="Clear recent searches"
+              aria-label="Clear all recent searches"
             >
-              <FaTrashAlt style={{ fontSize: "0.6rem" }} />
+              <FaTrashAlt aria-hidden="true" style={{ fontSize: "0.6rem" }} />
               Clear
             </button>
           </div>
@@ -554,78 +818,80 @@ const SearchBar = () => {
           {recentSearches.map((term, index) => (
             <div
               key={index}
+              role="option"
+              aria-selected={false}
+              tabIndex={0}
               style={themeStyles.recentItem}
               onClick={() => handleRecentClick(term)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode
-                  ? "rgba(255,255,255,0.06)"
-                  : "rgba(62, 39, 35, 0.02)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleRecentClick(term);
+                }
               }}
             >
               <span style={themeStyles.recentItemLeft}>
-                <FaSearch style={themeStyles.recentIcon} />
+                <FaSearch aria-hidden="true" style={themeStyles.recentIcon} />
                 <span style={themeStyles.recentText}>{term}</span>
               </span>
-              {/* ✅ Per-item remove (X) */}
               <button
                 type="button"
+                className="searchbar-btn"
                 style={themeStyles.removeRecentButton}
                 onClick={(e) => removeRecentSearch(term, e)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = brandColors.primary;
-                  e.currentTarget.style.backgroundColor = isDarkMode
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(245,52,107,0.08)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = isDarkMode
-                    ? "#a0a0a0"
-                    : "#bcaaa4";
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
-                aria-label={`Remove ${term} from recent searches`}
+                aria-label={`Remove "${term}" from recent searches`}
               >
-                <FaTimes />
+                <FaTimes aria-hidden="true" />
               </button>
             </div>
           ))}
         </div>
       )}
 
+      {/* ── Search results ── */}
       {searchTerm && searchResults.length > 0 && (
         <>
-          {searchResults.map((product) => {
+          {searchResults.map((product, idx) => {
             const isNatural =
               product.category === "Skincare" ||
               product.category === "Hair Care";
+            const isActive = activeIndex === idx;
             return (
               <div
                 key={product.id}
-                style={themeStyles.resultItem}
+                role="option"
+                aria-selected={isActive}
+                tabIndex={-1}
+                style={{
+                  ...themeStyles.resultItem,
+                  ...(isActive && themeStyles.resultItemActive),
+                }}
+                className={`search-result-item${isActive ? " is-active" : ""}`}
                 onClick={() => handleResultClick(product.id)}
+                onMouseEnter={() => setActiveIndex(idx)}
               >
                 <img
                   src={product.image}
-                  alt={product.name}
+                  alt={`${product.name} — ${product.category} by ASudha Beauty`}
                   style={themeStyles.resultImage}
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div style={themeStyles.resultInfo}>
                   <div style={themeStyles.resultName}>
                     {product.name}
                     {isNatural && (
                       <span style={themeStyles.naturalBadge}>
-                        <FaLeaf style={{ fontSize: "0.4rem" }} />
+                        <FaLeaf aria-hidden="true" style={{ fontSize: "0.4rem" }} />
                         Natural
                       </span>
                     )}
                   </div>
                   <div style={themeStyles.resultCategory}>
-                    {isNatural
-                      ? `🌿 ${product.category}`
-                      : product.category}
+                    {isNatural && (
+                      <FaLeaf aria-hidden="true" style={{ fontSize: "0.5rem", opacity: 0.7 }} />
+                    )}
+                    {product.category}
                     {product.bestSeller && (
                       <span
                         style={{
@@ -635,7 +901,7 @@ const SearchBar = () => {
                           color: "#ffc107",
                         }}
                       >
-                        <FaStar style={{ fontSize: "0.5rem" }} />
+                        <FaStar aria-hidden="true" style={{ fontSize: "0.5rem" }} />
                         Best Seller
                       </span>
                     )}
@@ -645,25 +911,75 @@ const SearchBar = () => {
               </div>
             );
           })}
+
           {searchResults.length >= 8 && (
-            <div style={themeStyles.viewAll} onClick={handleSearch}>
+            <button
+              type="button"
+              className="searchbar-btn"
+              style={themeStyles.viewAll}
+              onClick={handleSearch}
+              aria-label={`View all results for ${searchTerm}`}
+            >
               View all results for "{searchTerm}"
-              <FaArrowRight style={{ fontSize: "0.7rem" }} />
-            </div>
+              <FaArrowRight aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+            </button>
           )}
         </>
       )}
 
+      {/* ── Empty state with internal hyperlinks ── */}
       {searchTerm && searchResults.length === 0 && (
         <div style={themeStyles.emptyState}>
           <div style={themeStyles.emptyIcon}>
-            <FaLeaf />
+            <FaLeaf aria-hidden="true" />
           </div>
           <div style={themeStyles.emptyText}>
             No products found for "{searchTerm}"
           </div>
           <div style={themeStyles.emptySub}>
-            Try searching for Multani Mitti, Ubtan, or other herbal products
+            Try Multani Mitti, Ubtan, Amla, Reetha, or Shikakai
+          </div>
+
+          {/* Internal hyperlinks to encourage continued navigation */}
+          <div style={themeStyles.emptyLinks}>
+            <Link
+              to="/shop"
+              className="empty-link"
+              style={themeStyles.emptyLink}
+              onClick={() => setIsOpen(false)}
+            >
+              <FaShoppingBag aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              Browse All Products
+            </Link>
+            <Link
+              to="/blog"
+              className="empty-link-outline"
+              style={themeStyles.emptyLinkOutline}
+              onClick={() => setIsOpen(false)}
+            >
+              <FaBookOpen aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              Read Ayurvedic Guides
+            </Link>
+          </div>
+
+          {/* Trending guides — deep internal links */}
+          <div style={themeStyles.trendingHeader}>
+            <FaFire aria-hidden="true" style={{ fontSize: "0.6rem" }} />
+            Trending Guides
+          </div>
+          <div style={themeStyles.trendingList}>
+            {TRENDING_GUIDES.map((guide) => (
+              <Link
+                key={guide.to}
+                to={guide.to}
+                className="trending-link"
+                style={themeStyles.trendingLink}
+                onClick={() => setIsOpen(false)}
+              >
+                <span>{guide.label}</span>
+                <FaArrowRight aria-hidden="true" style={{ fontSize: "0.6rem" }} />
+              </Link>
+            ))}
           </div>
         </div>
       )}
@@ -672,15 +988,20 @@ const SearchBar = () => {
 
   return (
     <div ref={searchRef} style={themeStyles.searchContainer}>
-      <form onSubmit={handleSearch} style={themeStyles.searchForm}>
+      <form
+        onSubmit={handleSearch}
+        style={themeStyles.searchForm}
+        role="search"
+      >
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search Ayurvedic powders, herbs..."
+          placeholder="Search Multani Mitti, Ubtan, Amla…"
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
             setIsOpen(true);
+            setActiveIndex(-1);
             updateDropdownPos();
           }}
           onFocus={() => {
@@ -690,21 +1011,31 @@ const SearchBar = () => {
           }}
           onKeyDown={handleKeyDown}
           style={themeStyles.searchInput}
-          aria-label="Search products"
+          aria-label="Search Ayurvedic products"
+          aria-autocomplete="list"
+          aria-controls="search-results-listbox"
+          aria-expanded={shouldShowDropdown}
+          role="combobox"
           autoComplete="off"
         />
         {searchTerm && (
           <button
             type="button"
+            className="searchbar-btn"
             onClick={clearSearch}
             style={themeStyles.clearButton}
             aria-label="Clear search"
           >
-            <FaTimes />
+            <FaTimes aria-hidden="true" />
           </button>
         )}
-        <button type="submit" style={themeStyles.searchButton} aria-label="Search">
-          <FaSearch />
+        <button
+          type="submit"
+          className="searchbar-btn"
+          style={themeStyles.searchButton}
+          aria-label="Submit search"
+        >
+          <FaSearch aria-hidden="true" />
         </button>
       </form>
 

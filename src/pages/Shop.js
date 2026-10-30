@@ -1,3 +1,4 @@
+// src/pages/Shop.jsx
 import React, {
   useState,
   useEffect,
@@ -6,6 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
 import ProductCard from "../components/ProductCard";
@@ -24,7 +26,15 @@ import {
   FaBoxOpen,
   FaChevronDown,
   FaCheck,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaArrowRight,
+  FaFlask,
+  FaShieldAlt,
 } from "react-icons/fa";
+
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
 
 // ─── Brand palette (module-scope: stable references) ───
 const brandColors = {
@@ -54,6 +64,74 @@ const SORT_OPTIONS = [
   { value: "best-selling", label: "Best Selling" },
 ];
 
+// ─── Internal backlinks to related blog guides ───
+const RELATED_GUIDES = [
+  {
+    to: "/blog/1",
+    label: "Multani Mitti benefits for oily skin",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/2",
+    label: "Ubtan for glowing skin — the Ayurvedic ritual",
+    icon: <FaSpa />,
+  },
+  {
+    to: "/blog/3",
+    label: "Amla-Reetha-Shikakai hair care science",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/6",
+    label: "Herbal face packs for every skin type",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/7",
+    label: "The science behind Ayurvedic herbs",
+    icon: <FaFlask />,
+  },
+];
+
+// ─── Authoritative external hyperlinks (E-E-A-T) ───
+const TRUSTED_SOURCES = [
+  {
+    label: "NIH NCCIH — Ayurvedic Medicine: In Depth",
+    href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth",
+    domain: "nccih.nih.gov",
+  },
+  {
+    label: "PubMed — Multani Mitti (Fuller's Earth) skin research",
+    href: "https://pubmed.ncbi.nlm.nih.gov/?term=multani+mitti+fuller%27s+earth+skin",
+    domain: "pubmed.ncbi.nlm.nih.gov",
+  },
+  {
+    label: "Ministry of AYUSH — Government of India",
+    href: "https://ayush.gov.in/",
+    domain: "ayush.gov.in",
+  },
+];
+
+// ─── Shop FAQs (used for FAQPage schema) ───
+const SHOP_FAQS = [
+  {
+    q: "Are all ASudha Beauty products 100% natural?",
+    a: "Yes. All ASudha Beauty products — Multani Mitti, Ubtan, Amla, Reetha, and Shikakai — are 100% natural, chemical-free, paraben-free, and cruelty-free.",
+  },
+  {
+    q: "Which ASudha product is best for oily skin?",
+    a: "For oily skin, we recommend Multani Mitti (Fuller's Earth) — it absorbs excess oil and deep-cleanses pores. For combination skin, try our Ubtan blend.",
+  },
+  {
+    q: "Which product is best for hair fall?",
+    a: "Our Amla-Reetha-Shikakai hair pack is the traditional Ayurvedic remedy for hair fall, dandruff, and dull hair. It's a 100% natural shampoo alternative.",
+  },
+  {
+    q: "Do you offer free shipping?",
+    a: "Yes — free shipping on all orders above ₹500 across India, delivered from our store in Gorakhpur to your doorstep.",
+  },
+];
+
 const Shop = () => {
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
@@ -79,10 +157,11 @@ const Shop = () => {
     natural: false,
   });
 
-  // ─── Custom dropdown state ───
+  // ─── Custom sort dropdown state ───
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef(null);
   const sortTriggerRef = useRef(null);
+  const filterCloseRef = useRef(null);
 
   // ✅ Portal-based dropdown position state
   const [dropdownPos, setDropdownPos] = useState({
@@ -145,13 +224,30 @@ const Shop = () => {
     setTempFilters((prev) => ({ ...prev, category: selectedCategory }));
   }, [selectedCategory]);
 
-  // Lock body scroll while filter drawer is open
+  // Lock body scroll while filter drawer is open + focus the close button
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = showFilters ? "hidden" : prev || "";
+    if (showFilters) {
+      const timer = setTimeout(() => filterCloseRef.current?.focus(), 50);
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = prev || "";
+      };
+    }
     return () => {
       document.body.style.overflow = prev || "";
     };
+  }, [showFilters]);
+
+  // Close filter drawer on Escape
+  useEffect(() => {
+    if (!showFilters) return;
+    const handleEscape = (e) => {
+      if (e.key === "Escape") setShowFilters(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
   }, [showFilters]);
 
   // Close custom sort dropdown on outside click
@@ -207,13 +303,13 @@ const Shop = () => {
     };
   }, [sortDropdownOpen, windowWidth]);
 
-  // ✅ Categories derived from actual product data
+  // ─── Categories derived from actual product data ───
   const categories = useMemo(() => {
     const unique = new Set(products.map((p) => p.category).filter(Boolean));
     return ["all", ...Array.from(unique).sort()];
   }, []);
 
-  // Filter products
+  // ─── Filter products ───
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       if (
@@ -243,7 +339,7 @@ const Shop = () => {
     });
   }, [selectedCategory, selectedFilters]);
 
-  // Sort products
+  // ─── Sort products ───
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
     switch (sortBy) {
@@ -366,6 +462,87 @@ const Shop = () => {
     return count;
   };
 
+  // ─── SEO: breadcrumb + citations + JSON-LD ───
+  const shopBreadcrumb = useMemo(
+    () => [
+      { name: "Home", url: "/" },
+      { name: "Shop", url: "/shop" },
+    ],
+    []
+  );
+
+  const shopCitations = useMemo(
+    () =>
+      TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    []
+  );
+
+  const shopJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "CollectionPage",
+          "@id": `${SITE_URL}/shop#page`,
+          url: `${SITE_URL}/shop`,
+          name: "Shop Natural Ayurvedic Products | ASudha Beauty",
+          description:
+            "Shop 100% natural, chemical-free Ayurvedic skincare and hair care — Multani Mitti, Ubtan, Amla, Reetha, Shikakai. Free shipping above ₹500.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          about: {
+            "@type": "Thing",
+            name: "Ayurvedic skincare and hair care products",
+          },
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/assets/images/og-shop.png`,
+          },
+        },
+        {
+          "@type": "ItemList",
+          "@id": `${SITE_URL}/shop#products`,
+          name: "ASudha Beauty — Natural Ayurvedic Products",
+          description:
+            "100% natural Multani Mitti, Ubtan, Amla, Reetha, and Shikakai powders for glowing skin and healthy hair.",
+          numberOfItems: products.length,
+          itemListOrder: "https://schema.org/ItemListOrderAscending",
+          itemListElement: products.map((p, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            url: `${SITE_URL}/product/${p.id}`,
+            name: p.name,
+            image: `${SITE_URL}${p.image}`,
+            ...(p.price > 0 && {
+              offers: {
+                "@type": "Offer",
+                price: String(p.price),
+                priceCurrency: "INR",
+                availability:
+                  p.inStock !== false
+                    ? "https://schema.org/InStock"
+                    : "https://schema.org/OutOfStock",
+                url: `${SITE_URL}/product/${p.id}`,
+              },
+            }),
+          })),
+        },
+        {
+          "@type": "FAQPage",
+          "@id": `${SITE_URL}/shop#faq`,
+          mainEntity: SHOP_FAQS.map((faq) => ({
+            "@type": "Question",
+            name: faq.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: faq.a,
+            },
+          })),
+        },
+      ],
+    }),
+    []
+  );
+
   // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
   useLayoutEffect(() => {
     document
@@ -391,14 +568,17 @@ const Shop = () => {
         padding: 0.5rem;
       }
 
-      .shop-filter-btn:hover {
+      .shop-filter-btn:hover,
+      .shop-filter-btn:focus-visible {
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
         color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         border-color: transparent !important;
         transform: translateY(-3px);
         box-shadow: 0 14px 32px rgba(245, 52, 107, 0.4);
+        outline: none;
       }
-      .shop-close-btn:hover {
+      .shop-close-btn:hover,
+      .shop-close-btn:focus-visible {
         color: ${brandColors.primary} !important;
         transform: rotate(90deg);
         background: ${
@@ -406,24 +586,33 @@ const Shop = () => {
             ? "rgba(255, 255, 255, 0.06)"
             : "rgba(62, 39, 35, 0.05)"
         } !important;
+        outline: none;
       }
-      .shop-clear-chip:hover {
+      .shop-clear-chip:hover,
+      .shop-clear-chip:focus-visible {
         transform: scale(1.25);
         color: ${brandColors.gold} !important;
+        outline: none;
       }
-      .shop-apply-btn:hover {
+      .shop-apply-btn:hover,
+      .shop-apply-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 14px 34px rgba(245, 52, 107, 0.5);
+        outline: none;
       }
-      .shop-reset-btn:hover {
+      .shop-reset-btn:hover,
+      .shop-reset-btn:focus-visible {
         border-color: ${brandColors.primary};
         color: ${brandColors.primary};
         transform: translateY(-3px);
+        outline: none;
       }
-      .shop-clear-filters-btn:hover {
+      .shop-clear-filters-btn:hover,
+      .shop-clear-filters-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 14px 34px rgba(245, 52, 107, 0.5);
         gap: 0.65rem;
+        outline: none;
       }
       .shop-select:focus,
       .shop-input:focus {
@@ -433,22 +622,56 @@ const Shop = () => {
             ? "rgba(212, 175, 55, 0.18)"
             : "rgba(199, 125, 66, 0.12)"
         };
+        outline: none;
       }
       .shop-banner-chip:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(76, 175, 80, 0.25);
       }
-      .shop-sort-trigger:hover {
+      .shop-sort-trigger:hover,
+      .shop-sort-trigger:focus-visible {
         border-color: ${isDarkMode ? brandColors.gold : brandColors.bronze} !important;
         transform: translateY(-2px);
         box-shadow: 0 12px 28px rgba(245, 52, 107, 0.25) !important;
+        outline: none;
       }
-      .shop-sort-option:hover {
+      .shop-sort-option:hover,
+      .shop-sort-option:focus-visible {
         background-color: ${
           isDarkMode
             ? "rgba(255, 255, 255, 0.06)"
             : "rgba(62, 39, 35, 0.05)"
         } !important;
+        outline: none;
+      }
+      .shop-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .shop-related-link:hover,
+      .shop-related-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        gap: 0.6rem;
+        outline: none;
+      }
+      .shop-citation-link:hover,
+      .shop-citation-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+      .shop-breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .shop-filter-btn, .shop-sort-trigger, .shop-clear-chip,
+        .shop-apply-btn, .shop-reset-btn, .shop-close-btn,
+        .shop-related-link, .shop-citation-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -461,7 +684,6 @@ const Shop = () => {
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       maxWidth: "1280px",
       width: "100%",
@@ -478,8 +700,6 @@ const Shop = () => {
       boxSizing: "border-box",
       minHeight: "100%",
     },
-
-    // ─── Fixed ambient blobs ───
     bgBlob1: {
       position: "fixed",
       top: "-160px",
@@ -512,8 +732,23 @@ const Shop = () => {
       zIndex: 0,
       pointerEvents: "none",
     },
-
-    // ─── Natural banner ───
+    breadcrumb: {
+      position: "relative",
+      zIndex: 1,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.78rem",
+      color: T.textDim,
+      marginBottom: "1rem",
+      flexWrap: "wrap",
+      fontWeight: "600",
+    },
+    breadcrumbLink: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      fontWeight: "700",
+    },
     naturalBanner: {
       position: "relative",
       zIndex: 1,
@@ -601,8 +836,6 @@ const Shop = () => {
       WebkitBackdropFilter: "blur(6px)",
       transition: "transform 0.25s ease, box-shadow 0.25s ease",
     },
-
-    // ─── Header ───
     header: {
       position: "relative",
       zIndex: 1,
@@ -650,8 +883,6 @@ const Shop = () => {
       whiteSpace: "nowrap",
       boxShadow: T.shadow,
     },
-
-    // ─── Filter bar ───
     filterBar: {
       position: "relative",
       zIndex: 1,
@@ -694,8 +925,6 @@ const Shop = () => {
       justifyContent: "center",
       minWidth: "20px",
     },
-
-    // ─── Custom sort dropdown ───
     sortWrapper: {
       position: "relative",
       flexShrink: 0,
@@ -742,7 +971,6 @@ const Shop = () => {
       fontSize: "0.75rem",
       flexShrink: 0,
     },
-    // ✅ Portal-rendered menu — position is `fixed`, calculated from trigger rect
     sortMenu: {
       position: "fixed",
       top: dropdownPos.top,
@@ -790,8 +1018,6 @@ const Shop = () => {
       fontSize: "0.75rem",
       flexShrink: 0,
     },
-
-    // ─── Active filters ───
     activeFilters: {
       position: "relative",
       zIndex: 1,
@@ -816,7 +1042,6 @@ const Shop = () => {
       fontWeight: "600",
       maxWidth: "100%",
       overflow: "hidden",
-      textOverflow: "ellipsis",
       whiteSpace: "nowrap",
       boxShadow: T.shadow,
     },
@@ -829,6 +1054,10 @@ const Shop = () => {
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
+      background: "none",
+      border: "none",
+      padding: 0,
+      fontFamily: "inherit",
     },
     clearAllButton: {
       background: "none",
@@ -842,8 +1071,6 @@ const Shop = () => {
       fontFamily: "inherit",
       letterSpacing: "0.2px",
     },
-
-    // ─── Filter drawer ───
     filterOverlay: {
       position: "fixed",
       top: 0,
@@ -1017,8 +1244,6 @@ const Shop = () => {
       transition: "all 0.3s ease",
       fontFamily: "inherit",
     },
-
-    // ─── Products grid ───
     productsGrid: {
       position: "relative",
       zIndex: 1,
@@ -1037,8 +1262,6 @@ const Shop = () => {
       minWidth: 0,
       boxSizing: "border-box",
     },
-
-    // ─── Empty state ───
     noProducts: {
       position: "relative",
       zIndex: 1,
@@ -1099,14 +1322,116 @@ const Shop = () => {
       boxShadow: "0 10px 26px rgba(245, 52, 107, 0.35)",
       fontFamily: "inherit",
     },
+
+    // ─── Related Reading (internal backlinks) ───
+    relatedSection: {
+      position: "relative",
+      zIndex: 1,
+      marginTop: "3rem",
+      padding: isMobile ? "1.5rem" : "2rem",
+      backgroundColor: T.card,
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+    },
+    relatedTitle: {
+      fontSize: "1.1rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.25rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "10px",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+
+    // ─── Sources & References (external hyperlinks) ───
+    citationSection: {
+      position: "relative",
+      zIndex: 1,
+      marginTop: "1.5rem",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    citationTitle: {
+      fontSize: "0.88rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthLight,
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
   };
 
-  // ✅ Portal-rendered dropdown content
+  // ─── Portal-rendered sort dropdown content ───
   const sortDropdownContent = sortDropdownOpen ? (
     <div
       ref={sortDropdownRef}
       style={themeStyles.sortMenu}
       role="listbox"
+      id="shop-sort-listbox"
       aria-label="Sort options"
     >
       {SORT_OPTIONS.map((opt) => {
@@ -1129,7 +1454,7 @@ const Shop = () => {
           >
             <span>{opt.label}</span>
             {active && (
-              <span style={themeStyles.sortCheck}>
+              <span style={themeStyles.sortCheck} aria-hidden="true">
                 <FaCheck />
               </span>
             )}
@@ -1141,29 +1466,38 @@ const Shop = () => {
 
   return (
     <div style={themeStyles.container}>
+      {/* ─── SEO: meta + JSON-LD + breadcrumb + citations ─── */}
       <SEO
         title={
           selectedCategory === "all"
-            ? "Shop Natural Ayurvedic Products | ASudha Beauty"
+            ? "Shop Natural Ayurvedic Products | Multani Mitti, Ubtan, Amla | ASudha"
             : `${selectedCategory} Products | ASudha Beauty`
         }
-        description="Shop ASudha Beauty's 100% natural Ayurvedic skincare and hair care powders. Multani Mitti, Ubtan, Amla, Reetha, Shikakai, and more."
-        keywords="natural skincare, Ayurvedic products, Multani Mitti, Ubtan, Shikakai, hair care powders, ASudha Beauty shop"
+        description="Shop ASudha Beauty's 100% natural Ayurvedic skincare and hair care powders — Multani Mitti, Ubtan, Amla, Reetha, Shikakai. Chemical-free, cruelty-free, free shipping above ₹500."
+        keywords="natural skincare products online, ayurvedic beauty products, multani mitti online, buy ubtan powder, amla reetha shikakai, chemical free skincare india, herbal skincare products, best natural face pack, ayurvedic skincare routine"
         url="/shop"
+        breadcrumb={shopBreadcrumb}
+        citations={shopCitations}
       />
 
-      <div style={themeStyles.bgBlob1}></div>
-      <div style={themeStyles.bgBlob2}></div>
+      {/* Extra JSON-LD graph: ItemList + CollectionPage + FAQPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(shopJsonLd) }}
+      />
+
+      <div style={themeStyles.bgBlob1} aria-hidden="true" />
+      <div style={themeStyles.bgBlob2} aria-hidden="true" />
 
       {/* Natural banner — only on default view */}
       {selectedCategory === "all" && activeFilterCount() === 0 && (
         <div style={themeStyles.naturalBanner}>
-          <div style={themeStyles.naturalBannerAccent} />
-          <div style={themeStyles.bannerIconWrap}>
+          <div style={themeStyles.naturalBannerAccent} aria-hidden="true" />
+          <div style={themeStyles.bannerIconWrap} aria-hidden="true">
             <FaSpa />
           </div>
           <h2 style={themeStyles.bannerTitle}>
-            Discover Natural Skincare & Haircare
+            Discover Natural Skincare &amp; Haircare
           </h2>
           <p style={themeStyles.bannerSubtitle}>
             Explore our collection of 100% natural, Ayurvedic products including
@@ -1171,13 +1505,14 @@ const Shop = () => {
           </p>
           <div style={themeStyles.bannerChips}>
             {["Multani Mitti", "Ubtan", "Shikakai", "Reetha", "Amla"].map(
-              (name, idx) => (
+              (name) => (
                 <span
-                  key={idx}
+                  key={name}
                   style={themeStyles.bannerChip}
                   className="shop-banner-chip"
                 >
                   <FaLeaf
+                    aria-hidden="true"
                     style={{ color: brandColors.green, fontSize: "0.65rem" }}
                   />
                   {name}
@@ -1189,33 +1524,48 @@ const Shop = () => {
       )}
 
       {/* Header */}
-      <div style={themeStyles.header}>
+      <header style={themeStyles.header}>
         <h1 style={themeStyles.title}>
-          <FaLeaf style={{ fontSize: "0.8em", color: brandColors.green }} />
-          Natural Skincare & Haircare Shop
+          <FaLeaf
+            aria-hidden="true"
+            style={{ fontSize: "0.8em", color: brandColors.green }}
+          />
+          Natural Skincare &amp; Haircare Shop
           <span style={themeStyles.titleAccent} aria-hidden="true" />
         </h1>
-        <div style={themeStyles.resultCount}>
+        <div
+          style={themeStyles.resultCount}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {sortedProducts.length}{" "}
           {sortedProducts.length === 1 ? "product" : "products"} found
         </div>
-      </div>
+      </header>
 
       {/* Filter bar */}
       <div style={themeStyles.filterBar}>
         <button
+          type="button"
           style={themeStyles.filterButton}
           className="shop-filter-btn"
           onClick={() => setShowFilters(true)}
-          aria-label="Open filters"
+          aria-label={
+            activeFilterCount() > 0
+              ? `Open filters (${activeFilterCount()} active)`
+              : "Open filters"
+          }
         >
-          <FaSlidersH /> Filters
+          <FaSlidersH aria-hidden="true" /> Filters
           {activeFilterCount() > 0 && (
-            <span style={themeStyles.filterCount}>{activeFilterCount()}</span>
+            <span style={themeStyles.filterCount} aria-hidden="true">
+              {activeFilterCount()}
+            </span>
           )}
         </button>
 
-        {/* ✅ Custom sort dropdown — trigger only; menu rendered via portal */}
+        {/* Custom sort dropdown — trigger only; menu rendered via portal */}
         <div style={themeStyles.sortWrapper}>
           <button
             ref={sortTriggerRef}
@@ -1223,14 +1573,21 @@ const Shop = () => {
             className="shop-sort-trigger"
             style={themeStyles.sortTrigger}
             onClick={() => setSortDropdownOpen((v) => !v)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown" && !sortDropdownOpen) {
+                e.preventDefault();
+                setSortDropdownOpen(true);
+              }
+            }}
             aria-haspopup="listbox"
             aria-expanded={sortDropdownOpen}
-            aria-label="Sort products"
+            aria-controls="shop-sort-listbox"
+            aria-label={`Sort products. Currently sorted by: ${currentSortLabel}`}
           >
             <span style={themeStyles.sortTriggerLabel}>
               {currentSortLabel}
             </span>
-            <span style={themeStyles.sortChevron}>
+            <span style={themeStyles.sortChevron} aria-hidden="true">
               <FaChevronDown />
             </span>
           </button>
@@ -1242,91 +1599,92 @@ const Shop = () => {
         <div style={themeStyles.activeFilters}>
           {selectedCategory !== "all" && (
             <span style={themeStyles.filterChip}>
-              <FaTags /> Category: {selectedCategory}
-              <span
+              <FaTags aria-hidden="true" /> Category: {selectedCategory}
+              <button
+                type="button"
                 style={themeStyles.clearChip}
                 className="shop-clear-chip"
                 onClick={() => clearFilter("category")}
-                role="button"
                 aria-label="Clear category filter"
               >
-                <FaTimes style={{ fontSize: "0.7rem" }} />
-              </span>
+                <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              </button>
             </span>
           )}
           {(selectedFilters.priceRange.min > 0 ||
             selectedFilters.priceRange.max < 5000) && (
             <span style={themeStyles.filterChip}>
-              <FaTags /> ₹{selectedFilters.priceRange.min} – ₹
-              {selectedFilters.priceRange.max}
-              <span
+              <FaTags aria-hidden="true" /> ₹{selectedFilters.priceRange.min} –
+              ₹{selectedFilters.priceRange.max}
+              <button
+                type="button"
                 style={themeStyles.clearChip}
                 className="shop-clear-chip"
                 onClick={() => clearFilter("price")}
-                role="button"
                 aria-label="Clear price filter"
               >
-                <FaTimes style={{ fontSize: "0.7rem" }} />
-              </span>
+                <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              </button>
             </span>
           )}
           {selectedFilters.rating > 0 && (
             <span style={themeStyles.filterChip}>
-              <FaStar /> {selectedFilters.rating}+ Stars
-              <span
+              <FaStar aria-hidden="true" /> {selectedFilters.rating}+ Stars
+              <button
+                type="button"
                 style={themeStyles.clearChip}
                 className="shop-clear-chip"
                 onClick={() => clearFilter("rating")}
-                role="button"
                 aria-label="Clear rating filter"
               >
-                <FaTimes style={{ fontSize: "0.7rem" }} />
-              </span>
+                <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              </button>
             </span>
           )}
           {selectedFilters.bestSeller && (
             <span style={themeStyles.filterChip}>
-              <FaFire /> Best Seller
-              <span
+              <FaFire aria-hidden="true" /> Best Seller
+              <button
+                type="button"
                 style={themeStyles.clearChip}
                 className="shop-clear-chip"
                 onClick={() => clearFilter("bestSeller")}
-                role="button"
                 aria-label="Clear best seller filter"
               >
-                <FaTimes style={{ fontSize: "0.7rem" }} />
-              </span>
+                <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              </button>
             </span>
           )}
           {selectedFilters.inStock && (
             <span style={themeStyles.filterChip}>
-              <FaHeart /> In Stock Only
-              <span
+              <FaHeart aria-hidden="true" /> In Stock Only
+              <button
+                type="button"
                 style={themeStyles.clearChip}
                 className="shop-clear-chip"
                 onClick={() => clearFilter("inStock")}
-                role="button"
                 aria-label="Clear in stock filter"
               >
-                <FaTimes style={{ fontSize: "0.7rem" }} />
-              </span>
+                <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              </button>
             </span>
           )}
           {selectedFilters.natural && (
             <span style={themeStyles.filterChip}>
-              <FaLeaf /> Natural Only
-              <span
+              <FaLeaf aria-hidden="true" /> Natural Only
+              <button
+                type="button"
                 style={themeStyles.clearChip}
                 className="shop-clear-chip"
                 onClick={() => clearFilter("natural")}
-                role="button"
                 aria-label="Clear natural filter"
               >
-                <FaTimes style={{ fontSize: "0.7rem" }} />
-              </span>
+                <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />
+              </button>
             </span>
           )}
           <button
+            type="button"
             style={themeStyles.clearAllButton}
             onClick={resetFilters}
             aria-label="Clear all filters"
@@ -1350,15 +1708,17 @@ const Shop = () => {
         >
           <div style={themeStyles.filterModalHeader}>
             <h3 style={themeStyles.filterModalTitle}>
-              <FaSlidersH /> Filter Products
+              <FaSlidersH aria-hidden="true" /> Filter Products
             </h3>
             <button
+              ref={filterCloseRef}
+              type="button"
               style={themeStyles.closeButton}
               className="shop-close-btn"
               onClick={() => setShowFilters(false)}
               aria-label="Close filters"
             >
-              <FaTimes />
+              <FaTimes aria-hidden="true" />
             </button>
           </div>
 
@@ -1366,6 +1726,8 @@ const Shop = () => {
           <div style={themeStyles.filterGroup}>
             <h4 style={themeStyles.filterGroupTitle}>Category</h4>
             <select
+              id="filter-category"
+              aria-label="Filter by category"
               style={themeStyles.priceInput}
               className="shop-select"
               value={tempFilters.category}
@@ -1390,6 +1752,7 @@ const Shop = () => {
               <input
                 type="number"
                 placeholder="Min"
+                aria-label="Minimum price"
                 style={themeStyles.priceInput}
                 className="shop-input"
                 value={tempFilters.priceRange.min}
@@ -1406,6 +1769,7 @@ const Shop = () => {
               <input
                 type="number"
                 placeholder="Max"
+                aria-label="Maximum price"
                 style={themeStyles.priceInput}
                 className="shop-input"
                 value={tempFilters.priceRange.max}
@@ -1429,6 +1793,7 @@ const Shop = () => {
               {[4, 3, 2, 1].map((rating) => (
                 <button
                   key={rating}
+                  type="button"
                   style={{
                     ...themeStyles.ratingButton,
                     ...(tempFilters.rating === rating
@@ -1437,14 +1802,23 @@ const Shop = () => {
                   }}
                   onClick={() => setTempFilters({ ...tempFilters, rating })}
                   aria-pressed={tempFilters.rating === rating}
+                  aria-label={`Show products rated ${rating} stars and above`}
                 >
-                  {rating}+ <FaStar style={{ fontSize: "0.75rem" }} />
+                  {rating}+{" "}
+                  <FaStar
+                    aria-hidden="true"
+                    style={{ fontSize: "0.75rem" }}
+                  />
                 </button>
               ))}
               {tempFilters.rating > 0 && (
                 <button
+                  type="button"
                   style={themeStyles.ratingButton}
-                  onClick={() => setTempFilters({ ...tempFilters, rating: 0 })}
+                  onClick={() =>
+                    setTempFilters({ ...tempFilters, rating: 0 })
+                  }
+                  aria-label="Clear rating filter"
                 >
                   Clear
                 </button>
@@ -1454,8 +1828,9 @@ const Shop = () => {
 
           {/* Checkboxes */}
           <div style={themeStyles.filterGroup}>
-            <label style={themeStyles.checkboxLabel}>
+            <label style={themeStyles.checkboxLabel} htmlFor="filter-natural">
               <input
+                id="filter-natural"
                 type="checkbox"
                 checked={tempFilters.natural}
                 onChange={(e) =>
@@ -1465,11 +1840,15 @@ const Shop = () => {
                   })
                 }
               />
-              <FaLeaf style={{ color: brandColors.green }} /> Natural Products
-              Only
+              <FaLeaf
+                aria-hidden="true"
+                style={{ color: brandColors.green }}
+              />{" "}
+              Natural Products Only
             </label>
-            <label style={themeStyles.checkboxLabel}>
+            <label style={themeStyles.checkboxLabel} htmlFor="filter-bestseller">
               <input
+                id="filter-bestseller"
                 type="checkbox"
                 checked={tempFilters.bestSeller}
                 onChange={(e) =>
@@ -1479,11 +1858,15 @@ const Shop = () => {
                   })
                 }
               />
-              <FaFire style={{ color: brandColors.primary }} /> Best Selling
-              Products Only
+              <FaFire
+                aria-hidden="true"
+                style={{ color: brandColors.primary }}
+              />{" "}
+              Best Selling Products Only
             </label>
-            <label style={themeStyles.checkboxLabel}>
+            <label style={themeStyles.checkboxLabel} htmlFor="filter-instock">
               <input
+                id="filter-instock"
                 type="checkbox"
                 checked={tempFilters.inStock}
                 onChange={(e) =>
@@ -1493,13 +1876,15 @@ const Shop = () => {
                   })
                 }
               />
-              <FaHeart style={{ color: "#2196f3" }} /> In Stock Only
+              <FaHeart aria-hidden="true" style={{ color: "#2196f3" }} /> In
+              Stock Only
             </label>
           </div>
 
           {/* Actions */}
           <div style={themeStyles.filterActions}>
             <button
+              type="button"
               style={themeStyles.resetButton}
               className="shop-reset-btn"
               onClick={resetFilters}
@@ -1507,6 +1892,7 @@ const Shop = () => {
               Reset All
             </button>
             <button
+              type="button"
               style={themeStyles.applyButton}
               className="shop-apply-btn"
               onClick={applyFilters}
@@ -1519,7 +1905,10 @@ const Shop = () => {
 
       {/* Product grid */}
       {sortedProducts.length > 0 ? (
-        <div style={themeStyles.productsGrid}>
+        <section
+          style={themeStyles.productsGrid}
+          aria-label={`${sortedProducts.length} Ayurvedic products`}
+        >
           {sortedProducts.map((product) => (
             <ProductCard
               key={product.id}
@@ -1529,31 +1918,116 @@ const Shop = () => {
                 product.category === "Skincare" ||
                 product.category === "Hair Care"
               }
-              badgeText="🌿 Natural"
+              badgeText="Natural"
             />
           ))}
-        </div>
+        </section>
       ) : (
         <div style={themeStyles.noProducts}>
-          <div style={themeStyles.noProductsIconWrap}>
+          <div style={themeStyles.noProductsIconWrap} aria-hidden="true">
             <FaBoxOpen />
           </div>
           <h3 style={themeStyles.noProductsTitle}>No products found</h3>
           <p style={themeStyles.noProductsText}>
-            Try adjusting your filters or explore our full natural skincare &
-            haircare collection.
+            Try adjusting your filters or explore our full natural skincare
+            &amp; haircare collection.
           </p>
           <button
+            type="button"
             style={themeStyles.clearFiltersBtn}
             className="shop-clear-filters-btn"
             onClick={resetFilters}
           >
-            <FaUndoAlt /> Clear All Filters
+            <FaUndoAlt aria-hidden="true" /> Clear All Filters
           </button>
         </div>
       )}
 
-      {/* ✅ Portal-rendered sort dropdown — escapes all stacking contexts */}
+      {/* ─── Related Reading (internal backlinks to blog) ─── */}
+      <section
+        style={themeStyles.relatedSection}
+        aria-labelledby="shop-related-reading-title"
+      >
+        <h2
+          id="shop-related-reading-title"
+          style={themeStyles.relatedTitle}
+        >
+          <FaBookOpen aria-hidden="true" /> Learn About the Ayurvedic Ritual
+        </h2>
+        <ul style={themeStyles.relatedList}>
+          {RELATED_GUIDES.map((guide) => (
+            <li key={guide.to}>
+              <Link
+                to={guide.to}
+                style={themeStyles.relatedLink}
+                className="shop-related-link"
+                aria-label={`Read: ${guide.label}`}
+              >
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                  }}
+                >
+                  <span style={themeStyles.relatedIcon} aria-hidden="true">
+                    {guide.icon}
+                  </span>
+                  {guide.label}
+                </span>
+                <FaArrowRight
+                  aria-hidden="true"
+                  style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ─── Sources & References (external hyperlinks / E-E-A-T) ─── */}
+      <section
+        style={themeStyles.citationSection}
+        aria-labelledby="shop-sources-title"
+      >
+        <h2 id="shop-sources-title" style={themeStyles.citationTitle}>
+          <FaShieldAlt aria-hidden="true" /> Sources &amp; Further Reading
+        </h2>
+        <ul style={themeStyles.citationList}>
+          {TRUSTED_SOURCES.map((source) => (
+            <li key={source.href}>
+              <a
+                href={source.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={themeStyles.citationLink}
+                className="shop-citation-link"
+                aria-label={`${source.label} — opens in new tab`}
+              >
+                <FaExternalLinkAlt
+                  aria-hidden="true"
+                  style={{
+                    fontSize: "0.65rem",
+                    marginTop: "0.2rem",
+                    flexShrink: 0,
+                    color: isDarkMode
+                      ? brandColors.gold
+                      : brandColors.bronze,
+                  }}
+                />
+                <span>
+                  {source.label}
+                  <div style={themeStyles.citationDomain}>
+                    {source.domain}
+                  </div>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Portal-rendered sort dropdown — escapes all stacking contexts */}
       {typeof document !== "undefined" &&
         createPortal(sortDropdownContent, document.body)}
     </div>

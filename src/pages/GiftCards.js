@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/GiftCards.jsx
+import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useGiftCard } from "../context/GiftCardContext";
@@ -13,7 +14,6 @@ import {
   FaShoppingBag,
   FaWhatsapp,
   FaFacebook,
-  FaTwitter,
   FaEnvelope as FaMail,
   FaSpa,
   FaStar,
@@ -22,7 +22,11 @@ import {
   FaCopy,
   FaUser,
   FaCommentAlt,
+  FaExclamationTriangle,
 } from "react-icons/fa";
+
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
 
 // ─── Brand palette (module-scope: stable references) ───
 const brandColors = {
@@ -45,6 +49,9 @@ const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
+// ✅ FIXED: Moved to module scope to satisfy react-hooks/exhaustive-deps
+const GIFT_CARD_AMOUNTS = [250, 500, 1000, 2000, 5000];
+
 const GiftCards = () => {
   const { isDarkMode } = useTheme();
   const { createGiftCard } = useGiftCard();
@@ -62,6 +69,7 @@ const GiftCards = () => {
   const [createdCard, setCreatedCard] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [copied, setCopied] = useState(false);
 
   // ─── Theme tokens ───
@@ -116,26 +124,33 @@ const GiftCards = () => {
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
 
-  const giftCardAmounts = [250, 500, 1000, 2000, 5000];
+  const validateForm = () => {
+    const errors = {};
+    if (!recipientName.trim()) errors.recipientName = "Recipient name is required";
+    if (!recipientEmail.trim()) {
+      errors.recipientEmail = "Recipient email is required";
+    } else if (!/\S+@\S+\.\S+/.test(recipientEmail)) {
+      errors.recipientEmail = "Please enter a valid email address";
+    }
+    if (!senderName.trim()) errors.senderName = "Your name is required";
+    if (!amount || amount < 100 || amount > 50000) {
+      errors.amount = "Amount must be between ₹100 and ₹50,000";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError("");
 
-    if (!recipientName.trim() || !recipientEmail.trim() || !senderName.trim()) {
-      setError("Please fill in all required fields");
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(recipientEmail)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-    if (!amount || amount < 100 || amount > 50000) {
-      setError("Amount must be between ₹100 and ₹50,000");
+    if (!validateForm()) {
+      const firstError = Object.keys(fieldErrors)[0];
+      if (firstError) document.getElementById(`gc-${firstError}`)?.focus();
       return;
     }
 
     setLoading(true);
-    setError("");
 
     setTimeout(() => {
       const result = createGiftCard(
@@ -156,7 +171,7 @@ const GiftCards = () => {
   };
 
   const handleShare = (platform) => {
-    const text = `🎁 I've sent an ASudha Beauty Gift Card worth ₹${amount}! Experience the power of 100% natural Ayurvedic beauty. Pure. Natural. You.`;
+    const text = `I've sent an ASudha Beauty Gift Card worth ₹${amount}! Experience the power of 100% natural Ayurvedic beauty. Pure. Natural. You.`;
     const url = typeof window !== "undefined" ? window.location.href : "";
 
     switch (platform) {
@@ -171,14 +186,6 @@ const GiftCards = () => {
           `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
             url
           )}&quote=${encodeURIComponent(text)}`,
-          "_blank"
-        );
-        break;
-      case "twitter":
-        window.open(
-          `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            text
-          )}&url=${encodeURIComponent(url)}`,
           "_blank"
         );
         break;
@@ -210,7 +217,44 @@ const GiftCards = () => {
     }
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── JSON-LD: WebPage + Product Schema for Gift Card ───
+  const giftCardJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/gift-cards#webpage`,
+          url: `${SITE_URL}/gift-cards`,
+          name: "Gift Cards | ASudha Beauty",
+          description:
+            "Send an ASudha Beauty gift card to your loved ones. Perfect for birthdays, anniversaries, or any special occasion.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+        },
+        {
+          "@type": "Product",
+          name: "ASudha Beauty Gift Card",
+          description:
+            "Give the gift of nature. A digital gift card for 100% natural Ayurvedic beauty products.",
+          brand: {
+            "@type": "Brand",
+            name: "ASudha Beauty",
+          },
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "INR",
+            lowPrice: "100",
+            highPrice: "50000",
+            // ✅ FIXED: Reading from module scope constant
+            offerCount: GIFT_CARD_AMOUNTS.length,
+          },
+        },
+      ],
+    }),
+    []
+  );
+
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-giftcard-styles="true"]')
@@ -231,10 +275,6 @@ const GiftCards = () => {
         0%, 100% { transform: translate(0, 0) scale(1); }
         50% { transform: translate(30px, 45px) scale(1.1); }
       }
-      @keyframes gcSparkle {
-        0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.35; }
-        50% { transform: scale(1.15) rotate(8deg); opacity: 0.65; }
-      }
 
       .gc-orb-1 { animation: gcFloat1 16s ease-in-out infinite; }
       .gc-orb-2 { animation: gcFloat2 20s ease-in-out infinite; }
@@ -245,37 +285,41 @@ const GiftCards = () => {
                     background-color 0.25s ease;
       }
       .gc-input:focus {
-        border-color: ${
-          isDarkMode ? brandColors.gold : brandColors.bronze
-        } !important;
-        box-shadow: 0 0 0 4px ${
-          isDarkMode
-            ? "rgba(212, 175, 55, 0.18)"
-            : "rgba(199, 125, 66, 0.12)"
-        } !important;
+        border-color: ${isDarkMode ? brandColors.gold : brandColors.bronze} !important;
+        box-shadow: 0 0 0 4px ${isDarkMode ? "rgba(212, 175, 55, 0.18)" : "rgba(199, 125, 66, 0.12)"} !important;
         background-color: ${isDarkMode ? "#0a0a0a" : "#ffffff"} !important;
       }
       .gc-input::placeholder {
         color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
+      }
+      .gc-input[aria-invalid="true"] {
+        border-color: #f44336 !important;
+      }
+      .gc-input[aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15) !important;
       }
 
       .gc-amount-btn {
         transition: transform 0.25s ease, border-color 0.25s ease,
                     box-shadow 0.25s ease, background 0.25s ease;
       }
-      .gc-amount-btn:hover {
+      .gc-amount-btn:hover,
+      .gc-amount-btn:focus-visible {
         transform: translateY(-3px);
         border-color: ${brandColors.primary} !important;
         box-shadow: 0 8px 22px rgba(245, 52, 107, 0.2);
+        outline: none;
       }
 
       .gc-submit-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .gc-submit-btn:hover:not(:disabled) {
+      .gc-submit-btn:hover:not(:disabled),
+      .gc-submit-btn:focus-visible:not(:disabled) {
         transform: translateY(-3px);
         box-shadow: 0 16px 40px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
       }
       .gc-submit-btn:disabled {
         opacity: 0.55;
@@ -288,12 +332,8 @@ const GiftCards = () => {
       }
       .gc-info-card:hover {
         transform: translateY(-4px);
-        box-shadow: ${T.shadowLift};
-        border-color: ${
-          isDarkMode
-            ? "rgba(212, 175, 55, 0.35)"
-            : "rgba(199, 125, 66, 0.3)"
-        } !important;
+        box-shadow: ${isDarkMode ? "0 22px 48px rgba(0, 0, 0, 0.7)" : "0 22px 48px rgba(62, 39, 35, 0.12)"};
+        border-color: ${isDarkMode ? "rgba(212, 175, 55, 0.35)" : "rgba(199, 125, 66, 0.3)"} !important;
       }
       .gc-info-card:hover .gc-info-icon {
         transform: scale(1.08) rotate(-6deg);
@@ -305,43 +345,57 @@ const GiftCards = () => {
       .gc-back-btn {
         transition: all 0.25s ease;
       }
-      .gc-back-btn:hover {
+      .gc-back-btn:hover,
+      .gc-back-btn:focus-visible {
         transform: translateX(-4px);
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
-        color: ${
-          isDarkMode ? brandColors.black : "#ffffff"
-        } !important;
+        color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         border-color: transparent !important;
+        outline: none;
       }
 
       .gc-share-btn {
         transition: all 0.25s ease;
       }
-      .gc-share-btn:hover {
+      .gc-share-btn:hover,
+      .gc-share-btn:focus-visible {
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
-        color: ${
-          isDarkMode ? brandColors.black : "#ffffff"
-        } !important;
+        color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         border-color: transparent !important;
         transform: translateY(-3px);
         box-shadow: 0 10px 26px rgba(245, 52, 107, 0.35);
+        outline: none;
       }
 
       .gc-copy-btn {
         transition: all 0.25s ease;
       }
-      .gc-copy-btn:hover {
+      .gc-copy-btn:hover,
+      .gc-copy-btn:focus-visible {
         transform: translateY(-2px);
         box-shadow: 0 8px 22px rgba(245, 52, 107, 0.4);
+        outline: none;
       }
 
       .gc-action-btn {
         transition: all 0.3s ease;
       }
-      .gc-action-btn:hover {
+      .gc-action-btn:hover,
+      .gc-action-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 16px 40px rgba(245, 52, 107, 0.5);
         gap: 0.75rem;
+        outline: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .gc-orb-1, .gc-orb-2, .gc-orb-3 { animation: none !important; }
+        .gc-input, .gc-amount-btn, .gc-submit-btn, .gc-info-card,
+        .gc-info-icon, .gc-back-btn, .gc-share-btn, .gc-copy-btn,
+        .gc-action-btn {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -351,11 +405,9 @@ const GiftCards = () => {
         .querySelectorAll('style[data-giftcard-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper with animated background ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -366,7 +418,6 @@ const GiftCards = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -435,7 +486,6 @@ const GiftCards = () => {
       filter: "blur(95px)",
       opacity: isDarkMode ? 0.38 : 0.28,
     },
-
     content: {
       position: "relative",
       zIndex: 1,
@@ -449,7 +499,6 @@ const GiftCards = () => {
       width: "100%",
       boxSizing: "border-box",
     },
-
     backButton: {
       display: "inline-flex",
       alignItems: "center",
@@ -468,33 +517,10 @@ const GiftCards = () => {
       WebkitBackdropFilter: "blur(8px)",
       fontFamily: "inherit",
     },
-
     header: {
       textAlign: "center",
       marginBottom: isNarrow ? "2rem" : "3rem",
     },
-    heroBadge: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.45rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.1)",
-      borderRadius: "50px",
-      fontSize: "0.72rem",
-      color: isDarkMode ? T.gold : brandColors.bronze,
-      marginBottom: "1.25rem",
-      border: `1px solid ${
-        isDarkMode ? "rgba(212, 175, 55, 0.3)" : "rgba(199, 125, 66, 0.2)"
-      }`,
-      fontWeight: "800",
-      letterSpacing: "1px",
-      textTransform: "uppercase",
-      backdropFilter: "blur(8px)",
-      WebkitBackdropFilter: "blur(8px)",
-    },
-    // ✅ Solid title + gradient underline accent
     title: {
       fontSize: isMobile ? "2rem" : isNarrow ? "2.4rem" : "3rem",
       fontWeight: "900",
@@ -531,15 +557,12 @@ const GiftCards = () => {
       margin: "0 auto",
       lineHeight: "1.7",
     },
-
     grid: {
       display: "grid",
       gridTemplateColumns: isNarrow ? "1fr" : "1.05fr 1fr",
       gap: isNarrow ? "1.5rem" : "2rem",
       alignItems: "start",
     },
-
-    // ─── Form card ───
     formSection: {
       backgroundColor: T.card,
       borderRadius: "24px",
@@ -633,11 +656,18 @@ const GiftCards = () => {
       boxSizing: "border-box",
       fontWeight: "600",
     },
+    fieldError: {
+      fontSize: "0.75rem",
+      color: T.danger,
+      fontWeight: "700",
+      marginTop: "0.35rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+    },
     amountGrid: {
       display: "grid",
-      gridTemplateColumns: `repeat(auto-fit, minmax(${
-        isMobile ? "70px" : "80px"
-      }, 1fr))`,
+      gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? "70px" : "80px"}, 1fr))`,
       gap: "0.6rem",
       marginBottom: "0.9rem",
     },
@@ -662,9 +692,7 @@ const GiftCards = () => {
       boxShadow: "0 10px 24px rgba(245, 52, 107, 0.35)",
     },
     customAmount: { marginTop: "0.85rem" },
-    inputWithIcon: {
-      position: "relative",
-    },
+    inputWithIcon: { position: "relative" },
     inputIcon: {
       position: "absolute",
       left: "1.15rem",
@@ -682,11 +710,7 @@ const GiftCards = () => {
       marginBottom: "1.35rem",
       textAlign: "center",
       fontSize: "0.9rem",
-      border: `1px solid ${
-        isDarkMode
-          ? "rgba(255, 138, 138, 0.25)"
-          : "rgba(198, 40, 40, 0.18)"
-      }`,
+      border: `1px solid ${isDarkMode ? "rgba(255, 138, 138, 0.25)" : "rgba(198, 40, 40, 0.18)"}`,
       fontWeight: "700",
     },
     submitButton: {
@@ -708,8 +732,6 @@ const GiftCards = () => {
       letterSpacing: "0.3px",
       marginTop: "0.5rem",
     },
-
-    // ─── Info section ───
     infoSection: {
       backgroundColor: T.card,
       borderRadius: "24px",
@@ -788,10 +810,7 @@ const GiftCards = () => {
         ? "1px solid rgba(212, 175, 55, 0.2)"
         : "1px solid rgba(212, 175, 55, 0.15)",
     },
-    infoCardBody: {
-      flex: 1,
-      minWidth: 0,
-    },
+    infoCardBody: { flex: 1, minWidth: 0 },
     infoCardTitle: {
       fontWeight: "800",
       marginBottom: "0.3rem",
@@ -813,9 +832,7 @@ const GiftCards = () => {
         : "linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(245, 52, 107, 0.06))",
       borderRadius: "16px",
       textAlign: "center",
-      border: `1px solid ${
-        isDarkMode ? "rgba(212, 175, 55, 0.25)" : "rgba(199, 125, 66, 0.18)"
-      }`,
+      border: `1px solid ${isDarkMode ? "rgba(212, 175, 55, 0.25)" : "rgba(199, 125, 66, 0.18)"}`,
     },
     trustText: {
       fontSize: "0.88rem",
@@ -828,8 +845,6 @@ const GiftCards = () => {
       gap: "0.5rem",
       letterSpacing: "0.2px",
     },
-
-    // ─── Success screen ───
     successWrap: {
       position: "relative",
       zIndex: 1,
@@ -900,9 +915,7 @@ const GiftCards = () => {
       padding: "1.25rem 1.5rem",
       borderRadius: "18px",
       margin: "1.25rem 0",
-      border: `2px dashed ${
-        isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
-      }`,
+      border: `2px dashed ${isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"}`,
     },
     giftCardCode: {
       fontSize: isMobile ? "1.05rem" : "1.3rem",
@@ -991,49 +1004,46 @@ const GiftCards = () => {
     },
   };
 
-  const BackgroundLayer = () => (
-    <div style={themeStyles.bgLayer}>
+  // ─── Shared background JSX ───
+  const backgroundJSX = (
+    <div style={themeStyles.bgLayer} aria-hidden="true">
       <div style={themeStyles.bgGradient} />
       <div style={themeStyles.bgGrid} />
-      <div
-        className="gc-orb-1"
-        style={themeStyles.bgOrb1}
-        aria-hidden="true"
-      />
-      <div
-        className="gc-orb-2"
-        style={themeStyles.bgOrb2}
-        aria-hidden="true"
-      />
-      <div
-        className="gc-orb-3"
-        style={themeStyles.bgOrb3}
-        aria-hidden="true"
-      />
+      <div className="gc-orb-1" style={themeStyles.bgOrb1} />
+      <div className="gc-orb-2" style={themeStyles.bgOrb2} />
+      <div className="gc-orb-3" style={themeStyles.bgOrb3} />
     </div>
   );
 
-  // ─── SUCCESS SCREEN ──────────────────────────────────────────────
+  // ─── SUCCESS SCREEN ───
   if (isSubmitted && createdCard) {
     return (
       <div style={themeStyles.container}>
-        <BackgroundLayer />
-        <div style={themeStyles.successWrap}>
-          <SEO
-            title="Gift Card Purchased | ASudha Beauty"
-            description="Your ASudha Beauty gift card has been created successfully. Share the gift of natural Ayurvedic beauty."
-            keywords="gift card, e-gift card, digital gift card, Ayurvedic gift"
-            url="/gift-cards"
-          />
+        <SEO
+          title="Gift Card Purchased | ASudha Beauty"
+          description="Your ASudha Beauty gift card has been created successfully. Share the gift of natural Ayurvedic beauty."
+          keywords="gift card, e-gift card, digital gift card, Ayurvedic gift"
+          url="/gift-cards"
+          citations={[
+            { label: "Consumer Protection Act, 2019", href: "https://consumeraffairs.nic.in/" },
+          ]}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(giftCardJsonLd) }}
+        />
 
+        {backgroundJSX}
+
+        <main style={themeStyles.successWrap}>
           <div style={themeStyles.successSection}>
-            <div style={themeStyles.successAccentBar} />
-            <div style={themeStyles.successIconWrap}>
+            <div style={themeStyles.successAccentBar} aria-hidden="true" />
+            <div style={themeStyles.successIconWrap} aria-hidden="true">
               <FaCheckCircle style={themeStyles.successIcon} />
             </div>
-            <h2 style={themeStyles.successTitle}>
-              Gift Card Created Successfully! 🎉
-            </h2>
+            <h1 style={themeStyles.successTitle}>
+              Gift Card Created Successfully
+            </h1>
             <p style={themeStyles.successSubtitle}>
               Your gift card has been sent to{" "}
               <strong style={{ color: T.text }}>{recipientEmail}</strong>.
@@ -1045,6 +1055,7 @@ const GiftCards = () => {
             <div style={themeStyles.codeBox}>
               <span style={themeStyles.giftCardCode}>{createdCard.code}</span>
               <button
+                type="button"
                 style={themeStyles.copyButton}
                 className="gc-copy-btn"
                 onClick={handleCopyCode}
@@ -1052,11 +1063,11 @@ const GiftCards = () => {
               >
                 {copied ? (
                   <>
-                    <FaCheckCircle /> Copied!
+                    <FaCheckCircle aria-hidden="true" /> Copied!
                   </>
                 ) : (
                   <>
-                    <FaCopy /> Copy
+                    <FaCopy aria-hidden="true" /> Copy
                   </>
                 )}
               </button>
@@ -1070,195 +1081,246 @@ const GiftCards = () => {
             <p style={themeStyles.shareTitle}>Share the joy</p>
             <div style={themeStyles.shareButtons}>
               <button
+                type="button"
                 style={themeStyles.shareButton}
                 className="gc-share-btn"
                 onClick={() => handleShare("whatsapp")}
                 aria-label="Share on WhatsApp"
               >
-                <FaWhatsapp />
+                <FaWhatsapp aria-hidden="true" />
               </button>
               <button
+                type="button"
                 style={themeStyles.shareButton}
                 className="gc-share-btn"
                 onClick={() => handleShare("facebook")}
                 aria-label="Share on Facebook"
               >
-                <FaFacebook />
+                <FaFacebook aria-hidden="true" />
               </button>
               <button
-                style={themeStyles.shareButton}
-                className="gc-share-btn"
-                onClick={() => handleShare("twitter")}
-                aria-label="Share on Twitter"
-              >
-                <FaTwitter />
-              </button>
-              <button
+                type="button"
                 style={themeStyles.shareButton}
                 className="gc-share-btn"
                 onClick={() => handleShare("email")}
                 aria-label="Share via Email"
               >
-                <FaMail />
+                <FaMail aria-hidden="true" />
               </button>
             </div>
 
             <button
+              type="button"
               style={themeStyles.actionButton}
               className="gc-action-btn"
               onClick={() => navigate("/shop")}
             >
-              Explore Our Herbal Powders <FaArrowRight />
+              Explore Our Herbal Powders <FaArrowRight aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
-  // ─── MAIN FORM ────────────────────────────────────────────────────
+  // ─── MAIN FORM ───
   return (
     <div style={themeStyles.container}>
-      <BackgroundLayer />
-      <div style={themeStyles.content}>
-        <SEO
-          title="Gift Cards | ASudha Beauty"
-          description="Send an ASudha Beauty gift card to your loved ones. Perfect for birthdays, anniversaries, or any special occasion."
-          keywords="gift card, e-gift card, digital gift card, beauty gift card, Ayurvedic gift"
-          url="/gift-cards"
-        />
+      <SEO
+        title="Gift Cards | ASudha Beauty — Give the Gift of Natural Beauty"
+        description="Send an ASudha Beauty gift card to your loved ones. Perfect for birthdays, anniversaries, or any special occasion. Valid for 100% natural Ayurvedic skincare and hair care."
+        keywords="gift card, e-gift card, digital gift card, beauty gift card, Ayurvedic gift"
+        url="/gift-cards"
+        citations={[
+          { label: "Consumer Protection Act, 2019", href: "https://consumeraffairs.nic.in/" },
+        ]}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(giftCardJsonLd) }}
+      />
 
+      {backgroundJSX}
+
+      <main style={themeStyles.content}>
         <button
+          type="button"
           onClick={() => navigate(-1)}
           style={themeStyles.backButton}
           className="gc-back-btn"
-          type="button"
+          aria-label="Go back to previous page"
         >
-          <FaArrowLeft /> Back
+          <FaArrowLeft aria-hidden="true" /> Back
         </button>
 
-        <div style={themeStyles.header}>
-          {/* <div style={themeStyles.heroBadge}>
-            <FaLeaf style={{ fontSize: "0.7rem" }} /> Share the Goodness
-          </div> */}
+        <header style={themeStyles.header}>
           <h1 style={themeStyles.title}>
-            <FaGift style={themeStyles.titleIcon} /> Gift Cards
+            <FaGift aria-hidden="true" style={themeStyles.titleIcon} /> Gift Cards
             <span style={themeStyles.titleAccent} aria-hidden="true" />
           </h1>
           <p style={themeStyles.subtitle}>
             Give the gift of nature. Send an ASudha Beauty gift card to your
             loved ones — so they can explore our 100% natural Ayurvedic powders.
           </p>
-        </div>
+        </header>
 
         <div style={themeStyles.grid}>
           {/* Gift Card Form */}
-          <div style={themeStyles.formSection}>
-            <div style={themeStyles.formAccentBar} />
+          <section style={themeStyles.formSection} aria-labelledby="gc-form-title">
+            <div style={themeStyles.formAccentBar} aria-hidden="true" />
             <div style={themeStyles.formTitleRow}>
-              <span style={themeStyles.formTitleIcon}>
+              <span style={themeStyles.formTitleIcon} aria-hidden="true">
                 <FaHeart />
               </span>
-              <h2 style={themeStyles.formTitle}>Create a Gift Card</h2>
+              <h2 id="gc-form-title" style={themeStyles.formTitle}>
+                Create a Gift Card
+              </h2>
             </div>
 
-            {error && <div style={themeStyles.error}>{error}</div>}
+            {error && (
+              <div style={themeStyles.error} role="alert" aria-live="assertive">
+                <FaExclamationTriangle aria-hidden="true" /> {error}
+              </div>
+            )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div style={themeStyles.formGroup}>
                 <label style={themeStyles.label}>
-                  <FaRupeeSign style={themeStyles.labelIcon} /> Select Amount *
+                  <FaRupeeSign aria-hidden="true" style={themeStyles.labelIcon} /> Select Amount *
                 </label>
-                <div style={themeStyles.amountGrid}>
-                  {giftCardAmounts.map((cardAmount) => (
+                <div style={themeStyles.amountGrid} role="group" aria-label="Select gift card amount">
+                  {GIFT_CARD_AMOUNTS.map((cardAmount) => (
                     <button
                       key={cardAmount}
                       type="button"
                       style={{
                         ...themeStyles.amountButton,
-                        ...(amount === cardAmount
-                          ? themeStyles.activeAmount
-                          : {}),
+                        ...(amount === cardAmount ? themeStyles.activeAmount : {}),
                       }}
                       className="gc-amount-btn"
                       onClick={() => setAmount(cardAmount)}
+                      aria-pressed={amount === cardAmount}
                     >
                       ₹{cardAmount}
                     </button>
                   ))}
                 </div>
                 <div style={themeStyles.customAmount}>
-                  <label style={themeStyles.label}>
-                    <FaGift style={themeStyles.labelIcon} /> Or enter custom
-                    amount
+                  <label htmlFor="gc-amount" style={themeStyles.label}>
+                    <FaGift aria-hidden="true" style={themeStyles.labelIcon} /> Or enter custom amount
                   </label>
                   <div style={themeStyles.inputWithIcon}>
-                    <FaRupeeSign style={themeStyles.inputIcon} />
+                    <FaRupeeSign aria-hidden="true" style={themeStyles.inputIcon} />
                     <input
+                      id="gc-amount"
                       type="number"
                       value={amount === 0 ? "" : amount}
-                      onChange={(e) => setAmount(Number(e.target.value))}
+                      onChange={(e) => {
+                        setAmount(Number(e.target.value));
+                        if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: "" }));
+                      }}
                       style={{ ...themeStyles.input, paddingLeft: "2.75rem" }}
                       className="gc-input"
                       placeholder="Enter amount"
                       min="100"
                       max="50000"
+                      aria-required="true"
+                      aria-invalid={fieldErrors.amount ? "true" : "false"}
+                      aria-describedby={fieldErrors.amount ? "gc-amount-error" : undefined}
                     />
                   </div>
+                  {fieldErrors.amount && (
+                    <div id="gc-amount-error" style={themeStyles.fieldError} role="alert">
+                      <FaExclamationTriangle aria-hidden="true" /> {fieldErrors.amount}
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>
-                  <FaUser style={themeStyles.labelIcon} /> Recipient's Name *
+                <label htmlFor="gc-recipientName" style={themeStyles.label}>
+                  <FaUser aria-hidden="true" style={themeStyles.labelIcon} /> Recipient's Name *
                 </label>
                 <input
+                  id="gc-recipientName"
                   type="text"
                   value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
+                  onChange={(e) => {
+                    setRecipientName(e.target.value);
+                    if (fieldErrors.recipientName) setFieldErrors(prev => ({ ...prev, recipientName: "" }));
+                  }}
                   style={themeStyles.input}
                   className="gc-input"
                   placeholder="Enter recipient's name"
-                  required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.recipientName ? "true" : "false"}
+                  aria-describedby={fieldErrors.recipientName ? "gc-recipientName-error" : undefined}
                 />
+                {fieldErrors.recipientName && (
+                  <div id="gc-recipientName-error" style={themeStyles.fieldError} role="alert">
+                    <FaExclamationTriangle aria-hidden="true" /> {fieldErrors.recipientName}
+                  </div>
+                )}
               </div>
 
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>
-                  <FaEnvelope style={themeStyles.labelIcon} /> Recipient's Email *
+                <label htmlFor="gc-recipientEmail" style={themeStyles.label}>
+                  <FaEnvelope aria-hidden="true" style={themeStyles.labelIcon} /> Recipient's Email *
                 </label>
                 <input
+                  id="gc-recipientEmail"
                   type="email"
                   value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  onChange={(e) => {
+                    setRecipientEmail(e.target.value);
+                    if (fieldErrors.recipientEmail) setFieldErrors(prev => ({ ...prev, recipientEmail: "" }));
+                  }}
                   style={themeStyles.input}
                   className="gc-input"
                   placeholder="recipient@email.com"
-                  required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.recipientEmail ? "true" : "false"}
+                  aria-describedby={fieldErrors.recipientEmail ? "gc-recipientEmail-error" : undefined}
                 />
+                {fieldErrors.recipientEmail && (
+                  <div id="gc-recipientEmail-error" style={themeStyles.fieldError} role="alert">
+                    <FaExclamationTriangle aria-hidden="true" /> {fieldErrors.recipientEmail}
+                  </div>
+                )}
               </div>
 
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>
-                  <FaHeart style={themeStyles.labelIcon} /> Your Name *
+                <label htmlFor="gc-senderName" style={themeStyles.label}>
+                  <FaHeart aria-hidden="true" style={themeStyles.labelIcon} /> Your Name *
                 </label>
                 <input
+                  id="gc-senderName"
                   type="text"
                   value={senderName}
-                  onChange={(e) => setSenderName(e.target.value)}
+                  onChange={(e) => {
+                    setSenderName(e.target.value);
+                    if (fieldErrors.senderName) setFieldErrors(prev => ({ ...prev, senderName: "" }));
+                  }}
                   style={themeStyles.input}
                   className="gc-input"
                   placeholder="Your name"
-                  required
+                  aria-required="true"
+                  aria-invalid={fieldErrors.senderName ? "true" : "false"}
+                  aria-describedby={fieldErrors.senderName ? "gc-senderName-error" : undefined}
                 />
+                {fieldErrors.senderName && (
+                  <div id="gc-senderName-error" style={themeStyles.fieldError} role="alert">
+                    <FaExclamationTriangle aria-hidden="true" /> {fieldErrors.senderName}
+                  </div>
+                )}
               </div>
 
               <div style={themeStyles.formGroup}>
-                <label style={themeStyles.label}>
-                  <FaCommentAlt style={themeStyles.labelIcon} /> Personal
-                  Message (Optional)
+                <label htmlFor="gc-message" style={themeStyles.label}>
+                  <FaCommentAlt aria-hidden="true" style={themeStyles.labelIcon} /> Personal Message (Optional)
                 </label>
                 <textarea
+                  id="gc-message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   style={themeStyles.textarea}
@@ -1277,28 +1339,27 @@ const GiftCards = () => {
                   "Creating..."
                 ) : (
                   <>
-                    <FaGift /> Purchase Gift Card
+                    <FaGift aria-hidden="true" /> Purchase Gift Card
                   </>
                 )}
               </button>
             </form>
-          </div>
+          </section>
 
           {/* Information Section */}
-          <div style={themeStyles.infoSection}>
-            <div style={themeStyles.infoAccentBar} />
+          <aside style={themeStyles.infoSection} aria-labelledby="gc-info-title">
+            <div style={themeStyles.infoAccentBar} aria-hidden="true" />
             <div style={themeStyles.infoTitleRow}>
-              <span style={themeStyles.infoTitleIcon}>
+              <span style={themeStyles.infoTitleIcon} aria-hidden="true">
                 <FaSpa />
               </span>
-              <h2 style={themeStyles.infoTitle}>How It Works</h2>
+              <h2 id="gc-info-title" style={themeStyles.infoTitle}>
+                How It Works
+              </h2>
             </div>
 
             <div style={themeStyles.infoCard} className="gc-info-card">
-              <span
-                style={themeStyles.infoIconWrap}
-                className="gc-info-icon"
-              >
+              <span style={themeStyles.infoIconWrap} className="gc-info-icon" aria-hidden="true">
                 <FaGift />
               </span>
               <div style={themeStyles.infoCardBody}>
@@ -1311,10 +1372,7 @@ const GiftCards = () => {
             </div>
 
             <div style={themeStyles.infoCard} className="gc-info-card">
-              <span
-                style={themeStyles.infoIconWrap}
-                className="gc-info-icon"
-              >
+              <span style={themeStyles.infoIconWrap} className="gc-info-icon" aria-hidden="true">
                 <FaEnvelope />
               </span>
               <div style={themeStyles.infoCardBody}>
@@ -1329,10 +1387,7 @@ const GiftCards = () => {
             </div>
 
             <div style={themeStyles.infoCard} className="gc-info-card">
-              <span
-                style={themeStyles.infoIconWrap}
-                className="gc-info-icon"
-              >
+              <span style={themeStyles.infoIconWrap} className="gc-info-icon" aria-hidden="true">
                 <FaShoppingBag />
               </span>
               <div style={themeStyles.infoCardBody}>
@@ -1345,10 +1400,7 @@ const GiftCards = () => {
             </div>
 
             <div style={themeStyles.infoCard} className="gc-info-card">
-              <span
-                style={themeStyles.infoIconWrap}
-                className="gc-info-icon"
-              >
+              <span style={themeStyles.infoIconWrap} className="gc-info-icon" aria-hidden="true">
                 <FaRegClock />
               </span>
               <div style={themeStyles.infoCardBody}>
@@ -1362,13 +1414,13 @@ const GiftCards = () => {
 
             <div style={themeStyles.trustCard}>
               <p style={themeStyles.trustText}>
-                <FaStar style={{ color: isDarkMode ? T.gold : brandColors.goldDark }} />
+                <FaStar aria-hidden="true" style={{ color: isDarkMode ? T.gold : brandColors.goldDark }} />
                 Trusted by 5000+ happy customers
               </p>
             </div>
-          </div>
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

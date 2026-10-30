@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
 import ProductCard from "../components/ProductCard";
+import SEO from "../components/SEO"; // ✅ Added for SEO optimization
 import { products } from "../data/products";
 import {
   FaArrowRight,
@@ -19,6 +20,10 @@ import {
   FaShieldAlt,
   FaHeart,
   FaRegSnowflake,
+  // ✅ New icons replacing emojis
+  FaSpa,
+  FaTint,
+  FaSun,
 } from "react-icons/fa";
 
 const Home = () => {
@@ -89,7 +94,7 @@ const Home = () => {
   }, []);
 
   // ─── Global CSS ─────────────────────────────────────────────────
-  useEffect(() => {
+  useLayoutEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
       * { box-sizing: border-box; }
@@ -116,10 +121,6 @@ const Home = () => {
         0%, 100% { opacity: var(--base-opacity); transform: scale(1); }
         50%      { opacity: calc(var(--base-opacity) * 1.5); transform: scale(1.08); }
       }
-      @keyframes gradientShift {
-        0%, 100% { background-position: 0% 50%; }
-        50%      { background-position: 100% 50%; }
-      }
       @keyframes shineSweep {
         0%   { left: -120%; }
         100% { left: 120%; }
@@ -131,10 +132,6 @@ const Home = () => {
       @keyframes fadeInDown {
         from { opacity: 0; transform: translateY(-24px); }
         to   { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes scaleIn {
-        from { opacity: 0; transform: scale(0.94); }
-        to   { opacity: 1; transform: scale(1); }
       }
       @keyframes leafSpin {
         0%   { transform: rotate(0deg) scale(1); }
@@ -154,8 +151,6 @@ const Home = () => {
         pointer-events: none;
         z-index: 0;
       }
-
-      /* Layer 1: Base gradient overlay */
       .hm-bg::before {
         content: "";
         position: absolute;
@@ -168,8 +163,6 @@ const Home = () => {
              radial-gradient(ellipse at 80% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
              radial-gradient(ellipse at 50% 100%, rgba(76, 175, 80, 0.06) 0%, transparent 60%)`};
       }
-
-      /* Layer 2: Dot grid pattern */
       .hm-bg::after {
         content: "";
         position: absolute;
@@ -191,7 +184,6 @@ const Home = () => {
         filter: blur(110px);
         pointer-events: none;
       }
-
       .hm-mesh-1 {
         top: -180px; left: -180px;
         width: 560px; height: 560px;
@@ -233,7 +225,6 @@ const Home = () => {
         animation: meshPulse 12s ease-in-out infinite;
       }
 
-      /* Twinkling light dots */
       .hm-sparkle {
         position: absolute;
         width: 3px; height: 3px;
@@ -321,11 +312,16 @@ const Home = () => {
       .value-item:hover .value-icon {
         transform: rotate(-6deg) scale(1.12);
       }
+      
+      /* ✅ Ensures React Icons are perfectly centered in their halo */
       .value-icon {
         width: 52px; height: 52px;
         display: flex; align-items: center; justify-content: center;
         font-size: 1.55rem; border-radius: 14px; margin-bottom: 14px;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .value-icon svg {
+        width: 1.6rem; height: 1.6rem;
       }
 
       /* ─── Category cards ─── */
@@ -356,7 +352,7 @@ const Home = () => {
       }
 
       /* ─── Feature badge ─── */
-      .feature-badge { transition: all 0.35s ease; }
+      .feature-badge { transition: all 0.35s ease; text-decoration: none; }
       .feature-badge:hover {
         transform: translateY(-3px);
         border-color: rgba(245, 52, 107, 0.4) !important;
@@ -535,48 +531,49 @@ const Home = () => {
       ? explicitBestSellers.slice(0, 8)
       : allProducts.slice(0, 4);
 
+  // ✅ Emojis replaced with proper React Icons
   const values = [
     {
-      icon: "🌿",
+      icon: <FaLeaf />,
       title: "100% Natural",
       description: "Pure, natural, and effective products. No chemicals, no parabens.",
       color: brandColors.green,
       link: "/about",
     },
     {
-      icon: "✨",
+      icon: <FaSpa />,
       title: "Ayurvedic Care",
       description: "Rooted in ancient Indian wellness, trusted for generations.",
       color: brandColors.gold,
       link: "/about",
     },
     {
-      icon: "🌱",
+      icon: <FaHeart />,
       title: "Cruelty Free",
       description: "Ethical, sustainable, and kind to both people and the planet.",
       color: brandColors.primary,
       link: "/about",
     },
     {
-      icon: "💧",
+      icon: <FaTint />,
       title: "Deep Cleansing",
       description: "Removes excess oil and impurities for clear, healthy skin.",
       color: "#87CEEB",
-      link: "/about",
+      link: "/shop?category=Skincare",
     },
     {
-      icon: "🌟",
+      icon: <FaSun />,
       title: "Natural Glow",
       description: "Makes your skin glow naturally with every use.",
       color: brandColors.primary,
-      link: "/about",
+      link: "/shop?category=Skincare",
     },
     {
-      icon: "💪",
+      icon: <FaShieldAlt />,
       title: "Chemical Free",
       description: "No harsh chemicals, no artificial fragrances—just pure nature.",
       color: "#C1E1C1",
-      link: "/about",
+      link: "/faqs",
     },
   ];
 
@@ -917,7 +914,6 @@ const Home = () => {
       boxSizing: "border-box",
       overflowX: "hidden",
     },
-
     bgWrapper: {
       position: "absolute",
       inset: 0,
@@ -925,7 +921,6 @@ const Home = () => {
       zIndex: 0,
       pointerEvents: "none",
     },
-
     heroWrapper: {
       padding: responsive.heroPadding,
       paddingTop: "0.5rem",
@@ -1100,7 +1095,6 @@ const Home = () => {
       cursor: "pointer",
       fontFamily: "inherit",
     },
-
     heroRight: {
       position: "relative",
       overflow: "hidden",
@@ -1305,7 +1299,6 @@ const Home = () => {
       fontSize: isSmallMobile ? "0.45rem" : isMobile ? "0.55rem" : "0.75rem",
       fontFamily: "inherit",
     },
-
     sectionTitleBlock: {
       display: "flex",
       flexDirection: "column",
@@ -1329,7 +1322,6 @@ const Home = () => {
       background: "linear-gradient(90deg, #f7d794 0%, #f5346b 100%)",
       marginTop: "0.75rem",
     },
-
     valuesSection: {
       padding: isMobile ? "2rem 0.9rem" : "3rem 1.5rem",
       maxWidth: "1200px",
@@ -1408,7 +1400,6 @@ const Home = () => {
       lineHeight: "1.55",
       margin: 0,
     },
-
     categoriesSection: {
       padding: isMobile ? "2rem 0.9rem" : "3rem 1.5rem",
       maxWidth: "1200px",
@@ -1468,7 +1459,6 @@ const Home = () => {
       gap: "0.25rem",
       fontWeight: "600",
     },
-
     productsSection: {
       padding: isMobile ? "2rem 0.9rem" : "3rem 1.5rem",
       maxWidth: "1200px",
@@ -1486,7 +1476,6 @@ const Home = () => {
       alignItems: "stretch",
     },
     viewAllContainer: { textAlign: "center" },
-
     ctaSection: {
       padding: isMobile ? "2rem 0.9rem" : "3rem 1.5rem",
       maxWidth: "1200px",
@@ -1535,7 +1524,6 @@ const Home = () => {
       maxWidth: "600px",
       margin: "0 auto 1.25rem",
     },
-
     testimonialsSection: {
       padding: isMobile ? "2rem 0.9rem 3rem" : "3rem 1.5rem 4rem",
       maxWidth: "1200px",
@@ -1688,6 +1676,14 @@ const Home = () => {
 
   return (
     <div style={themeStyles.container}>
+      {/* ✅ HIGH-AUTHORITY SEO TAGS */}
+      <SEO
+        title="ASudha Beauty | 100% Natural Ayurvedic Skincare & Haircare Powders"
+        description="Shop 100% natural, chemical-free Ayurvedic powders at ASudha Beauty. Discover Multani Mitti, Ubtan, Amla, Reetha & Shikakai for glowing skin and healthy hair. Free shipping over ₹500!"
+        keywords="ayurvedic skincare, natural face pack, multani mitti powder, ubtan powder, amla powder for hair, reetha shikakai, chemical free skincare india, herbal beauty products, buy ayurvedic powder online"
+        url="/"
+      />
+
       {/* ─── Rich animated background ─────────────────────────────── */}
       <div style={themeStyles.bgWrapper} className="hm-bg">
         <div className="hm-mesh hm-mesh-1" />
@@ -1716,7 +1712,7 @@ const Home = () => {
             <p style={themeStyles.heroSubtitle}>
               Discover the power of 100% natural Ayurvedic powders. Deep
               cleansing, oil control, and natural radiance—trusted by nature,
-              loved by you.
+              loved by you. <Link to="/about" style={{ color: brandColors.primary, fontWeight: "600", textDecoration: "none" }}>Learn more about our Ayurvedic roots.</Link>
             </p>
 
             <div style={themeStyles.heroStats}>
@@ -1881,24 +1877,28 @@ const Home = () => {
         </section>
       </div>
 
-      {/* ─── FEATURE BADGES ──────────────────────────────────────── */}
+      {/* ─── FEATURE BADGES (Clickable Internal Links for SEO) ──────── */}
       <div style={{ ...hyperlinkStyles.featureBadges, position: "relative", zIndex: 1 }}>
-        {[
-          { icon: <FaTruck />, label: "Free Shipping ₹500+" },
-          { icon: <FaShieldAlt />, label: "100% Natural" },
-          { icon: <FaLeaf />, label: "Ayurvedic Care" },
-          { icon: <FaHeart />, label: "Chemical Free" },
-          { icon: <FaRegSnowflake />, label: "All Skin Types" },
-        ].map((b, i) => (
-          <div
-            key={i}
-            style={hyperlinkStyles.featureBadge}
-            className="feature-badge fade-up"
-          >
-            <span style={hyperlinkStyles.featureBadgeIcon}>{b.icon}</span>
-            <span>{b.label}</span>
-          </div>
-        ))}
+        <Link to="/shipping" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
+          <span style={hyperlinkStyles.featureBadgeIcon}><FaTruck /></span>
+          <span>Free Shipping ₹500+</span>
+        </Link>
+        <Link to="/about" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
+          <span style={hyperlinkStyles.featureBadgeIcon}><FaShieldAlt /></span>
+          <span>100% Natural</span>
+        </Link>
+        <Link to="/blog" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
+          <span style={hyperlinkStyles.featureBadgeIcon}><FaLeaf /></span>
+          <span>Ayurvedic Care</span>
+        </Link>
+        <Link to="/faqs" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
+          <span style={hyperlinkStyles.featureBadgeIcon}><FaHeart /></span>
+          <span>Chemical Free</span>
+        </Link>
+        <Link to="/shop" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
+          <span style={hyperlinkStyles.featureBadgeIcon}><FaRegSnowflake /></span>
+          <span>All Skin Types</span>
+        </Link>
       </div>
 
       {/* ─── VALUES ───────────────────────────────────────────────── */}
@@ -1918,6 +1918,7 @@ const Home = () => {
               key={index}
               style={hyperlinkStyles.valueItemLink}
               className="value-item-link"
+              aria-label={`Learn more about ${value.title}`}
             >
               <div
                 style={{
@@ -1936,7 +1937,8 @@ const Home = () => {
                   }}
                   className="value-icon"
                 >
-                  <span>{value.icon}</span>
+                  {/* ✅ Exact SVG Icons replacing emojis */}
+                  {value.icon}
                 </div>
                 <h3 style={themeStyles.valueTitle}>{value.title}</h3>
                 <div
@@ -2067,7 +2069,7 @@ const Home = () => {
           <h3 style={themeStyles.ctaTitle}>100% Natural Ayurvedic Care</h3>
           <p style={themeStyles.ctaText}>
             Chemical Free • Paraben Free • Preservative Free • Suitable for All
-            Skin & Hair Types
+            Skin & Hair Types. <Link to="/blog" style={{ color: brandColors.primary, fontWeight: "600", textDecoration: "none" }}>Read our Blog</Link> or <Link to="/faqs" style={{ color: brandColors.primary, fontWeight: "600", textDecoration: "none" }}>check our FAQs</Link> to learn more.
           </p>
           <Link
             to="/shop?category=Skincare"

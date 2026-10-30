@@ -1,5 +1,7 @@
+// src/pages/Contact.jsx
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
+import SEO from "../components/SEO";
 import {
   FaPhone,
   FaEnvelope,
@@ -11,16 +13,20 @@ import {
   FaClock,
   FaInstagram,
   FaFacebook,
-  FaTwitter,
-  FaYoutube,
   FaCheckCircle,
   FaUser,
   FaComment,
   FaSpa,
   FaPaperPlane,
+  FaHeadset,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+const WA_NUMBER = "917518217726";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -37,9 +43,7 @@ const brandColors = {
 };
 
 const DARK_SHADOW = "0 10px 30px rgba(0, 0, 0, 0.55)";
-const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
-const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
 const Contact = () => {
   const { isDarkMode } = useTheme();
@@ -48,6 +52,7 @@ const Contact = () => {
     email: "",
     message: "",
   });
+  const [errors, setErrors] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
@@ -68,8 +73,8 @@ const Contact = () => {
     gold: brandColors.gold,
     green: brandColors.green,
     accent: brandColors.primary,
+    danger: "#ff8a80",
     shadow: DARK_SHADOW,
-    shadowLift: DARK_SHADOW_LIFT,
   };
 
   const light = {
@@ -86,8 +91,8 @@ const Contact = () => {
     gold: brandColors.goldDark,
     green: brandColors.green,
     accent: brandColors.primary,
+    danger: "#c62828",
     shadow: LIGHT_SHADOW,
-    shadowLift: LIGHT_SHADOW_LIFT,
   };
 
   const T = isDarkMode ? dark : light;
@@ -102,20 +107,94 @@ const Contact = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (formData.name.trim().length < 2) {
+      newErrors.name = "Please enter your full name";
+    }
+    if (!/^\S+@\S+\.\S+$/.test(formData.email.trim())) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    if (formData.message.trim().length < 10) {
+      newErrors.message = "Please write a slightly longer message (min 10 chars)";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      // Focus the first invalid field
+      const firstError = Object.keys(errors)[0];
+      if (firstError) document.getElementById(firstError)?.focus();
+      return;
+    }
+
     setIsSubmitted(true);
     setFormData({ name: "", email: "", message: "" });
-    setTimeout(() => setIsSubmitted(false), 5000);
+    setTimeout(() => setIsSubmitted(false), 6000);
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── JSON-LD: ContactPage + Organization ───
+  const contactJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ContactPage",
+        "@id": `${SITE_URL}/contact#webpage`,
+        url: `${SITE_URL}/contact`,
+        name: "Contact Us | ASudha Beauty",
+        description: "Get in touch with ASudha Beauty for product questions, support, and wholesale inquiries.",
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+      },
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: "ASudha Beauty",
+        url: SITE_URL,
+        logo: `${SITE_URL}/assets/images/Logo.png`,
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            telephone: "+91-7518217726",
+            contactType: "customer service",
+            areaServed: "IN",
+            availableLanguage: ["English", "Hindi"],
+          },
+          {
+            "@type": "ContactPoint",
+            telephone: "+91-9335975525",
+            contactType: "sales",
+            areaServed: "IN",
+            availableLanguage: ["English", "Hindi"],
+          }
+        ],
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf",
+          addressLocality: "Gorakhpur",
+          addressRegion: "UP",
+          postalCode: "273001",
+          addressCountry: "IN",
+        },
+        sameAs: [
+          "https://www.instagram.com/asudha_beauty",
+          "https://www.facebook.com/asudhabeauty",
+        ],
+      },
+    ],
+  };
+
+  // ─── Injected CSS ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-contact-styles="true"]')
@@ -142,32 +221,44 @@ const Contact = () => {
       .contact-input::placeholder {
         color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
       }
+      .contact-input[aria-invalid="true"] {
+        border-color: ${brandColors.danger} !important;
+      }
+      .contact-input[aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15) !important;
+      }
 
       .submit-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .submit-btn:hover {
+      .submit-btn:hover:not(:disabled),
+      .submit-btn:focus-visible:not(:disabled) {
         transform: translateY(-3px);
         box-shadow: 0 14px 36px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
       }
 
       .chat-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
-      .chat-btn:hover {
+      .chat-btn:hover,
+      .chat-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 14px 32px rgba(37, 211, 102, 0.5);
+        outline: none;
       }
 
       .social-link {
         transition: all 0.3s ease;
       }
-      .social-link:hover {
+      .social-link:hover,
+      .social-link:focus-visible {
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
         color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         transform: translateY(-4px) rotate(-6deg);
         box-shadow: 0 12px 24px rgba(245, 52, 107, 0.35);
+        outline: none;
       }
 
       .info-item {
@@ -180,13 +271,24 @@ const Contact = () => {
         transform: scale(1.1) rotate(-6deg);
         box-shadow: 0 10px 26px rgba(245, 52, 107, 0.35);
       }
-
       .info-icon-wrap {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
 
-      .contact-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      .info-link {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+      .info-link:hover {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary};
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .submit-btn, .chat-btn, .social-link, .info-item, .info-icon-wrap {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -196,8 +298,6 @@ const Contact = () => {
         .querySelectorAll('style[data-contact-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // ✅ T / brandColors are stable derivations of isDarkMode
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
@@ -217,8 +317,6 @@ const Contact = () => {
       width: "100%",
       position: "relative",
     },
-
-    // ─── Decorative orbs ───
     bgOrb1: {
       position: "fixed",
       top: "-160px",
@@ -251,34 +349,11 @@ const Contact = () => {
       opacity: isDarkMode ? 0.35 : 0.25,
       zIndex: 0,
     },
-
-    // ─── Hero ───
     hero: {
       textAlign: "center",
       padding: isMobile ? "1.5rem 0 2rem" : "2rem 0 3rem",
       position: "relative",
       zIndex: 1,
-    },
-    heroBadge: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.45rem 1.15rem",
-      backgroundColor: isDarkMode
-        ? "rgba(212, 175, 55, 0.14)"
-        : "rgba(212, 175, 55, 0.1)",
-      borderRadius: "50px",
-      fontSize: "0.72rem",
-      color: isDarkMode ? brandColors.gold : brandColors.bronze,
-      marginBottom: "1.25rem",
-      border: isDarkMode
-        ? "1px solid rgba(212, 175, 55, 0.32)"
-        : "1px solid rgba(199, 125, 66, 0.18)",
-      fontWeight: "800",
-      letterSpacing: "1px",
-      textTransform: "uppercase",
-      backdropFilter: "blur(8px)",
-      WebkitBackdropFilter: "blur(8px)",
     },
     title: {
       fontSize: isMobile ? "2rem" : isNarrow ? "2.5rem" : "3.2rem",
@@ -308,8 +383,6 @@ const Contact = () => {
       margin: "0 auto",
       lineHeight: "1.75",
     },
-
-    // ─── Grid ───
     contactGrid: {
       display: "grid",
       gridTemplateColumns: isNarrow ? "1fr" : "1.05fr 1fr",
@@ -317,8 +390,7 @@ const Contact = () => {
       position: "relative",
       zIndex: 1,
     },
-
-    // ─── Form card ───
+    // ─── Form Section ───
     formSection: {
       backgroundColor: T.card,
       padding: isMobile ? "1.75rem 1.35rem" : "2.5rem 2.25rem",
@@ -439,6 +511,15 @@ const Contact = () => {
       width: "100%",
       boxSizing: "border-box",
     },
+    fieldError: {
+      fontSize: "0.75rem",
+      color: T.danger,
+      fontWeight: "700",
+      marginTop: "0.35rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+    },
     submitButton: {
       padding: "0.95rem",
       background: `linear-gradient(135deg, ${brandColors.gold} 0%, ${brandColors.primary} 100%)`,
@@ -458,7 +539,7 @@ const Contact = () => {
       marginTop: "0.35rem",
     },
 
-    // ─── Info section ───
+    // ─── Info Section ───
     infoSection: {
       backgroundColor: T.card,
       padding: isMobile ? "1.75rem 1.35rem" : "2.5rem 2.25rem",
@@ -547,7 +628,7 @@ const Contact = () => {
       margin: 0,
     },
 
-    // ─── WhatsApp chat card ───
+    // ─── WhatsApp Chat Card ───
     chatSection: {
       textAlign: "center",
       padding: isMobile ? "1.5rem 1.25rem" : "1.75rem 1.5rem",
@@ -566,6 +647,7 @@ const Contact = () => {
       fontSize: "2rem",
       marginBottom: "0.5rem",
       lineHeight: 1,
+      color: brandColors.whatsapp,
     },
     chatTitle: {
       fontSize: "1.1rem",
@@ -599,7 +681,7 @@ const Contact = () => {
       letterSpacing: "0.3px",
     },
 
-    // ─── Social ───
+    // ─── Social Section ───
     socialSection: {
       marginTop: "1.75rem",
       textAlign: "center",
@@ -634,7 +716,7 @@ const Contact = () => {
       border: `1px solid ${T.borderSoft}`,
     },
 
-    // ─── Trust badge ───
+    // ─── Trust Badge ───
     trustBadge: {
       display: "flex",
       alignItems: "center",
@@ -660,247 +742,287 @@ const Contact = () => {
 
   return (
     <div style={themeStyles.container}>
-      <div style={themeStyles.bgOrb1} />
-      <div style={themeStyles.bgOrb2} />
+      <SEO
+        title="Contact Us | ASudha Beauty — Natural Ayurvedic Skincare Support"
+        description="Get in touch with ASudha Beauty for product questions, order support, and wholesale inquiries. Call, email, or chat with us on WhatsApp. Visit our store in Gorakhpur."
+        keywords="contact asudha beauty, ayurvedic skincare support, natural beauty store gorakhpur, wholesale ayurvedic products contact"
+        url="/contact"
+        citations={[
+          { label: "Consumer Protection Act, 2019", href: "https://consumeraffairs.nic.in/" },
+          { label: "National Consumer Helpline", href: "https://consumerhelpline.gov.in/" }
+        ]}
+      />
 
-      {/* Hero */}
-      <div style={themeStyles.hero}>
-        {/* <div style={themeStyles.heroBadge}>
-          <FaLeaf style={{ fontSize: "0.7rem" }} />
-          Let&apos;s Connect
-        </div> */}
-        <h1 style={themeStyles.title}>
-          Connect with Us
-          <span style={themeStyles.titleAccent} aria-hidden="true" />
-        </h1>
-        <p style={themeStyles.subtitle}>
-          Have questions about our Ayurvedic powders? Need help choosing the
-          right product? We&apos;re here to guide you on your natural beauty
-          journey.
-        </p>
-      </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
+      />
 
-      <div style={themeStyles.contactGrid}>
-        {/* Form card */}
-        <div style={themeStyles.formSection}>
-          <div style={themeStyles.formAccentBar} />
-          <div style={themeStyles.formTitleRow}>
-            <span style={themeStyles.formTitleIcon}>
-              <FaComment />
-            </span>
-            <h2 style={themeStyles.formTitle}>Send Us a Message</h2>
-          </div>
-          <p style={themeStyles.formSubtitle}>
-            We&apos;ll respond within 24 hours.
+      <div style={themeStyles.bgOrb1} aria-hidden="true" />
+      <div style={themeStyles.bgOrb2} aria-hidden="true" />
+
+      <main>
+        {/* Hero */}
+        <header style={themeStyles.hero}>
+          <h1 style={themeStyles.title}>
+            Connect with Us
+            <span style={themeStyles.titleAccent} aria-hidden="true" />
+          </h1>
+          <p style={themeStyles.subtitle}>
+            Have questions about our Ayurvedic powders? Need help choosing the
+            right product? We&apos;re here to guide you on your natural beauty
+            journey.
           </p>
+        </header>
 
-          {isSubmitted && (
-            <div style={themeStyles.successMessage}>
-              <FaCheckCircle /> Thank you! We&apos;ll get back to you soon.
+        <div style={themeStyles.contactGrid}>
+          {/* Form card */}
+          <section style={themeStyles.formSection} aria-labelledby="contact-form-title">
+            <div style={themeStyles.formAccentBar} aria-hidden="true" />
+            <div style={themeStyles.formTitleRow}>
+              <span style={themeStyles.formTitleIcon} aria-hidden="true">
+                <FaComment />
+              </span>
+              <h2 id="contact-form-title" style={themeStyles.formTitle}>
+                Send Us a Message
+              </h2>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} style={themeStyles.form}>
-            <div style={themeStyles.formGroup}>
-              <label htmlFor="name" style={themeStyles.label}>
-                <FaUser style={themeStyles.labelIcon} /> Your Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                style={themeStyles.input}
-                className="contact-input"
-                placeholder="Enter your name"
-              />
-            </div>
-
-            <div style={themeStyles.formGroup}>
-              <label htmlFor="email" style={themeStyles.label}>
-                <FaEnvelope style={themeStyles.labelIcon} /> Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                style={themeStyles.input}
-                className="contact-input"
-                placeholder="your@email.com"
-              />
-            </div>
-
-            <div style={themeStyles.formGroup}>
-              <label htmlFor="message" style={themeStyles.label}>
-                <FaComment style={themeStyles.labelIcon} /> Your Message
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                required
-                style={themeStyles.textarea}
-                className="contact-input"
-                placeholder="How can we help you?"
-                rows="4"
-              />
-            </div>
-
-            <button type="submit" style={themeStyles.submitButton} className="submit-btn">
-              <FaPaperPlane style={{ fontSize: "0.9rem" }} />
-              Send Message <FaArrowRight style={{ fontSize: "0.8rem" }} />
-            </button>
-          </form>
-        </div>
-
-        {/* Info card */}
-        <div style={themeStyles.infoSection}>
-          <div style={themeStyles.infoAccentBar} />
-          <div style={themeStyles.infoTitleRow}>
-            <span style={themeStyles.infoTitleIcon}>
-              <FaSpa />
-            </span>
-            <h2 style={themeStyles.infoTitle}>Get in Touch</h2>
-          </div>
-          <p style={themeStyles.infoSub}>
-            Reach out through any of these channels.
-          </p>
-
-          <div style={themeStyles.infoItem} className="info-item">
-            <span style={themeStyles.infoIconWrap} className="info-icon-wrap">
-              <FaPhone />
-            </span>
-            <div>
-              <h3 style={themeStyles.infoSubtitle}>Call Us</h3>
-              <p style={themeStyles.infoText}>+91-7518217726</p>
-              <p style={themeStyles.infoText}>+91-9335975525</p>
-            </div>
-          </div>
-
-          <div style={themeStyles.infoItem} className="info-item">
-            <span style={themeStyles.infoIconWrap} className="info-icon-wrap">
-              <FaEnvelope />
-            </span>
-            <div>
-              <h3 style={themeStyles.infoSubtitle}>Email</h3>
-              <p style={themeStyles.infoText}>asudhabeauty@gmail.com</p>
-            </div>
-          </div>
-
-          <div style={themeStyles.infoItem} className="info-item">
-            <span style={themeStyles.infoIconWrap} className="info-icon-wrap">
-              <FaMapMarkerAlt />
-            </span>
-            <div>
-              <h3 style={themeStyles.infoSubtitle}>Visit Our Store</h3>
-              <p style={themeStyles.infoText}>
-                Shop No. 51/T-11/28, Pandariba Gali
-                <br />
-                Shahmaruf, Gorakhpur - 273001
-              </p>
-            </div>
-          </div>
-
-          <div style={themeStyles.infoItem} className="info-item">
-            <span style={themeStyles.infoIconWrap} className="info-icon-wrap">
-              <FaClock />
-            </span>
-            <div>
-              <h3 style={themeStyles.infoSubtitle}>Business Hours</h3>
-              <p style={themeStyles.infoText}>
-                Mon - Sun: 10:00 AM - 7:00 PM
-              </p>
-            </div>
-          </div>
-
-          <div style={themeStyles.chatSection}>
-            <div style={themeStyles.chatIcon}>👋</div>
-            <h2 style={themeStyles.chatTitle}>Need Quick Help?</h2>
-            <p style={themeStyles.chatText}>
-              Chat with us on WhatsApp for instant support.
+            <p style={themeStyles.formSubtitle}>
+              We&apos;ll respond within 24 hours.
             </p>
-            <a
-              href="https://wa.me/917518217726"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: "none" }}
-            >
-              <button style={themeStyles.chatButton} className="chat-btn">
-                <FaWhatsapp /> Chat Now
-              </button>
-            </a>
-          </div>
 
-          <div style={themeStyles.socialSection}>
-            <p style={themeStyles.socialTitle}>Follow Us</p>
-            <div style={themeStyles.socialLinks}>
+            {isSubmitted && (
+              <div
+                style={themeStyles.successMessage}
+                role="status"
+                aria-live="polite"
+              >
+                <FaCheckCircle aria-hidden="true" /> Thank you! We&apos;ll get back to you soon.
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={themeStyles.form} noValidate>
+              <div style={themeStyles.formGroup}>
+                <label htmlFor="name" style={themeStyles.label}>
+                  <FaUser aria-hidden="true" style={themeStyles.labelIcon} /> Your Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  style={themeStyles.input}
+                  className="contact-input"
+                  placeholder="Enter your full name"
+                  aria-required="true"
+                  aria-invalid={errors.name ? "true" : "false"}
+                  aria-describedby={errors.name ? "name-error" : undefined}
+                />
+                {errors.name && (
+                  <div id="name-error" style={themeStyles.fieldError} role="alert">
+                    <FaExclamationTriangle aria-hidden="true" /> {errors.name}
+                  </div>
+                )}
+              </div>
+
+              <div style={themeStyles.formGroup}>
+                <label htmlFor="email" style={themeStyles.label}>
+                  <FaEnvelope aria-hidden="true" style={themeStyles.labelIcon} /> Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  style={themeStyles.input}
+                  className="contact-input"
+                  placeholder="your@email.com"
+                  aria-required="true"
+                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                />
+                {errors.email && (
+                  <div id="email-error" style={themeStyles.fieldError} role="alert">
+                    <FaExclamationTriangle aria-hidden="true" /> {errors.email}
+                  </div>
+                )}
+              </div>
+
+              <div style={themeStyles.formGroup}>
+                <label htmlFor="message" style={themeStyles.label}>
+                  <FaComment aria-hidden="true" style={themeStyles.labelIcon} /> Your Message
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  style={themeStyles.textarea}
+                  className="contact-input"
+                  placeholder="How can we help you?"
+                  rows="4"
+                  aria-required="true"
+                  aria-invalid={errors.message ? "true" : "false"}
+                  aria-describedby={errors.message ? "message-error" : undefined}
+                />
+                {errors.message && (
+                  <div id="message-error" style={themeStyles.fieldError} role="alert">
+                    <FaExclamationTriangle aria-hidden="true" /> {errors.message}
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" style={themeStyles.submitButton} className="submit-btn">
+                <FaPaperPlane aria-hidden="true" style={{ fontSize: "0.9rem" }} />
+                Send Message <FaArrowRight aria-hidden="true" style={{ fontSize: "0.8rem" }} />
+              </button>
+            </form>
+          </section>
+
+          {/* Info card */}
+          <section style={themeStyles.infoSection} aria-labelledby="contact-info-title">
+            <div style={themeStyles.infoAccentBar} aria-hidden="true" />
+            <div style={themeStyles.infoTitleRow}>
+              <span style={themeStyles.infoTitleIcon} aria-hidden="true">
+                <FaSpa />
+              </span>
+              <h2 id="contact-info-title" style={themeStyles.infoTitle}>
+                Get in Touch
+              </h2>
+            </div>
+            <p style={themeStyles.infoSub}>
+              Reach out through any of these channels.
+            </p>
+
+            <div style={themeStyles.infoItem} className="info-item">
+              <span style={themeStyles.infoIconWrap} className="info-icon-wrap" aria-hidden="true">
+                <FaPhone />
+              </span>
+              <div>
+                <h3 style={themeStyles.infoSubtitle}>Call Us</h3>
+                <p style={themeStyles.infoText}>
+                  <a href="tel:+917518217726" className="info-link">+91-7518217726</a>
+                </p>
+                <p style={themeStyles.infoText}>
+                  <a href="tel:+919335975525" className="info-link">+91-9335975525</a>
+                </p>
+              </div>
+            </div>
+
+            <div style={themeStyles.infoItem} className="info-item">
+              <span style={themeStyles.infoIconWrap} className="info-icon-wrap" aria-hidden="true">
+                <FaEnvelope />
+              </span>
+              <div>
+                <h3 style={themeStyles.infoSubtitle}>Email</h3>
+                <p style={themeStyles.infoText}>
+                  <a href="mailto:asudhabeauty@gmail.com" className="info-link">
+                    asudhabeauty@gmail.com
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            <div style={themeStyles.infoItem} className="info-item">
+              <span style={themeStyles.infoIconWrap} className="info-icon-wrap" aria-hidden="true">
+                <FaMapMarkerAlt />
+              </span>
+              <div>
+                <h3 style={themeStyles.infoSubtitle}>Visit Our Store</h3>
+                <address style={{ ...themeStyles.infoText, fontStyle: "normal" }}>
+                  Shop No. 51/T-11/28, Pandariba Gali
+                  <br />
+                  Shahmaruf, Gorakhpur - 273001
+                </address>
+              </div>
+            </div>
+
+            <div style={themeStyles.infoItem} className="info-item">
+              <span style={themeStyles.infoIconWrap} className="info-icon-wrap" aria-hidden="true">
+                <FaClock />
+              </span>
+              <div>
+                <h3 style={themeStyles.infoSubtitle}>Business Hours</h3>
+                <p style={themeStyles.infoText}>
+                  Mon - Sun: 10:00 AM - 7:00 PM
+                </p>
+              </div>
+            </div>
+
+            {/* WhatsApp Chat Card */}
+            <div style={themeStyles.chatSection}>
+              <div style={themeStyles.chatIcon} aria-hidden="true">
+                <FaHeadset />
+              </div>
+              <h2 style={themeStyles.chatTitle}>Need Quick Help?</h2>
+              <p style={themeStyles.chatText}>
+                Chat with us on WhatsApp for instant support.
+              </p>
               <a
-                href="https://www.instagram.com/asudha_beauty"
+                href={`https://wa.me/${WA_NUMBER}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={themeStyles.socialLink}
-                className="social-link"
-                aria-label="Instagram"
+                style={{ textDecoration: "none" }}
+                aria-label="Chat with ASudha Beauty on WhatsApp"
               >
-                <FaInstagram />
-              </a>
-              <a
-                href="https://www.facebook.com/asudhabeauty"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={themeStyles.socialLink}
-                className="social-link"
-                aria-label="Facebook"
-              >
-                <FaFacebook />
-              </a>
-              <a
-                href="https://twitter.com/asudhabeauty"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={themeStyles.socialLink}
-                className="social-link"
-                aria-label="Twitter"
-              >
-                <FaTwitter />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={themeStyles.socialLink}
-                className="social-link"
-                aria-label="YouTube"
-              >
-                <FaYoutube />
+                <button style={themeStyles.chatButton} className="chat-btn">
+                  <FaWhatsapp aria-hidden="true" /> Chat Now
+                </button>
               </a>
             </div>
-          </div>
 
-          <div style={themeStyles.trustBadge}>
-            <FaHeart
-              style={{ ...themeStyles.trustIcon, color: brandColors.primary }}
-            />
-            <span>100% Natural</span>
-            <span>•</span>
-            <FaLeaf
-              style={{ ...themeStyles.trustIcon, color: brandColors.green }}
-            />
-            <span>Ayurvedic Care</span>
-            <span>•</span>
-            <FaCheckCircle
-              style={{ ...themeStyles.trustIcon, color: brandColors.green }}
-            />
-            <span>5000+ Trusted</span>
-          </div>
+            {/* Social Links (Instagram & Facebook Only) */}
+            <div style={themeStyles.socialSection}>
+              <p style={themeStyles.socialTitle}>Follow Us</p>
+              <div style={themeStyles.socialLinks}>
+                <a
+                  href="https://www.instagram.com/asudha_beauty"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.socialLink}
+                  className="social-link"
+                  aria-label="Follow ASudha Beauty on Instagram"
+                >
+                  <FaInstagram aria-hidden="true" />
+                </a>
+                <a
+                  href="https://www.facebook.com/asudhabeauty"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.socialLink}
+                  className="social-link"
+                  aria-label="Follow ASudha Beauty on Facebook"
+                >
+                  <FaFacebook aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+
+            {/* Trust Badge */}
+            <div style={themeStyles.trustBadge}>
+              <FaHeart
+                aria-hidden="true"
+                style={{ ...themeStyles.trustIcon, color: brandColors.primary }}
+              />
+              <span>100% Natural</span>
+              <span aria-hidden="true">•</span>
+              <FaLeaf
+                aria-hidden="true"
+                style={{ ...themeStyles.trustIcon, color: brandColors.green }}
+              />
+              <span>Ayurvedic Care</span>
+              <span aria-hidden="true">•</span>
+              <FaCheckCircle
+                aria-hidden="true"
+                style={{ ...themeStyles.trustIcon, color: brandColors.green }}
+              />
+              <span>5000+ Trusted</span>
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

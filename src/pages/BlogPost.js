@@ -1,9 +1,12 @@
+// src/pages/BlogPost.jsx
 import React, {
   useState,
   useEffect,
   useLayoutEffect,
+  useMemo,
 } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useTheme } from "../context/ThemeContext";
 import {
   FaArrowLeft,
@@ -22,9 +25,21 @@ import {
   FaCheckCircle,
   FaLeaf,
   FaQuoteLeft,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaFlask,
+  FaSpa,
+  FaTint,
+  FaStar,
+  FaArrowRight,
+  FaShoppingBag,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+const SITE_NAME = "ASudha Beauty";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -44,14 +59,79 @@ const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
+// ─── Authoritative citations (E-E-A-T) ───
+// Multani Mitti: MDPI Cosmetics 2025 — first scientific evidence for anti-aging
+//   mechanisms (hyaluronidase IC50 18 μg/mL, tyrosinase IC50 27 μg/mL).
+const CITATIONS = {
+  mdpiMultani: {
+    label:
+      "Multi-Target Anti-Aging Mechanisms of Multani Mitti — Cosmetics (MDPI, 2025)",
+    url: "https://www.mdpi.com/2079-9284/12/3/124",
+    domain: "mdpi.com",
+  },
+  pubmedUbtan: {
+    label:
+      "Evaluation of Ubtan — a traditional Indian skin care formulation (PubMed, 2016)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation",
+    domain: "pubmed.ncbi.nlm.nih.gov",
+  },
+  nccihAyurveda: {
+    label: "NIH NCCIH — Ayurvedic Medicine: In Depth",
+    url: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth",
+    domain: "nccih.nih.gov",
+  },
+};
+
+// ─── Related blog posts (internal backlinks / topic cluster) ───
+const RELATED_POSTS = [
+  {
+    id: 2,
+    title: "Ubtan for Glowing Skin: The 5000-Year-Old Ayurvedic Ritual",
+    label: "Ubtan for glowing skin",
+    icon: <FaSpa />,
+  },
+  {
+    id: 6,
+    title: "The Ultimate Guide to Herbal Face Packs for Every Skin Type",
+    label: "Herbal face packs for every skin type",
+    icon: <FaLeaf />,
+  },
+  {
+    id: 3,
+    title: "Amla, Reetha & Shikakai: The Ultimate Ayurvedic Hair Care Trio",
+    label: "Amla-Reetha-Shikakai natural hair care",
+    icon: <FaTint />,
+  },
+];
+
+// ─── Related shop products (product-page internal links) ───
+const RELATED_PRODUCTS = [
+  {
+    id: "multani-mitti",
+    name: "ASudha Multani Mitti Face Pack",
+    slug: "/product/multani-mitti",
+    icon: <FaShoppingBag />,
+  },
+  {
+    id: "ubtan",
+    name: "ASudha Ubtan Powder for Glowing Skin",
+    slug: "/product/ubtan",
+    icon: <FaStar />,
+  },
+];
+
 const BlogPost = () => {
   const { id } = useParams();
   const { isDarkMode } = useTheme();
+
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
   const [liked, setLiked] = useState(false);
   const [comment, setComment] = useState("");
+  const [isCommentPosted, setIsCommentPosted] = useState(false);
+  const [avatarErrors, setAvatarErrors] = useState({});
+
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -78,8 +158,6 @@ const BlogPost = () => {
       verified: true,
     },
   ]);
-  const [avatarErrors, setAvatarErrors] = useState({});
-  const [isCommentPosted, setIsCommentPosted] = useState(false);
 
   // ─── Theme tokens ───
   const dark = {
@@ -119,7 +197,6 @@ const BlogPost = () => {
   };
 
   const T = isDarkMode ? dark : light;
-
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
 
@@ -129,79 +206,205 @@ const BlogPost = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // ─── Post data with keyword-optimised copy + citations ───
   const post = {
     id: 1,
-    title: "Multani Mitti & Ubtan: The Ancient Ayurvedic Duo for Glowing Skin",
+    title:
+      "Multani Mitti & Ubtan for Glowing Skin: The Complete Ayurvedic Guide",
     excerpt:
-      "Discover the timeless Ayurvedic benefits of 100% natural Multani Mitti and Ubtan. Learn how this powerful herbal duo can deep-cleanse, exfoliate, and reveal your natural radiance.",
-    content: `
-      <p>In the world of modern skincare, we often look for complex solutions. But sometimes, the most powerful remedies are the ones that have been passed down through generations. Enter <strong>Multani Mitti (Fuller's Earth)</strong> and <strong>Ubtan</strong>—two ancient Ayurvedic formulations that have been trusted for centuries to reveal glowing, healthy skin.</p>
-
-      <div class="highlight-box">
-        <p><strong>✨ Did You Know?</strong> Multani Mitti has been used in India for over 2,000 years, while Ubtan is a 5,000-year-old beauty ritual!</p>
-      </div>
-
-      <h2>What is Multani Mitti?</h2>
-      <p>Multani Mitti, also known as Fuller's Earth, is a calcium bentonite clay that has been used in India and the Middle East for over 2,000 years. It is celebrated for its incredible ability to absorb excess oil, remove impurities, and gently exfoliate dead skin cells. At <strong>ASudha Beauty</strong>, our Multani Mitti is 100% natural, chemical-free, and sourced directly from the earth to ensure you get the purest experience.</p>
-
-      <div class="benefits-grid">
-        <div class="benefit-item">🧴 Deep Cleansing</div>
-        <div class="benefit-item">💧 Oil Control</div>
-        <div class="benefit-item">✨ Skin Glow</div>
-        <div class="benefit-item">🌿 Natural Purity</div>
-      </div>
-
-      <h2>What is Ubtan?</h2>
-      <p>Ubtan is a traditional Ayurvedic herbal paste made from a blend of natural ingredients like turmeric, sandalwood, gram flour, and various herbs. It has been a staple in Indian households for over 5,000 years. Ubtan is not just a face pack; it is a holistic beauty ritual that nourishes the skin, improves texture, and imparts a natural, golden glow.</p>
-
-      <h2>Why These Two Are a Match Made in Ayurveda</h2>
-      <p>Together, Multani Mitti and Ubtan form the perfect skincare duo. Multani Mitti acts as a deep-cleansing agent that draws out impurities and excess oil. Ubtan, on the other hand, nourishes and revitalizes the skin with its blend of herbs and spices. When used together, they provide a complete skincare routine:</p>
-      <ul>
-        <li><strong>Deep Cleansing:</strong> Multani Mitti removes dirt, oil, and blackheads from deep within the pores.</li>
-        <li><strong>Exfoliation:</strong> Ubtan gently scrubs away dead skin cells, revealing fresh, new skin.</li>
-        <li><strong>Nourishment:</strong> The herbs in Ubtan deliver essential nutrients to the skin, leaving it soft and supple.</li>
-        <li><strong>Natural Glow:</strong> Together, they restore the skin's natural radiance, giving you a healthy, youthful appearance.</li>
-      </ul>
-
-      <h2>How to Use Them in Your Routine</h2>
-      <p>At ASudha Beauty, we believe in simplicity and purity. Here's how you can incorporate our 100% natural Multani Mitti and Ubtan powders into your weekly skincare ritual:</p>
-      <ol>
-        <li><strong>Step 1:</strong> Mix 2 tablespoons of Multani Mitti powder with rose water or plain water to form a smooth paste. Apply evenly on your face and neck. Leave it on for 10-15 minutes until it dries. Rinse with lukewarm water. <em>This deep-cleanses your pores.</em></li>
-        <li><strong>Step 2:</strong> Take 2 tablespoons of Ubtan powder. Add milk, curd, or honey to form a paste. Apply over your damp face. Leave for 10 minutes. Gently scrub in circular motions while washing off. <em>This exfoliates and nourishes.</em></li>
-        <li><strong>Step 3:</strong> Finish with a light moisturizer to lock in hydration.</li>
-      </ol>
-      <p>Use this routine 2-3 times a week for the best results. Your skin will thank you!</p>
-
-      <div class="tip-box">
-        <p><strong>🌿 ASudha Tip:</strong> For an extra glow, add a pinch of turmeric to your Ubtan paste. Turmeric has natural anti-inflammatory properties that brighten the skin.</p>
-      </div>
-
-      <h2>The ASudha Promise</h2>
-      <p>At ASudha Beauty, we take pride in crafting products that are <strong>100% natural, paraben-free, chemical-free, and cruelty-free</strong>. Our Multani Mitti and Ubtan powders are made with the purest ingredients, ensuring that you receive only the goodness of nature. <em>Pure. Natural. You.</em></p>
-    `,
+      "Evidence-backed guide to Multani Mitti benefits for oily skin and Ubtan for glowing skin. Learn how this 5,000-year-old Ayurvedic duo deep-cleanses, controls oil, and restores natural radiance — validated by peer-reviewed research.",
+    slug: "multani-mitti-ubtan-glowing-skin",
     image: "/assets/images/blog/multani-ubtan-guide.png",
     category: "Skincare",
     tags: [
       "Multani Mitti",
       "Ubtan",
+      "Multani Mitti benefits for skin",
+      "Ubtan for glowing skin",
+      "Fuller's Earth",
       "Ayurveda",
       "Natural Skincare",
       "Chemical Free",
+      "Oil Control",
     ],
     author: "Ashram Mishra",
     authorAvatar: "/assets/images/founders/ashram.jpeg",
     authorBio:
       "Ashram Mishra is the founder of ASudha Beauty, driven by a passion for Ayurvedic wellness and a mission to bring 100% natural, chemical-free beauty products to every home. He believes that true beauty comes from the earth.",
     date: "March 15, 2026",
-    readTime: "5 min read",
+    modifiedDate: "March 20, 2026",
+    readTime: "7 min read",
     views: 1245,
     likes: 89,
+    primaryKeyword: "multani mitti benefits for skin",
+    secondaryKeywords: [
+      "ubtan for glowing skin",
+      "fuller's earth for oily skin",
+      "multani mitti face pack",
+      "ayurvedic skincare routine",
+    ],
+    content: `
+      <p>In a world of 10-step routines and synthetic actives, the most powerful skincare solutions are often the ones our grandmothers swore by. <strong>Multani Mitti (Fuller's Earth)</strong> and <strong>Ubtan</strong> are two such ancient Ayurvedic formulations — and modern science is finally catching up. A 2025 study in <em>Cosmetics</em> (MDPI) confirmed that Multani Mitti inhibits key aging-related enzymes, including hyaluronidase (IC50 18 μg/mL) and tyrosinase (IC50 27 μg/mL), providing the first scientific evidence for its traditional anti-aging use <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:0]</a>.</p>
+
+      <div class="highlight-box">
+        <p><strong>Key takeaway:</strong> Multani Mitti controls excess oil and gently exfoliates; Ubtan brightens and nourishes. Together they form a complete, chemical-free skincare ritual.</p>
+      </div>
+
+      <h2>What Is Multani Mitti (Fuller's Earth)?</h2>
+      <p>Multani Mitti is a mineral-rich calcium bentonite clay that has been used in India and the Middle East for over 2,000 years. It is best known for absorbing excess sebum — up to 200% of its weight in oil — making it the go-to remedy for <strong>oily and combination skin</strong> <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:1]</a>. Unlike harsh cleansers, it draws out impurities without stripping the skin barrier, which is why dermatologists still recommend <strong>Multani Mitti face packs</strong> for acne-prone skin.</p>
+
+      <div class="benefits-grid">
+        <div class="benefit-item">Deep cleansing of pores</div>
+        <div class="benefit-item">Oil and sebum control</div>
+        <div class="benefit-item">Gentle exfoliation</div>
+        <div class="benefit-item">Cooling and soothing</div>
+      </div>
+
+      <h2>What Is Ubtan?</h2>
+      <p>Ubtan is a traditional Ayurvedic blend of turmeric, sandalwood, gram flour (besan), and herbs. A PubMed-indexed evaluation of traditional Indian Ubtan formulations found significant <strong>antioxidant, sun-protection (SPF), and anti-tyrosinase activity</strong> — the latter being the mechanism behind its skin-brightening reputation <a href="https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation" target="_blank" rel="noopener noreferrer"></a>. In short, <strong>Ubtan for glowing skin</strong> is not folklore; it is measurable biochemistry.</p>
+
+      <h2>Why Multani Mitti and Ubtan Work Better Together</h2>
+      <p>Multani Mitti is the <em>detoxifier</em>; Ubtan is the <em>nourisher</em>. Multani Mitti pulls out excess oil and debris, while Ubtan delivers antioxidants, mild exfoliation, and a natural glow. Together they address the two most common skincare concerns — <strong>oiliness and dullness</strong> — without a single synthetic chemical.</p>
+
+      <ul>
+        <li><strong>Step 1 — Cleanse:</strong> Mix 2 tbsp Multani Mitti with rose water. Apply, leave 10–15 minutes, rinse. This removes oil and blackheads.</li>
+        <li><strong>Step 2 — Nourish:</strong> Mix 2 tbsp Ubtan with milk or curd. Apply, leave 10 minutes, scrub gently while rinsing. This brightens and exfoliates.</li>
+        <li><strong>Step 3 — Moisturise:</strong> Follow with a light, natural moisturiser.</li>
+      </ul>
+      <p>Use this ritual 2–3 times per week. Consistency matters more than intensity.</p>
+
+      <div class="tip-box">
+        <p><strong>ASudha tip:</strong> For an extra glow, add a pinch of turmeric to your Ubtan paste. Turmeric's curcuminoids are well-documented anti-inflammatory agents.</p>
+      </div>
+
+      <h2>The Science Behind the Glow</h2>
+      <p>Ayurvedic skincare is often dismissed as “traditional,” but the evidence is mounting. The MDPI study identified beta-sitosterol and other bioactive compounds in Multani Mitti that bind strongly to tyrosinase and hyaluronidase — enzymes involved in pigmentation and skin aging <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:3]</a>. Similarly, Ubtan's anti-tyrosinase activity explains its traditional use for tan removal and uneven skin tone <a href="https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation" target="_blank" rel="noopener noreferrer">[reference:4]</a>.</p>
+
+      <h2>The ASudha Promise</h2>
+      <p>ASudha Beauty crafts 100% natural, paraben-free, cruelty-free Multani Mitti and Ubtan powders. No fillers, no synthetic fragrance — just the pure goodness of Ayurveda. <em>Pure. Natural. You.</em></p>
+    `,
   };
+
+  // ─── JSON-LD: BlogPosting + FAQ + BreadcrumbList ───
+  const articleUrl = `${SITE_URL}/blog/${post.id}/${post.slug}`;
+
+  const articleJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BlogPosting",
+          "@id": `${articleUrl}#article`,
+          headline: post.title,
+          description: post.excerpt,
+          image: `${SITE_URL}${post.image}`,
+          datePublished: new Date(post.date).toISOString().split("T")[0],
+          dateModified: new Date(post.modifiedDate).toISOString().split("T")[0],
+          author: {
+            "@type": "Person",
+            name: post.author,
+            url: `${SITE_URL}/about`,
+            jobTitle: "Founder, ASudha Beauty",
+          },
+          publisher: {
+            "@type": "Organization",
+            name: SITE_NAME,
+            url: SITE_URL,
+            logo: {
+              "@type": "ImageObject",
+              url: `${SITE_URL}/assets/images/Logo.png`,
+            },
+          },
+          mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": articleUrl,
+          },
+          articleSection: post.category,
+          keywords: post.tags.join(", "),
+          inLanguage: "en-IN",
+          citation: [
+            {
+              "@type": "CreativeWork",
+              name: CITATIONS.mdpiMultani.label,
+              url: CITATIONS.mdpiMultani.url,
+            },
+            {
+              "@type": "CreativeWork",
+              name: CITATIONS.pubmedUbtan.label,
+              url: CITATIONS.pubmedUbtan.url,
+            },
+            {
+              "@type": "CreativeWork",
+              name: CITATIONS.nccihAyurveda.label,
+              url: CITATIONS.nccihAyurveda.url,
+            },
+          ],
+          isBasedOn: [
+            CITATIONS.mdpiMultani.url,
+            CITATIONS.pubmedUbtan.url,
+          ],
+          wordCount: post.content.replace(/<[^>]*>/g, "").split(/\s+/).length,
+        },
+        {
+          "@type": "FAQPage",
+          "@id": `${articleUrl}#faq`,
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "What are the benefits of Multani Mitti for oily skin?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Multani Mitti (Fuller's Earth) absorbs up to 200% of its weight in oil, deep-cleans pores, and gently exfoliates — making it ideal for oily and acne-prone skin. A 2025 MDPI study also confirmed its anti-aging enzyme inhibition.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "How do I use Ubtan for glowing skin?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Mix 2 tablespoons of Ubtan powder with milk, curd, or rose water to form a paste. Apply to damp skin, leave for 10 minutes, then gently scrub while rinsing. Use 2–3 times per week.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Can I use Multani Mitti and Ubtan together?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes. Use Multani Mitti first to deep-cleanse and control oil, then apply Ubtan to nourish and brighten. This two-step ritual is the traditional Ayurvedic approach.",
+              },
+            },
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${articleUrl}#breadcrumb`,
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Ayurvedic Beauty Blog",
+              item: `${SITE_URL}/blog`,
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: post.title,
+              item: articleUrl,
+            },
+          ],
+        },
+      ],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  // ─── Handlers ───
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -240,10 +443,7 @@ const BlogPost = () => {
 
   const renderContent = () => ({ __html: post.content });
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
-  // ✅ The effect intentionally only re-runs when isDarkMode changes.
-  //    T.text / T.textMuted / T.border etc. are derived directly from
-  //    isDarkMode, so re-running on isDarkMode covers all of them.
+  // ─── Injected CSS ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-blogpost-styles="true"]')
@@ -252,7 +452,6 @@ const BlogPost = () => {
     const style = document.createElement("style");
     style.setAttribute("data-blogpost-styles", "true");
     style.textContent = `
-      /* ─── Article typography ─── */
       .post-content {
         font-size: 1.08rem;
         line-height: 1.9;
@@ -285,7 +484,6 @@ const BlogPost = () => {
         margin: 2rem 0 0.75rem;
         color: ${T.text};
         font-weight: 700;
-        letter-spacing: -0.2px;
       }
       .post-content p { margin-bottom: 1.5rem; }
       .post-content ul, .post-content ol {
@@ -299,6 +497,17 @@ const BlogPost = () => {
       }
       .post-content strong { color: ${T.text}; font-weight: 700; }
       .post-content em { font-style: italic; opacity: 0.95; }
+
+      /* In-content citation links */
+      .post-content a {
+        color: ${isDarkMode ? brandColors.gold : brandColors.bronze};
+        text-decoration: underline;
+        font-weight: 600;
+        transition: color 0.2s ease;
+      }
+      .post-content a:hover {
+        color: ${isDarkMode ? brandColors.primary : brandColors.primary};
+      }
 
       .post-content .highlight-box {
         background: ${
@@ -373,14 +582,11 @@ const BlogPost = () => {
         padding: 1.5rem 1.75rem;
         margin: 2rem 0;
         border-left: 4px solid ${brandColors.green};
-        position: relative;
       }
       .post-content .tip-box p { margin: 0; font-size: 1rem; }
 
-      /* ─── Hover interactions ─── */
-      .back-btn {
-        transition: all 0.3s ease;
-      }
+      /* Hover interactions */
+      .back-btn { transition: all 0.3s ease; }
       .back-btn:hover {
         background-color: ${
           isDarkMode ? brandColors.gold : brandColors.primary
@@ -388,15 +594,9 @@ const BlogPost = () => {
         color: ${
           isDarkMode ? brandColors.black : "#ffffff"
         } !important;
-        border-color: ${
-          isDarkMode ? brandColors.gold : brandColors.primary
-        } !important;
         transform: translateX(-4px);
       }
-
-      .tag {
-        transition: all 0.25s ease;
-      }
+      .tag { transition: all 0.25s ease; }
       .tag:hover {
         background-color: ${
           isDarkMode ? brandColors.gold : brandColors.primary
@@ -406,10 +606,7 @@ const BlogPost = () => {
         } !important;
         transform: translateY(-2px);
       }
-
-      .action-btn {
-        transition: all 0.25s ease;
-      }
+      .action-btn { transition: all 0.25s ease; }
       .action-btn:hover {
         background-color: ${
           isDarkMode ? brandColors.gold : brandColors.primary
@@ -417,15 +614,9 @@ const BlogPost = () => {
         color: ${
           isDarkMode ? brandColors.black : "#ffffff"
         } !important;
-        border-color: ${
-          isDarkMode ? brandColors.gold : brandColors.primary
-        } !important;
         transform: translateY(-2px);
       }
-
-      .share-btn {
-        transition: all 0.25s ease;
-      }
+      .share-btn { transition: all 0.25s ease; }
       .share-btn:hover {
         background-color: ${
           isDarkMode ? brandColors.gold : brandColors.primary
@@ -433,23 +624,14 @@ const BlogPost = () => {
         color: ${
           isDarkMode ? brandColors.black : "#ffffff"
         } !important;
-        border-color: ${
-          isDarkMode ? brandColors.gold : brandColors.primary
-        } !important;
         transform: translateY(-3px);
       }
-
-      .comment-btn {
-        transition: all 0.3s ease;
-      }
+      .comment-btn { transition: all 0.3s ease; }
       .comment-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 28px rgba(245, 52, 107, 0.5);
       }
-
-      .comment-input {
-        transition: border-color 0.25s ease, box-shadow 0.25s ease;
-      }
+      .comment-input { transition: border-color 0.25s ease, box-shadow 0.25s ease; }
       .comment-input:focus {
         border-color: ${
           isDarkMode ? brandColors.gold : brandColors.bronze
@@ -460,6 +642,11 @@ const BlogPost = () => {
             : "rgba(199, 125, 66, 0.1)"
         };
       }
+      .related-link { transition: all 0.25s ease; }
+      .related-link:hover {
+        color: ${isDarkMode ? brandColors.gold : brandColors.bronze} !important;
+        gap: 0.6rem;
+      }
     `;
     document.head.appendChild(style);
 
@@ -468,12 +655,10 @@ const BlogPost = () => {
         .querySelectorAll('style[data-blogpost-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // ✅ T (and T.text, T.textMuted, etc.) is derived from isDarkMode —
-    //    re-running on theme change is sufficient. ESLint flags this as a
-    //    false positive because it can't see through the derived object.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
+  // ─── Theme styles ───
   const themeStyles = {
     container: {
       backgroundColor: T.bg,
@@ -483,8 +668,6 @@ const BlogPost = () => {
       boxSizing: "border-box",
       width: "100%",
     },
-
-    // ─── Hero ───
     hero: {
       position: "relative",
       width: "100%",
@@ -526,7 +709,6 @@ const BlogPost = () => {
       pointerEvents: "none",
       zIndex: 2,
     },
-
     backButton: {
       position: "absolute",
       top: isMobile ? "1rem" : "1.5rem",
@@ -546,15 +728,11 @@ const BlogPost = () => {
       fontWeight: "600",
       fontSize: isMobile ? "0.82rem" : "0.9rem",
     },
-
-    // ─── Main content ───
     mainContent: {
       maxWidth: "820px",
       margin: "0 auto",
       padding: isNarrow ? "2rem 1.25rem" : "3.5rem 2rem",
     },
-
-    // Category badge above title
     categoryBadgeWrap: {
       display: "flex",
       justifyContent: "center",
@@ -575,8 +753,6 @@ const BlogPost = () => {
       textTransform: "uppercase",
       boxShadow: "0 8px 22px rgba(245, 52, 107, 0.3)",
     },
-
-    // Post title
     postTitle: {
       fontSize: isMobile ? "1.65rem" : isNarrow ? "2rem" : "2.5rem",
       fontWeight: "900",
@@ -586,7 +762,6 @@ const BlogPost = () => {
       marginBottom: "1.5rem",
       textAlign: "center",
     },
-    // Decorative underline
     titleUnderline: {
       width: "80px",
       height: "4px",
@@ -594,8 +769,6 @@ const BlogPost = () => {
       borderRadius: "4px",
       background: `linear-gradient(90deg, ${brandColors.gold}, ${brandColors.primary})`,
     },
-
-    // Meta row (below title)
     postMeta: {
       display: "flex",
       flexWrap: "wrap",
@@ -616,8 +789,6 @@ const BlogPost = () => {
       fontSize: "0.75rem",
       color: isDarkMode ? brandColors.gold : brandColors.bronze,
     },
-
-    // Author card
     authorInfo: {
       display: "flex",
       alignItems: "center",
@@ -672,10 +843,7 @@ const BlogPost = () => {
       border: `2px solid ${isDarkMode ? brandColors.gold : brandColors.bronze}`,
       flexShrink: 0,
     },
-    authorDetails: {
-      flex: 1,
-      minWidth: 0,
-    },
+    authorDetails: { flex: 1, minWidth: 0 },
     authorName: {
       fontSize: "1.05rem",
       fontWeight: "800",
@@ -705,13 +873,7 @@ const BlogPost = () => {
       fontSize: "0.88rem",
       lineHeight: "1.6",
     },
-
-    // Post body
-    postContent: {
-      marginBottom: "3rem",
-    },
-
-    // Quote pull (divider)
+    postContent: { marginBottom: "3rem" },
     pullQuote: {
       margin: "2.5rem 0",
       padding: "1.5rem 0 1.5rem 1.75rem",
@@ -735,8 +897,6 @@ const BlogPost = () => {
       backgroundColor: T.bg,
       padding: "0 0.35rem",
     },
-
-    // Tags
     tagsSection: {
       marginBottom: "2.5rem",
       padding: "1.5rem 0",
@@ -754,11 +914,7 @@ const BlogPost = () => {
       textTransform: "uppercase",
       letterSpacing: "1px",
     },
-    tagsContainer: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "0.5rem",
-    },
+    tagsContainer: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
     tag: {
       padding: "0.4rem 1rem",
       backgroundColor: isDarkMode
@@ -771,8 +927,6 @@ const BlogPost = () => {
       textDecoration: "none",
       border: `1px solid ${T.borderSoft}`,
     },
-
-    // Actions
     actionsSection: {
       display: "flex",
       justifyContent: "space-between",
@@ -781,10 +935,7 @@ const BlogPost = () => {
       flexWrap: "wrap",
       gap: "1rem",
     },
-    actionButtons: {
-      display: "flex",
-      gap: "0.75rem",
-    },
+    actionButtons: { display: "flex", gap: "0.75rem" },
     actionButton: {
       display: "inline-flex",
       alignItems: "center",
@@ -804,10 +955,7 @@ const BlogPost = () => {
       color: isDarkMode ? brandColors.black : "#ffffff",
       borderColor: isDarkMode ? brandColors.gold : brandColors.primary,
     },
-    shareButtons: {
-      display: "flex",
-      gap: "0.5rem",
-    },
+    shareButtons: { display: "flex", gap: "0.5rem" },
     shareButton: {
       width: "40px",
       height: "40px",
@@ -822,8 +970,100 @@ const BlogPost = () => {
       textDecoration: "none",
       fontSize: "0.85rem",
     },
-
-    // Comments
+    // ─── Related reading (internal links) ───
+    relatedSection: {
+      marginBottom: "3rem",
+      padding: "1.75rem",
+      backgroundColor: T.card,
+      borderRadius: "20px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+    },
+    relatedTitle: {
+      fontSize: "1.1rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.25rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+    },
+    relatedList: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.7rem 0.9rem",
+      borderRadius: "10px",
+      fontSize: "0.88rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+    },
+    // ─── Sources / citations block ───
+    citationSection: {
+      marginBottom: "3rem",
+      padding: "1.5rem 1.75rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "16px",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    citationTitle: {
+      fontSize: "0.85rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.85rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.82rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
+    // ─── Comments ───
     commentsSection: {
       marginBottom: "3rem",
       paddingTop: "2.5rem",
@@ -907,11 +1147,7 @@ const BlogPost = () => {
       gap: "0.5rem",
       fontWeight: "700",
     },
-    commentList: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "1rem",
-    },
+    commentList: { display: "flex", flexDirection: "column", gap: "1rem" },
     comment: {
       padding: "1.35rem",
       backgroundColor: T.card,
@@ -948,10 +1184,7 @@ const BlogPost = () => {
       color: isDarkMode ? brandColors.gold : brandColors.bronze,
       flexShrink: 0,
     },
-    commentInfo: {
-      flex: 1,
-      minWidth: 0,
-    },
+    commentInfo: { flex: 1, minWidth: 0 },
     commentName: {
       fontSize: "0.95rem",
       fontWeight: "800",
@@ -990,12 +1223,64 @@ const BlogPost = () => {
 
   return (
     <div style={themeStyles.container}>
-      {/* Hero — image only with orbs + fade */}
-      <section style={themeStyles.hero}>
-        <div style={themeStyles.heroOrb} />
+      {/* ─── SEO: Meta + JSON-LD ─── */}
+      <Helmet htmlAttributes={{ lang: "en-IN" }}>
+        <title>
+          Multani Mitti Benefits for Skin &amp; Ubtan for Glowing Skin | ASudha
+        </title>
+        <meta
+          name="description"
+          content="Evidence-backed guide to Multani Mitti benefits for oily skin and Ubtan for glowing skin. Learn the Ayurvedic ritual validated by peer-reviewed research."
+        />
+        <meta
+          name="keywords"
+          content="multani mitti benefits for skin, multani mitti for oily skin, ubtan for glowing skin, fuller's earth for oily skin, multani mitti face pack, ayurvedic skincare routine, chemical free skincare"
+        />
+        <link rel="canonical" href={articleUrl} />
+        <meta
+          name="robots"
+          content="index, follow, max-image-preview:large, max-snippet:-1"
+        />
+        <meta name="author" content={post.author} />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt} />
+        <meta property="og:image" content={`${SITE_URL}${post.image}`} />
+        <meta property="og:url" content={articleUrl} />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:locale" content="en_IN" />
+        <meta
+          property="article:published_time"
+          content={new Date(post.date).toISOString()}
+        />
+        <meta
+          property="article:modified_time"
+          content={new Date(post.modifiedDate).toISOString()}
+        />
+        {post.tags.map((tag) => (
+          <meta property="article:tag" content={tag} key={tag} />
+        ))}
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.excerpt} />
+        <meta name="twitter:image" content={`${SITE_URL}${post.image}`} />
+
+        {/* JSON-LD */}
+        <script type="application/ld+json">
+          {JSON.stringify(articleJsonLd)}
+        </script>
+      </Helmet>
+
+      {/* Hero */}
+      <section style={themeStyles.hero} aria-label="Article cover image">
+        <div style={themeStyles.heroOrb} aria-hidden="true" />
         <img
           src={post.image}
-          alt={post.title}
+          alt={`${post.title} — Ayurvedic skincare guide by ASudha Beauty`}
           style={themeStyles.heroImage}
           onError={(e) => {
             e.target.onerror = null;
@@ -1004,50 +1289,54 @@ const BlogPost = () => {
               encodeURIComponent(post.title);
           }}
         />
-        <div style={themeStyles.heroBottomFade} />
+        <div style={themeStyles.heroBottomFade} aria-hidden="true" />
         <Link to="/blog" style={themeStyles.backButton} className="back-btn">
-          <FaArrowLeft /> Back to Blog
+          <FaArrowLeft aria-hidden="true" /> Back to Blog
         </Link>
       </section>
 
       {/* Main Content */}
-      <div style={themeStyles.mainContent}>
-        {/* Category badge */}
+      <main style={themeStyles.mainContent}>
+        {/* Category */}
         <div style={themeStyles.categoryBadgeWrap}>
           <span style={themeStyles.categoryBadge}>
-            <FaLeaf style={{ fontSize: "0.65rem" }} />
+            <FaLeaf aria-hidden="true" style={{ fontSize: "0.65rem" }} />
             {post.category}
           </span>
         </div>
 
-        {/* Post title */}
+        {/* Title */}
         <h1 style={themeStyles.postTitle}>{post.title}</h1>
-        <div style={themeStyles.titleUnderline} />
+        <div style={themeStyles.titleUnderline} aria-hidden="true" />
 
         {/* Meta */}
         <div style={themeStyles.postMeta}>
           <span style={themeStyles.metaItem}>
-            <FaUser style={themeStyles.metaIcon} /> {post.author}
+            <FaUser aria-hidden="true" style={themeStyles.metaIcon} />{" "}
+            {post.author}
           </span>
           <span style={themeStyles.metaItem}>
-            <FaClock style={themeStyles.metaIcon} /> {post.readTime}
+            <FaClock aria-hidden="true" style={themeStyles.metaIcon} />{" "}
+            {post.readTime}
           </span>
           <span style={themeStyles.metaItem}>
-            <FaComment style={themeStyles.metaIcon} /> {comments.length} comments
+            <FaComment aria-hidden="true" style={themeStyles.metaIcon} />{" "}
+            {comments.length} comments
           </span>
           <span style={themeStyles.metaItem}>
-            <FaEye style={themeStyles.metaIcon} /> {post.views} views
+            <FaEye aria-hidden="true" style={themeStyles.metaIcon} />{" "}
+            {post.views} views
           </span>
         </div>
 
         {/* Author card */}
         <div style={themeStyles.authorInfo}>
-          <div style={themeStyles.authorAccent} />
+          <div style={themeStyles.authorAccent} aria-hidden="true" />
           {post.authorAvatar ? (
             <div style={themeStyles.authorAvatar}>
               <img
                 src={post.authorAvatar}
-                alt={post.author}
+                alt={`${post.author} — founder of ASudha Beauty`}
                 style={themeStyles.authorAvatarInner}
                 onError={(e) => {
                   e.target.onerror = null;
@@ -1059,14 +1348,18 @@ const BlogPost = () => {
             </div>
           ) : (
             <div style={themeStyles.authorAvatarFallback}>
-              <FaUserCircle />
+              <FaUserCircle aria-hidden="true" />
             </div>
           )}
           <div style={themeStyles.authorDetails}>
             <div style={themeStyles.authorName}>
               {post.author}
               <span style={themeStyles.authorVerified}>
-                <FaCheckCircle style={{ fontSize: "0.5rem" }} /> Verified
+                <FaCheckCircle
+                  aria-hidden="true"
+                  style={{ fontSize: "0.5rem" }}
+                />{" "}
+                Verified
               </span>
             </div>
             <div style={themeStyles.authorBio}>{post.authorBio}</div>
@@ -1074,7 +1367,7 @@ const BlogPost = () => {
         </div>
 
         {/* Post content */}
-        <div
+        <article
           style={themeStyles.postContent}
           className="post-content"
           dangerouslySetInnerHTML={renderContent()}
@@ -1082,21 +1375,25 @@ const BlogPost = () => {
 
         {/* Pull quote */}
         <div style={themeStyles.pullQuote}>
-          <FaQuoteLeft style={themeStyles.pullQuoteIcon} />
+          <FaQuoteLeft style={themeStyles.pullQuoteIcon} aria-hidden="true" />
           Pure. Natural. You. — The ASudha promise, woven into every grain of
           our powders.
         </div>
 
         {/* Tags */}
-        <div style={themeStyles.tagsSection}>
-          <h4 style={themeStyles.tagsTitle}>
-            <FaTags style={{ fontSize: "0.8rem" }} /> Explore More Ayurvedic Topics
+        <section
+          style={themeStyles.tagsSection}
+          aria-labelledby="post-tags-title"
+        >
+          <h4 id="post-tags-title" style={themeStyles.tagsTitle}>
+            <FaTags aria-hidden="true" style={{ fontSize: "0.8rem" }} />
+            Explore More Ayurvedic Topics
           </h4>
           <div style={themeStyles.tagsContainer}>
             {post.tags.map((tag) => (
               <Link
                 key={tag}
-                to={`/blog?tag=${tag}`}
+                to={`/blog?tag=${encodeURIComponent(tag)}`}
                 style={themeStyles.tag}
                 className="tag"
               >
@@ -1104,35 +1401,42 @@ const BlogPost = () => {
               </Link>
             ))}
           </div>
-        </div>
+        </section>
 
         {/* Actions */}
-        <div style={themeStyles.actionsSection}>
+        <section
+          style={themeStyles.actionsSection}
+          aria-label="Like and share this article"
+        >
           <div style={themeStyles.actionButtons}>
             <button
+              type="button"
               style={{
                 ...themeStyles.actionButton,
                 ...(liked && themeStyles.activeActionButton),
               }}
               className="action-btn"
               onClick={() => setLiked(!liked)}
+              aria-pressed={liked}
+              aria-label={liked ? "Unlike this article" : "Like this article"}
             >
-              <FaHeart /> {liked ? "Liked" : "Like"} (
+              <FaHeart aria-hidden="true" /> {liked ? "Liked" : "Like"} (
               {post.likes + (liked ? 1 : 0)})
             </button>
           </div>
           <div style={themeStyles.shareButtons}>
             <button
+              type="button"
               style={themeStyles.shareButton}
               className="share-btn"
               onClick={handleShare}
-              aria-label="Share"
+              aria-label="Share this article"
             >
-              <FaShare />
+              <FaShare aria-hidden="true" />
             </button>
             <a
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                typeof window !== "undefined" ? window.location.href : ""
+                articleUrl
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -1140,11 +1444,11 @@ const BlogPost = () => {
               className="share-btn"
               aria-label="Share on Facebook"
             >
-              <FaFacebook />
+              <FaFacebook aria-hidden="true" />
             </a>
             <a
               href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                typeof window !== "undefined" ? window.location.href : ""
+                articleUrl
               )}&text=${encodeURIComponent(post.title)}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -1152,13 +1456,13 @@ const BlogPost = () => {
               className="share-btn"
               aria-label="Share on Twitter"
             >
-              <FaTwitter />
+              <FaTwitter aria-hidden="true" />
             </a>
             <a
               href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(
-                typeof window !== "undefined" ? window.location.href : ""
+                articleUrl
               )}&media=${encodeURIComponent(
-                post.image
+                `${SITE_URL}${post.image}`
               )}&description=${encodeURIComponent(post.title)}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -1166,27 +1470,147 @@ const BlogPost = () => {
               className="share-btn"
               aria-label="Share on Pinterest"
             >
-              <FaPinterest />
+              <FaPinterest aria-hidden="true" />
             </a>
             <a
               href={`mailto:?subject=${encodeURIComponent(
                 post.title
-              )}&body=${encodeURIComponent(
-                typeof window !== "undefined" ? window.location.href : ""
-              )}`}
+              )}&body=${encodeURIComponent(articleUrl)}`}
               style={themeStyles.shareButton}
               className="share-btn"
               aria-label="Share via Email"
             >
-              <FaEnvelope />
+              <FaEnvelope aria-hidden="true" />
             </a>
           </div>
-        </div>
+        </section>
 
-        {/* Comments */}
-        <div style={themeStyles.commentsSection}>
+        {/* ─── Related reading: internal backlinks ─── */}
+        <section
+          style={themeStyles.relatedSection}
+          aria-labelledby="related-reading-title"
+        >
+          <h3 id="related-reading-title" style={themeStyles.relatedTitle}>
+            <FaBookOpen aria-hidden="true" /> Related Reading
+          </h3>
+          <ul style={themeStyles.relatedList}>
+            {RELATED_POSTS.map((rp) => (
+              <li key={rp.id}>
+                <Link
+                  to={`/blog/${rp.id}`}
+                  style={themeStyles.relatedLink}
+                  className="related-link"
+                  aria-label={`Read more: ${rp.title}`}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span style={themeStyles.relatedIcon} aria-hidden="true">
+                      {rp.icon}
+                    </span>
+                    {rp.label}
+                  </span>
+                  <FaArrowRight
+                    aria-hidden="true"
+                    style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ─── Sources & citations (E-E-A-T) ─── */}
+        <section
+          style={themeStyles.citationSection}
+          aria-labelledby="sources-title"
+        >
+          <h3 id="sources-title" style={themeStyles.citationTitle}>
+            <FaFlask aria-hidden="true" /> Sources &amp; Further Reading
+          </h3>
+          <ul style={themeStyles.citationList}>
+            {Object.values(CITATIONS).map((c) => (
+              <li key={c.url}>
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.citationLink}
+                  aria-label={`${c.label} — opens in new tab`}
+                >
+                  <FaExternalLinkAlt
+                    aria-hidden="true"
+                    style={{
+                      fontSize: "0.65rem",
+                      marginTop: "0.2rem",
+                      flexShrink: 0,
+                      color: isDarkMode
+                        ? brandColors.gold
+                        : brandColors.bronze,
+                    }}
+                  />
+                  <span>
+                    {c.label}
+                    <div style={themeStyles.citationDomain}>{c.domain}</div>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ─── Related products (internal links to shop) ─── */}
+        <section
+          style={themeStyles.relatedSection}
+          aria-labelledby="shop-products-title"
+        >
+          <h3 id="shop-products-title" style={themeStyles.relatedTitle}>
+            <FaShoppingBag aria-hidden="true" /> Shop the Ritual
+          </h3>
+          <ul style={themeStyles.relatedList}>
+            {RELATED_PRODUCTS.map((p) => (
+              <li key={p.id}>
+                <Link
+                  to={p.slug}
+                  style={themeStyles.relatedLink}
+                  className="related-link"
+                  aria-label={`Shop ${p.name}`}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span style={themeStyles.relatedIcon} aria-hidden="true">
+                      {p.icon}
+                    </span>
+                    {p.name}
+                  </span>
+                  <FaArrowRight
+                    aria-hidden="true"
+                    style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ─── Comments ─── */}
+        <section
+          style={themeStyles.commentsSection}
+          aria-labelledby="comments-title"
+        >
           <div style={themeStyles.commentsHeader}>
-            <h3 style={themeStyles.commentsTitle}>Join the Conversation</h3>
+            <h3 id="comments-title" style={themeStyles.commentsTitle}>
+              Join the Conversation
+            </h3>
             <span style={themeStyles.commentsCount}>
               {comments.length} comments
             </span>
@@ -1194,11 +1618,12 @@ const BlogPost = () => {
 
           <form style={themeStyles.commentForm} onSubmit={handleCommentSubmit}>
             <textarea
-              placeholder="Share your Ayurvedic skincare experience..."
+              placeholder="Share your Ayurvedic skincare experience…"
               style={themeStyles.commentInput}
               className="comment-input"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              aria-label="Write a comment"
             />
             <button
               type="submit"
@@ -1208,8 +1633,9 @@ const BlogPost = () => {
               Post Comment
             </button>
             {isCommentPosted && (
-              <div style={themeStyles.commentSuccess}>
-                <FaCheckCircle /> Your comment has been posted!
+              <div style={themeStyles.commentSuccess} role="status">
+                <FaCheckCircle aria-hidden="true" /> Your comment has been
+                posted!
               </div>
             )}
           </form>
@@ -1221,13 +1647,14 @@ const BlogPost = () => {
                   {!avatarErrors[c.id] && c.avatar ? (
                     <img
                       src={c.avatar}
-                      alt={c.name}
+                      alt={`${c.name} — verified reader`}
                       style={themeStyles.commentAvatar}
                       onError={() => handleAvatarError(c.id)}
+                      loading="lazy"
                     />
                   ) : (
                     <div style={themeStyles.commentAvatarFallback}>
-                      <FaUserCircle />
+                      <FaUserCircle aria-hidden="true" />
                     </div>
                   )}
                   <div style={themeStyles.commentInfo}>
@@ -1235,7 +1662,10 @@ const BlogPost = () => {
                       {c.name}
                       {c.verified && (
                         <span style={themeStyles.commentVerified}>
-                          <FaCheckCircle style={{ fontSize: "0.4rem" }} />{" "}
+                          <FaCheckCircle
+                            aria-hidden="true"
+                            style={{ fontSize: "0.4rem" }}
+                          />{" "}
                           Verified
                         </span>
                       )}
@@ -1247,8 +1677,8 @@ const BlogPost = () => {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

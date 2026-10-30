@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/Cart.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
@@ -17,9 +23,18 @@ import {
   FaGift,
   FaArrowRight,
   FaSpa,
+  FaCheckCircle,
+  FaExternalLinkAlt,
+  FaHeadset,
+  FaUndo,
+  FaLock,
+  FaBookOpen,
 } from "react-icons/fa";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -39,6 +54,51 @@ const DARK_SHADOW = "0 10px 30px rgba(0, 0, 0, 0.55)";
 const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
+
+// ─── Authoritative external citations (trust + security signals) ───
+const TRUSTED_SOURCES = [
+  {
+    label:
+      "Reserve Bank of India — Safe Digital Payments & Consumer Protection",
+    href: "https://www.rbi.org.in/",
+    domain: "rbi.org.in",
+  },
+  {
+    label:
+      "Consumer Protection Act, 2019 — Department of Consumer Affairs",
+    href: "https://consumeraffairs.nic.in/",
+    domain: "consumeraffairs.nic.in",
+  },
+  {
+    label: "National Consumer Helpline — Government of India",
+    href: "https://consumerhelpline.gov.in/",
+    domain: "consumerhelpline.gov.in",
+  },
+];
+
+// ─── Internal policy links (contextual backlinks) ───
+const POLICY_LINKS = [
+  {
+    to: "/returns",
+    label: "Returns & Refunds",
+    icon: <FaUndo />,
+  },
+  {
+    to: "/shipping",
+    label: "Shipping Policy",
+    icon: <FaTruck />,
+  },
+  {
+    to: "/contact",
+    label: "Customer Support",
+    icon: <FaHeadset />,
+  },
+  {
+    to: "/faqs",
+    label: "FAQs",
+    icon: <FaBookOpen />,
+  },
+];
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -102,18 +162,47 @@ const Cart = () => {
   const isTablet = windowWidth <= 1024;
   const isNarrow = windowWidth <= 768;
 
-  const subtotal = getCartTotal();
+  const subtotal = Number(getCartTotal()) || 0;
   const isFreeShipping = subtotal >= 500;
   const freeShippingThreshold = 500;
   const remaining = Math.max(0, freeShippingThreshold - subtotal);
-  const progressPercent = Math.min((subtotal / freeShippingThreshold) * 100, 100);
-  const gcBalance = getTotalGiftCardBalance();
+  const progressPercent = Math.min(
+    (subtotal / freeShippingThreshold) * 100,
+    100
+  );
+  const gcBalance = Number(getTotalGiftCardBalance()) || 0;
 
   const hasNaturalItems = cartItems.some(
     (item) => item.category === "Skincare" || item.category === "Hair Care"
   );
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  const totalItemCount = cartItems.reduce(
+    (acc, item) => acc + (Number(item.quantity) || 0),
+    0
+  );
+
+  const citations = useMemo(
+    () => TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    []
+  );
+
+  // ─── JSON-LD: WebPage (no breadcrumb per site pattern) ───
+  const cartJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/cart#webpage`,
+      url: `${SITE_URL}/cart`,
+      name: "Your Cart | ASudha Beauty",
+      description:
+        "Review your 100% natural Ayurvedic skincare and hair care selection and proceed to secure checkout.",
+      isPartOf: { "@id": `${SITE_URL}/#website` },
+      inLanguage: "en-IN",
+    }),
+    []
+  );
+
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-cart-styles="true"]')
@@ -143,36 +232,68 @@ const Cart = () => {
       .cart-orb-2 { animation: cartFloat2 18s ease-in-out infinite; }
       .cart-orb-3 { animation: cartFloat3 16s ease-in-out infinite; }
 
+      .cart-empty-cta,
+      .cart-checkout-btn {
+        transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
+      }
       .cart-empty-cta:hover,
-      .cart-checkout-btn:hover {
+      .cart-checkout-btn:hover,
+      .cart-empty-cta:focus-visible,
+      .cart-checkout-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 14px 36px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
+      }
+      .cart-checkout-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : "#ffffff"};
+        outline-offset: 2px;
       }
 
-      .cart-continue-link:hover {
+      .cart-continue-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .cart-continue-link:hover,
+      .cart-continue-link:focus-visible {
         color: ${brandColors.primary} !important;
         gap: 0.7rem;
+        outline: none;
       }
 
       .cart-remove-btn {
         transition: all 0.25s ease;
       }
-      .cart-remove-btn:hover {
+      .cart-remove-btn:hover,
+      .cart-remove-btn:focus-visible {
         background: ${
           isDarkMode
             ? "rgba(255, 138, 128, 0.2)"
             : "rgba(198, 40, 40, 0.15)"
         } !important;
         transform: scale(1.1) rotate(-6deg);
+        outline: none;
+      }
+      .cart-remove-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
       }
 
       .cart-qty-btn {
         transition: all 0.25s ease;
       }
-      .cart-qty-btn:hover {
+      .cart-qty-btn:hover,
+      .cart-qty-btn:focus-visible {
         transform: scale(1.12);
         box-shadow: 0 6px 18px rgba(245, 52, 107, 0.4);
+        outline: none;
+      }
+      .cart-qty-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
+      }
+      .cart-qty-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       .cart-item-card {
@@ -193,7 +314,6 @@ const Cart = () => {
         } !important;
       }
 
-      /* Shimmer effect on the total row's amount */
       .cart-total-amount {
         position: relative;
         display: inline-block;
@@ -206,16 +326,36 @@ const Cart = () => {
         background: linear-gradient(
           90deg,
           transparent,
-          ${
-            isDarkMode
-              ? "rgba(255,255,255,0.18)"
-              : "rgba(255,255,255,0.6)"
-          },
+          ${isDarkMode ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.6)"},
           transparent
         );
         transform: translateX(-120%) skewX(-20deg);
         animation: cartShine 4s ease-in-out infinite;
         pointer-events: none;
+      }
+
+      /* Policy / citation links */
+      .cart-policy-link {
+        transition: color 0.25s ease, border-color 0.25s ease;
+      }
+      .cart-policy-link:hover,
+      .cart-policy-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        outline: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .cart-orb-1, .cart-orb-2, .cart-orb-3 { animation: none !important; }
+        .cart-total-amount::after { animation: none !important; }
+        .cart-empty-cta, .cart-checkout-btn, .cart-continue-link,
+        .cart-remove-btn, .cart-qty-btn, .cart-item-card,
+        .cart-policy-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -225,11 +365,9 @@ const Cart = () => {
         .querySelectorAll('style[data-cart-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper with ambient background ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -240,8 +378,6 @@ const Cart = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // Background layer (fixed, behind everything)
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -311,7 +447,6 @@ const Cart = () => {
       opacity: isDarkMode ? 0.35 : 0.25,
     },
 
-    // Content wrapper (above bg layer)
     content: {
       position: "relative",
       zIndex: 1,
@@ -328,7 +463,6 @@ const Cart = () => {
       boxSizing: "border-box",
     },
 
-    // Header
     title: {
       fontSize: isSmallMobile
         ? "1.35rem"
@@ -365,7 +499,6 @@ const Cart = () => {
       boxShadow: T.shadow,
     },
 
-    // Empty state
     emptyCart: {
       textAlign: "center",
       padding: isMobile ? "2.5rem 1rem" : "4.5rem 2rem",
@@ -477,7 +610,6 @@ const Cart = () => {
       letterSpacing: "0.3px",
     },
 
-    // Cart layout
     cartGrid: {
       display: "grid",
       gridTemplateColumns: isTablet
@@ -644,7 +776,6 @@ const Cart = () => {
       flexShrink: 0,
     },
 
-    // Summary
     summary: {
       padding: isMobile ? "1.5rem 1.25rem" : "2rem 1.75rem",
       backgroundColor: T.card,
@@ -704,7 +835,6 @@ const Cart = () => {
       fontWeight: "900",
     },
 
-    // Free shipping progress
     progressBarOuter: {
       height: "10px",
       backgroundColor: isDarkMode
@@ -759,7 +889,6 @@ const Cart = () => {
       }`,
     },
 
-    // Gift card hint
     giftCardHint: {
       marginTop: "0.85rem",
       padding: isMobile ? "0.7rem 0.85rem" : "0.8rem 1.1rem",
@@ -837,49 +966,177 @@ const Cart = () => {
       fontSize: "0.85rem",
       flexShrink: 0,
     },
+
+    // ─── Trust & Policy section (below cart) ───
+    trustSection: {
+      marginTop: "2.5rem",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    trustTitle: {
+      fontSize: "0.9rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "1rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    policyGrid: {
+      display: "grid",
+      gridTemplateColumns: isMobile
+        ? "repeat(2, minmax(0, 1fr))"
+        : "repeat(4, minmax(0, 1fr))",
+      gap: "0.65rem",
+      marginBottom: "1.25rem",
+    },
+    policyLink: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.45rem",
+      padding: "0.6rem 0.85rem",
+      borderRadius: "10px",
+      fontSize: "0.82rem",
+      fontWeight: "700",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+      transition: "color 0.25s ease, border-color 0.25s ease",
+    },
+    policyIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.8rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.68rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
+    },
   };
 
-  // ─── Shared background layer ───
-  const BackgroundLayer = () => (
-    <div style={themeStyles.bgLayer}>
+  // ─── Shared background JSX (inline, not a component — avoids remounts) ───
+  const backgroundJSX = (
+    <div style={themeStyles.bgLayer} aria-hidden="true">
       <div style={themeStyles.bgGradient} />
       <div style={themeStyles.bgGrid} />
-      <div
-        className="cart-orb-1"
-        style={themeStyles.bgOrb1}
-        aria-hidden="true"
-      />
-      <div
-        className="cart-orb-2"
-        style={themeStyles.bgOrb2}
-        aria-hidden="true"
-      />
-      <div
-        className="cart-orb-3"
-        style={themeStyles.bgOrb3}
-        aria-hidden="true"
-      />
+      <div className="cart-orb-1" style={themeStyles.bgOrb1} />
+      <div className="cart-orb-2" style={themeStyles.bgOrb2} />
+      <div className="cart-orb-3" style={themeStyles.bgOrb3} />
     </div>
   );
 
-  // ─── EMPTY CART ──────────────────────────────────────────────────
+  // ─── Trust + citations section ───
+  const trustSectionJSX = (
+    <section style={themeStyles.trustSection} aria-labelledby="cart-trust-title">
+      <h2 id="cart-trust-title" style={themeStyles.trustTitle}>
+        <FaShieldAlt aria-hidden="true" /> Your Purchase Is Protected
+      </h2>
+      <div style={themeStyles.policyGrid}>
+        {POLICY_LINKS.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            style={themeStyles.policyLink}
+            className="cart-policy-link"
+            aria-label={item.label}
+          >
+            <span style={themeStyles.policyIcon} aria-hidden="true">
+              {item.icon}
+            </span>
+            {item.label}
+          </Link>
+        ))}
+      </div>
+      <ul style={themeStyles.citationList}>
+        {TRUSTED_SOURCES.map((source) => (
+          <li key={source.href}>
+            <a
+              href={source.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={themeStyles.citationLink}
+              className="cart-policy-link"
+              aria-label={`${source.label} — opens in new tab`}
+            >
+              <FaExternalLinkAlt
+                aria-hidden="true"
+                style={{
+                  fontSize: "0.65rem",
+                  marginTop: "0.2rem",
+                  flexShrink: 0,
+                  color: isDarkMode ? brandColors.gold : brandColors.bronze,
+                }}
+              />
+              <span>
+                {source.label}
+                <div style={themeStyles.citationDomain}>
+                  {source.domain}
+                </div>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
+  // ─── EMPTY CART ───
   if (cartItems.length === 0) {
     return (
       <div style={themeStyles.container}>
-        <BackgroundLayer />
-        <div style={themeStyles.content}>
-          <SEO
-            title="Your Cart | ASudha Beauty"
-            description="Your cart is empty. Explore ASudha Beauty's 100% natural Ayurvedic skincare and hair care products."
-            url="/cart"
-          />
+        <SEO
+          title="Your Cart | ASudha Beauty"
+          description="Your cart is empty. Explore ASudha Beauty's 100% natural Ayurvedic skincare and hair care products."
+          url="/cart"
+          citations={citations}
+          noindex
+        />
 
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(cartJsonLd) }}
+        />
+
+        {backgroundJSX}
+
+        <main style={themeStyles.content}>
           <div style={themeStyles.emptyCart}>
-            <div style={themeStyles.emptyCartAccent} />
-            <div style={themeStyles.emptyIconWrap}>
+            <div style={themeStyles.emptyCartAccent} aria-hidden="true" />
+            <div style={themeStyles.emptyIconWrap} aria-hidden="true">
               <FaShoppingCart style={themeStyles.emptyIcon} />
             </div>
-            <h2 style={themeStyles.emptyTitle}>Your Cart is Empty</h2>
+            <h1 style={themeStyles.emptyTitle}>Your Cart is Empty</h1>
             <p style={themeStyles.emptyText}>
               Looks like you haven&apos;t added any natural Ayurvedic products
               yet. Explore our 100% herbal powders for glowing skin and healthy
@@ -888,55 +1145,84 @@ const Cart = () => {
 
             <div style={themeStyles.emptyFeatures}>
               <div style={themeStyles.emptyFeature}>
-                <span style={themeStyles.emptyFeatureIconWrap}>
+                <span
+                  style={themeStyles.emptyFeatureIconWrap}
+                  aria-hidden="true"
+                >
                   <FaLeaf />
                 </span>
                 <span>100% Natural</span>
               </div>
               <div style={themeStyles.emptyFeature}>
-                <span style={themeStyles.emptyFeatureIconWrap}>
+                <span
+                  style={themeStyles.emptyFeatureIconWrap}
+                  aria-hidden="true"
+                >
                   <FaShieldAlt />
                 </span>
                 <span>Chemical Free</span>
               </div>
               <div style={themeStyles.emptyFeature}>
-                <span style={themeStyles.emptyFeatureIconWrap}>
+                <span
+                  style={themeStyles.emptyFeatureIconWrap}
+                  aria-hidden="true"
+                >
                   <FaTruck />
                 </span>
                 <span>Free Shipping ₹500+</span>
               </div>
               <div style={themeStyles.emptyFeature}>
-                <span style={themeStyles.emptyFeatureIconWrap}>
+                <span
+                  style={themeStyles.emptyFeatureIconWrap}
+                  aria-hidden="true"
+                >
                   <FaHeart />
                 </span>
                 <span>Cruelty Free</span>
               </div>
             </div>
 
-            <Link to="/shop" style={themeStyles.shopButton} className="cart-empty-cta">
-              <FaLeaf /> Discover Our Herbal Powders
+            <Link
+              to="/shop"
+              style={themeStyles.shopButton}
+              className="cart-empty-cta"
+            >
+              <FaLeaf aria-hidden="true" /> Discover Our Herbal Powders
             </Link>
           </div>
-        </div>
+
+          {trustSectionJSX}
+        </main>
       </div>
     );
   }
 
-  // ─── CART WITH ITEMS ─────────────────────────────────────────────
+  // ─── CART WITH ITEMS ───
   return (
     <div style={themeStyles.container}>
-      <BackgroundLayer />
-      <div style={themeStyles.content}>
-        <SEO
-          title={`Your Cart (${cartItems.length} item${
-            cartItems.length !== 1 ? "s" : ""
-          }) | ASudha Beauty`}
-          description="Review your natural Ayurvedic skincare selection and proceed to checkout."
-          url="/cart"
-        />
+      <SEO
+        title={`Your Cart (${cartItems.length} item${
+          cartItems.length !== 1 ? "s" : ""
+        }) | ASudha Beauty`}
+        description="Review your natural Ayurvedic skincare selection and proceed to secure checkout."
+        url="/cart"
+        citations={citations}
+        noindex
+      />
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(cartJsonLd) }}
+      />
+
+      {backgroundJSX}
+
+      <main style={themeStyles.content}>
         <h1 style={themeStyles.title}>
-          <FaShoppingCart style={themeStyles.titleIcon} />
+          <FaShoppingCart
+            aria-hidden="true"
+            style={themeStyles.titleIcon}
+          />
           Your Shopping Cart
           <span style={themeStyles.titleCount}>
             {cartItems.length} item{cartItems.length !== 1 ? "s" : ""}
@@ -949,25 +1235,31 @@ const Cart = () => {
               const isNatural =
                 item.category === "Skincare" || item.category === "Hair Care";
               return (
-                <div
+                <article
                   key={`${item.id}-${item.selectedShade || "default"}`}
                   style={themeStyles.cartItem}
                   className="cart-item-card"
+                  aria-label={`${item.name}${item.selectedShade ? ` — ${item.selectedShade}` : ""} in your cart`}
                 >
                   {isNatural && (
                     <span style={themeStyles.naturalBadge}>
-                      <FaLeaf style={{ fontSize: "0.55rem" }} /> Natural
+                      <FaLeaf aria-hidden="true" style={{ fontSize: "0.55rem" }} />{" "}
+                      Natural
                     </span>
                   )}
 
                   <img
                     src={item.image}
-                    alt={item.name}
+                    alt={`${item.name}${
+                      item.selectedShade ? ` — ${item.selectedShade}` : ""
+                    } — ${item.category || "Ayurvedic"} by ASudha Beauty`}
                     style={themeStyles.itemImage}
+                    loading="lazy"
+                    decoding="async"
                   />
 
                   <div style={themeStyles.itemDetails}>
-                    <h3 style={themeStyles.itemName}>{item.name}</h3>
+                    <h2 style={themeStyles.itemName}>{item.name}</h2>
                     {item.selectedShade && (
                       <p style={themeStyles.itemShade}>
                         Variant: {item.selectedShade}
@@ -979,25 +1271,37 @@ const Cart = () => {
                   </div>
 
                   <div style={themeStyles.itemActions}>
-                    <div style={themeStyles.quantityControl}>
+                    <div
+                      style={themeStyles.quantityControl}
+                      role="group"
+                      aria-label={`Quantity controls for ${item.name}`}
+                    >
                       <button
+                        type="button"
                         style={themeStyles.quantityButton}
                         className="cart-qty-btn"
                         onClick={() =>
                           updateQuantity(
                             item.id,
                             item.selectedShade,
-                            item.quantity - 1
+                            Math.max(1, item.quantity - 1)
                           )
                         }
-                        aria-label="Decrease quantity"
+                        disabled={item.quantity <= 1}
+                        aria-label={`Decrease quantity of ${item.name}`}
                       >
-                        <FaMinus style={{ fontSize: "0.7rem" }} />
+                        <FaMinus aria-hidden="true" style={{ fontSize: "0.7rem" }} />
                       </button>
-                      <span style={themeStyles.quantityValue}>
+                      <span
+                        style={themeStyles.quantityValue}
+                        aria-live="polite"
+                        aria-atomic="true"
+                        aria-label={`Quantity: ${item.quantity}`}
+                      >
                         {item.quantity}
                       </span>
                       <button
+                        type="button"
                         style={themeStyles.quantityButton}
                         className="cart-qty-btn"
                         onClick={() =>
@@ -1007,13 +1311,14 @@ const Cart = () => {
                             item.quantity + 1
                           )
                         }
-                        aria-label="Increase quantity"
+                        aria-label={`Increase quantity of ${item.name}`}
                       >
-                        <FaPlus style={{ fontSize: "0.7rem" }} />
+                        <FaPlus aria-hidden="true" style={{ fontSize: "0.7rem" }} />
                       </button>
                     </div>
 
                     <button
+                      type="button"
                       style={themeStyles.removeButton}
                       className="cart-remove-btn"
                       onClick={() =>
@@ -1021,18 +1326,22 @@ const Cart = () => {
                       }
                       aria-label={`Remove ${item.name} from cart`}
                     >
-                      <FaTrash />
+                      <FaTrash aria-hidden="true" />
                     </button>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
 
-          <div style={themeStyles.summary}>
-            <div style={themeStyles.summaryAccent} />
-            <h2 style={themeStyles.summaryTitle}>
+          <aside
+            style={themeStyles.summary}
+            aria-labelledby="order-summary-title"
+          >
+            <div style={themeStyles.summaryAccent} aria-hidden="true" />
+            <h2 id="order-summary-title" style={themeStyles.summaryTitle}>
               <FaSpa
+                aria-hidden="true"
                 style={{
                   fontSize: "1rem",
                   color: isDarkMode ? T.gold : brandColors.bronze,
@@ -1043,12 +1352,8 @@ const Cart = () => {
 
             <div style={themeStyles.summaryRow}>
               <span>
-                Subtotal (
-                {cartItems.reduce((acc, item) => acc + item.quantity, 0)} item
-                {cartItems.reduce((acc, item) => acc + item.quantity, 0) !== 1
-                  ? "s"
-                  : ""}
-                )
+                Subtotal ({totalItemCount} item
+                {totalItemCount !== 1 ? "s" : ""})
               </span>
               <span>₹{subtotal.toFixed(2)}</span>
             </div>
@@ -1070,9 +1375,21 @@ const Cart = () => {
 
             {hasNaturalItems && (
               <div style={themeStyles.summaryRow}>
-                <span>🌿 Natural Products</span>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
+                  <FaLeaf
+                    aria-hidden="true"
+                    style={{ color: brandColors.green, fontSize: "0.75rem" }}
+                  />
+                  Natural Products
+                </span>
                 <span style={{ color: brandColors.green, fontWeight: "800" }}>
-                  ✓
+                  <FaCheckCircle aria-hidden="true" />
                 </span>
               </div>
             )}
@@ -1088,7 +1405,7 @@ const Cart = () => {
                     fontWeight: "800",
                   }}
                 >
-                  <FaGift /> Gift Card Balance
+                  <FaGift aria-hidden="true" /> Gift Card Balance
                 </span>
                 <span
                   style={{
@@ -1111,39 +1428,52 @@ const Cart = () => {
               </span>
             </div>
 
-            {/* Free shipping progress bar */}
             {!isFreeShipping && subtotal > 0 && (
               <>
-                <div style={themeStyles.progressBarOuter}>
+                <div
+                  style={themeStyles.progressBarOuter}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={freeShippingThreshold}
+                  aria-valuenow={Math.min(subtotal, freeShippingThreshold)}
+                  aria-label="Progress toward free shipping"
+                >
                   <div style={themeStyles.progressBarInner} />
                 </div>
                 <div style={themeStyles.freeShippingNote}>
-                  <FaTruck /> Add ₹{remaining.toFixed(2)} more for free shipping!
+                  <FaTruck aria-hidden="true" /> Add ₹
+                  {remaining.toFixed(2)} more for free shipping!
                 </div>
               </>
             )}
 
             {isFreeShipping && subtotal > 0 && (
               <div style={themeStyles.freeShippingNote}>
-                <FaTruck /> You qualify for free shipping! 🎉
+                <FaCheckCircle aria-hidden="true" /> You qualify for free
+                shipping!
               </div>
             )}
 
             {gcBalance > 0 && (
               <div style={themeStyles.giftCardHint}>
                 <span>
-                  <FaGift style={{ marginRight: "0.35rem" }} />
+                  <FaGift
+                    aria-hidden="true"
+                    style={{ marginRight: "0.35rem" }}
+                  />
                   Gift card ready to apply at checkout
                 </span>
               </div>
             )}
 
             <button
+              type="button"
               style={themeStyles.checkoutButton}
               className="cart-checkout-btn"
               onClick={() => navigate("/checkout")}
             >
-              Proceed to Checkout <FaArrowRight />
+              <FaLock aria-hidden="true" /> Proceed to Secure Checkout{" "}
+              <FaArrowRight aria-hidden="true" />
             </button>
 
             <Link
@@ -1151,24 +1481,31 @@ const Cart = () => {
               style={themeStyles.continueLink}
               className="cart-continue-link"
             >
-              <FaArrowLeft /> Continue Shopping
+              <FaArrowLeft aria-hidden="true" /> Continue Shopping
             </Link>
 
             <div style={themeStyles.trustBadges}>
               <span style={themeStyles.trustBadge}>
-                <FaShieldAlt style={themeStyles.trustBadgeIcon} /> Secure
-                Checkout
+                <FaLock aria-hidden="true" style={themeStyles.trustBadgeIcon} />{" "}
+                Secure Checkout
               </span>
               <span style={themeStyles.trustBadge}>
-                <FaLeaf style={themeStyles.trustBadgeIcon} /> 100% Natural
+                <FaLeaf aria-hidden="true" style={themeStyles.trustBadgeIcon} />{" "}
+                100% Natural
               </span>
               <span style={themeStyles.trustBadge}>
-                <FaHeart style={themeStyles.trustBadgeIcon} /> Cruelty Free
+                <FaHeart
+                  aria-hidden="true"
+                  style={themeStyles.trustBadgeIcon}
+                />{" "}
+                Cruelty Free
               </span>
             </div>
-          </div>
+          </aside>
         </div>
-      </div>
+
+        {trustSectionJSX}
+      </main>
     </div>
   );
 };

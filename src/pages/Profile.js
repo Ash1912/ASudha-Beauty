@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/Profile.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../context/OrdersContext";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import {
   FaUser,
   FaShoppingBag,
@@ -23,14 +30,110 @@ import {
   FaEnvelope,
   FaSpinner,
   FaRedo,
+  FaTruck,
+  FaSyncAlt,
+  FaExclamationTriangle,
+  FaArrowRight,
 } from "react-icons/fa";
 import SEO from "../components/SEO";
+
+// ─── Site constants ───
+// const SITE_URL = "https://www.asudhabeauty.shop";
+const ORDERS_STORAGE_KEY = "asudha_orders"; // primary storage key
+const ORDERS_STORAGE_KEYS = [
+  ORDERS_STORAGE_KEY,
+  "orders",
+  "asudha-beauty-orders",
+  "asudhaOrders",
+];
+
+// ─── Brand palette (module scope: stable) ───
+const brandColors = {
+  primary: "#f5346b",
+  primaryDark: "#cf2a57",
+  gold: "#f7d794",
+  goldDark: "#d4af37",
+  bronze: "#c77d42",
+  black: "#0f0f0f",
+  darkSlate: "#1a1a1a",
+  earthLight: "#6d4c41",
+  cream: "#fcf8f5",
+  green: "#4caf50",
+};
+
+// ─── Product colors for collection grid ───
+const COLLECTION_ITEMS = [
+  { name: "Multani Mitti", icon: <FaTint />, color: "#8bc34a" },
+  { name: "Ubtan Powder", icon: <FaGem />, color: "#ffb74d" },
+  { name: "Shikakai", icon: <FaLeaf />, color: "#66bb6a" },
+  { name: "Reetha", icon: <FaLeaf />, color: "#a1887f" },
+];
+
+// ─── Read orders from localStorage (multi-key fallback) ───
+const readStoredOrders = () => {
+  if (typeof window === "undefined") return [];
+  for (const key of ORDERS_STORAGE_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch {
+      /* ignore malformed storage */
+    }
+  }
+  return [];
+};
+
+// ─── Normalize an order so UI can never crash on it ───
+const normalizeOrder = (o, userEmail) => ({
+  id:
+    o?.id ||
+    o?.orderId ||
+    o?.orderNumber ||
+    `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  date:
+    o?.date || o?.createdAt || o?.orderDate || new Date().toISOString(),
+  total:
+    typeof o?.total === "number"
+      ? o.total
+      : parseFloat(o?.total ?? o?.amount ?? 0) || 0,
+  items: Array.isArray(o?.items)
+    ? o.items.map((it) => ({
+        id: it.id,
+        name: it.name || "Product",
+        quantity: Number(it.quantity) || 1,
+        price: Number(it.price) || 0,
+        image: it.image,
+        category: it.category || "Skincare",
+        selectedShade: it.selectedShade,
+      }))
+    : [],
+  customer: o?.customer || {
+    name: "",
+    email: userEmail || "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    phone: "",
+  },
+  userEmail:
+    o?.userEmail ||
+    o?.email ||
+    o?.customer?.email ||
+    userEmail ||
+    "",
+});
 
 const Profile = () => {
   const { isDarkMode } = useTheme();
   const { user, logout, updateProfile } = useAuth();
   const { getOrdersByUser, getLiveStatus } = useOrders();
   const { addToCart } = useCart();
+  const { wishlistItems = [] } = useWishlist() || {};
   const navigate = useNavigate();
 
   const [windowWidth, setWindowWidth] = useState(
@@ -40,25 +143,18 @@ const Profile = () => {
   const [editedName, setEditedName] = useState(user?.name || "");
   const [editedEmail, setEditedEmail] = useState(user?.email || "");
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updateError, setUpdateError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [reorderMessage, setReorderMessage] = useState(null);
 
-  // ASudha Beauty Brand Palette
-  const brandColors = {
-    primary: "#f5346b",
-    primaryDark: "#cf2a57",
-    gold: "#f7d794",
-    goldDark: "#d4af37",
-    bronze: "#c77d42",
-    black: "#0f0f0f",
-    darkSlate: "#1a1a1a",
-    earthLight: "#6d4c41",
-    cream: "#fcf8f5",
-    green: "#4caf50",
-  };
+  // ✅ NEW: Robust order state
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersRefreshedAt, setOrdersRefreshedAt] = useState(null);
+  const [diagnostic, setDiagnostic] = useState(null);
 
-  // Theme tokens
+  // ─── Theme tokens ───
   const T = {
     bg: isDarkMode ? brandColors.black : brandColors.cream,
     bgAlt: isDarkMode ? "#141414" : "#ffffff",
@@ -89,15 +185,133 @@ const Profile = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const orders = user?.email ? getOrdersByUser(user.email) : [];
+  // ✅ NEW: Robust order loading with 3 fallbacks
+  const loadOrders = useCallback(() => {
+    setOrdersLoading(true);
+    setDiagnostic(null);
 
-  const skincareStats = { totalProducts: 7, naturalProducts: 7, favorites: 3 };
+    try {
+      const normalizedEmail = (user?.email || "").toLowerCase().trim();
+      let found = [];
+      let source = "none";
 
+      // Fallback 1: Use OrdersContext
+      if (normalizedEmail && typeof getOrdersByUser === "function") {
+        try {
+          const ctxOrders = getOrdersByUser(user.email);
+          if (Array.isArray(ctxOrders) && ctxOrders.length > 0) {
+            found = ctxOrders;
+            source = "context";
+          }
+        } catch (e) {
+          console.warn("[Profile] getOrdersByUser failed:", e);
+        }
+      }
+
+      // Fallback 2: LocalStorage, match by email
+      if (found.length === 0) {
+        const stored = readStoredOrders();
+        if (stored.length > 0) {
+          const matched = stored.filter((o) => {
+            const oEmail = (
+              o?.userEmail ||
+              o?.email ||
+              o?.customer?.email ||
+              ""
+            )
+              .toLowerCase()
+              .trim();
+            return oEmail === normalizedEmail;
+          });
+          if (matched.length > 0) {
+            found = matched;
+            source = "localStorage-email";
+          } else if (normalizedEmail) {
+            // Set a diagnostic — orders exist in storage but don't match this user
+            setDiagnostic({
+              type: "no-match",
+              totalStored: stored.length,
+              userEmail: normalizedEmail,
+              sampleEmails: stored
+                .slice(0, 3)
+                .map(
+                  (o) =>
+                    o?.userEmail || o?.email || o?.customer?.email || "(none)"
+                ),
+            });
+          }
+        }
+      }
+
+      // Fallback 3: Match by user ID
+      if (found.length === 0 && user?.id) {
+        const stored = readStoredOrders();
+        const matched = stored.filter(
+          (o) => String(o?.userId) === String(user.id)
+        );
+        if (matched.length > 0) {
+          found = matched;
+          source = "localStorage-userId";
+        }
+      }
+
+      // Normalize every order so a single bad order can't break the list
+      const normalized = found.map((o) => normalizeOrder(o, user?.email));
+
+      // Sort newest first
+      normalized.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      setOrders(normalized);
+      setOrdersRefreshedAt(new Date());
+
+      if (process.env.NODE_ENV === "development") {
+        console.info(
+          `[Profile] Loaded ${normalized.length} orders (source: ${source})`
+        );
+      }
+    } catch (err) {
+      console.error("[Profile] Failed to load orders:", err);
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [user?.email, user?.id, getOrdersByUser]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  // ─── Derived stats ───
+  const totalItemsPurchased = orders.reduce(
+    (sum, o) => sum + (o.items?.reduce((s, it) => s + it.quantity, 0) || 0),
+    0
+  );
+
+  const wishlistCount = Array.isArray(wishlistItems)
+    ? wishlistItems.length
+    : 0;
+
+  const skincareStats = {
+    orders: orders.length,
+    itemsPurchased: totalItemsPurchased,
+    favorites: wishlistCount,
+  };
+
+  // ─── Handlers ───
   const handleUpdateProfile = async () => {
+    setUpdateError("");
+    if (!editedName.trim()) {
+      setUpdateError("Name cannot be empty");
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(editedEmail.trim())) {
+      setUpdateError("Please enter a valid email address");
+      return;
+    }
     setSaving(true);
     const result = await updateProfile({
-      name: editedName,
-      email: editedEmail,
+      name: editedName.trim(),
+      email: editedEmail.trim(),
     });
     setSaving(false);
 
@@ -105,6 +319,8 @@ const Profile = () => {
       setIsEditing(false);
       setUpdateSuccess(true);
       setTimeout(() => setUpdateSuccess(false), 3000);
+    } else {
+      setUpdateError(result?.error || "Could not update profile. Try again.");
     }
   };
 
@@ -120,29 +336,41 @@ const Profile = () => {
     setIsEditing(false);
     setEditedName(user?.name || "");
     setEditedEmail(user?.email || "");
+    setUpdateError("");
   };
 
   const handleReorder = (order) => {
-    if (!order.items || order.items.length === 0) return;
-
-    order.items.forEach((item) => {
-      addToCart(
-        {
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          image: item.image,
-          category: item.category || "Skincare",
-          inStock: true,
-          shades: [],
-        },
-        item.selectedShade || null,
-        item.quantity || 1
-      );
-    });
-
-    setReorderMessage(`Added ${order.items.length} item(s) to cart`);
-    setTimeout(() => setReorderMessage(null), 2500);
+    try {
+      if (!order?.items || order.items.length === 0) {
+        setReorderMessage("This order has no items to re-order.");
+        setTimeout(() => setReorderMessage(null), 2500);
+        return;
+      }
+      let added = 0;
+      order.items.forEach((item) => {
+        if (!item?.id) return;
+        addToCart(
+          {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            category: item.category || "Skincare",
+            inStock: true,
+            shades: [],
+          },
+          item.selectedShade || null,
+          item.quantity || 1
+        );
+        added += 1;
+      });
+      setReorderMessage(`Added ${added} item(s) to cart`);
+      setTimeout(() => setReorderMessage(null), 2500);
+    } catch (err) {
+      console.error("[Profile] Reorder failed:", err);
+      setReorderMessage("Could not re-order items. Please try again.");
+      setTimeout(() => setReorderMessage(null), 2500);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -166,15 +394,145 @@ const Profile = () => {
         year: "numeric",
       });
     } catch {
-      return dateStr;
+      return String(dateStr);
     }
   };
 
   const isMobile = windowWidth <= 480;
   const isNarrow = windowWidth <= 768;
 
+  // ─── Injected CSS (only depends on isDarkMode) ───
+  useLayoutEffect(() => {
+    document
+      .querySelectorAll('style[data-profile-styles="true"]')
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+
+    const style = document.createElement("style");
+    style.setAttribute("data-profile-styles", "true");
+    style.textContent = `
+      @keyframes profileFadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes profileSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      .profile-back-btn { transition: all 0.3s ease; }
+      .profile-back-btn:hover,
+      .profile-back-btn:focus-visible {
+        transform: translateX(-4px);
+        background: linear-gradient(135deg, #f7d794, #f5346b) !important;
+        color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
+        border-color: transparent !important;
+        outline: none;
+      }
+
+      .profile-logout { transition: all 0.3s ease; }
+      .profile-logout:hover,
+      .profile-logout:focus-visible {
+        background: ${brandColors.primary} !important;
+        color: #ffffff !important;
+        border-color: ${brandColors.primary} !important;
+        transform: translateY(-2px);
+        outline: none;
+      }
+
+      .profile-icon-btn { transition: all 0.3s ease; }
+      .profile-icon-btn:hover,
+      .profile-icon-btn:focus-visible {
+        background: linear-gradient(135deg, #f7d794, #f5346b) !important;
+        color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
+        border-color: transparent !important;
+        transform: translateY(-2px);
+        outline: none;
+      }
+
+      .profile-order-card { transition: all 0.3s ease; }
+      .profile-order-card:hover {
+        transform: translateY(-4px);
+        box-shadow: ${
+          isDarkMode
+            ? "0 20px 40px rgba(0, 0, 0, 0.65)"
+            : "0 20px 40px rgba(62, 39, 35, 0.1)"
+        };
+        border-color: rgba(212, 175, 55, 0.4) !important;
+      }
+
+      .profile-collection-card { transition: all 0.3s ease; }
+      .profile-collection-card:hover,
+      .profile-collection-card:focus-visible {
+        transform: translateY(-6px);
+        box-shadow: ${
+          isDarkMode
+            ? "0 20px 40px rgba(0, 0, 0, 0.65)"
+            : "0 20px 40px rgba(62, 39, 35, 0.1)"
+        };
+        border-color: rgba(212, 175, 55, 0.4) !important;
+        outline: none;
+      }
+
+      .profile-edit-input { transition: border-color 0.25s ease, box-shadow 0.25s ease; }
+      .profile-edit-input:focus {
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.bronze
+        } !important;
+        box-shadow: 0 0 0 3px ${
+          isDarkMode
+            ? "rgba(212, 175, 55, 0.18)"
+            : "rgba(199, 125, 66, 0.12)"
+        };
+        outline: none;
+      }
+
+      .profile-wishlist-btn { transition: all 0.3s ease; }
+      .profile-wishlist-btn:hover,
+      .profile-wishlist-btn:focus-visible {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 32px rgba(245, 52, 107, 0.4);
+        outline: none;
+      }
+
+      .profile-reorder-btn { transition: all 0.3s ease; }
+      .profile-reorder-btn:hover,
+      .profile-reorder-btn:focus-visible {
+        background: ${brandColors.primary} !important;
+        color: #ffffff !important;
+        transform: translateY(-2px);
+        outline: none;
+      }
+
+      .profile-refresh-btn { transition: all 0.25s ease; }
+      .profile-refresh-btn:hover,
+      .profile-refresh-btn:focus-visible {
+        color: ${brandColors.primary} !important;
+        border-color: ${brandColors.primary} !important;
+        outline: none;
+      }
+      .profile-refresh-btn .spinner {
+        animation: profileSpin 1s linear infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .profile-back-btn, .profile-logout, .profile-icon-btn,
+        .profile-order-card, .profile-collection-card, .profile-edit-input,
+        .profile-wishlist-btn, .profile-reorder-btn, .profile-refresh-btn {
+          transition: none !important;
+          transform: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document
+        .querySelectorAll('style[data-profile-styles="true"]')
+        .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+    };
+  }, [isDarkMode]);
+
   const themeStyles = {
-    // ─── Page wrapper: NO inner scroll, natural page scroll ───
     container: {
       maxWidth: "1200px",
       margin: "0 auto",
@@ -185,15 +543,12 @@ const Profile = () => {
         : "2.5rem 1.5rem 5rem",
       backgroundColor: T.bg,
       color: T.text,
-      minHeight: "100%", // ✅ was "100vh" — no forced viewport height
+      minHeight: "100%",
       position: "relative",
-      // ✅ overflowX removed — no inner scroll container
       transition: "background-color 0.3s ease, color 0.3s ease",
       boxSizing: "border-box",
       width: "100%",
     },
-
-    // ─── Fixed blobs: stay in place, no horizontal overflow ───
     bgBlob1: {
       position: "fixed",
       top: "-150px",
@@ -226,7 +581,6 @@ const Profile = () => {
       pointerEvents: "none",
       zIndex: 0,
     },
-
     backButton: {
       position: "relative",
       zIndex: 2,
@@ -246,8 +600,8 @@ const Profile = () => {
       fontWeight: "600",
       transition: "all 0.3s ease",
       boxShadow: T.shadow,
+      fontFamily: "inherit",
     },
-
     successMessage: {
       position: "relative",
       zIndex: 2,
@@ -267,9 +621,26 @@ const Profile = () => {
       }`,
       backdropFilter: "blur(12px)",
       WebkitBackdropFilter: "blur(12px)",
-      animation: "fadeInUp 0.35s ease",
+      animation: "profileFadeInUp 0.35s ease",
     },
-
+    errorMessage: {
+      position: "relative",
+      zIndex: 2,
+      background: isDarkMode
+        ? "rgba(244, 67, 54, 0.15)"
+        : "rgba(244, 67, 54, 0.1)",
+      color: isDarkMode ? "#ff8a80" : "#c62828",
+      padding: "0.85rem 1.15rem",
+      borderRadius: "14px",
+      marginBottom: "1.25rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.6rem",
+      fontWeight: "600",
+      border: `1px solid ${
+        isDarkMode ? "rgba(244, 67, 54, 0.3)" : "rgba(244, 67, 54, 0.25)"
+      }`,
+    },
     reorderMessage: {
       position: "fixed",
       bottom: "1.5rem",
@@ -286,10 +657,10 @@ const Profile = () => {
       display: "flex",
       alignItems: "center",
       gap: "0.5rem",
-      animation: "fadeInUp 0.35s ease",
+      animation: "profileFadeInUp 0.35s ease",
       whiteSpace: "nowrap",
+      maxWidth: "calc(100vw - 2rem)",
     },
-
     profileGrid: {
       position: "relative",
       zIndex: 2,
@@ -301,8 +672,6 @@ const Profile = () => {
       width: "100%",
       boxSizing: "border-box",
     },
-
-    // ─── Sidebar card ───
     sidebar: {
       backgroundColor: T.card,
       backdropFilter: "blur(20px)",
@@ -318,7 +687,6 @@ const Profile = () => {
       position: "relative",
       overflow: "hidden",
     },
-    // Subtle top accent line on sidebar
     sidebarAccent: {
       position: "absolute",
       top: 0,
@@ -328,7 +696,6 @@ const Profile = () => {
       background: "linear-gradient(90deg, #f7d794, #f5346b, #4caf50)",
       opacity: 0.85,
     },
-
     avatarWrapper: {
       width: isMobile ? "105px" : "135px",
       height: isMobile ? "105px" : "135px",
@@ -377,7 +744,6 @@ const Profile = () => {
       boxShadow: "0 8px 22px rgba(76,175,80,0.35)",
       letterSpacing: "0.2px",
     },
-
     stats: {
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
@@ -405,7 +771,6 @@ const Profile = () => {
       fontWeight: "600",
       letterSpacing: "0.6px",
     },
-
     logoutButton: {
       display: "inline-flex",
       alignItems: "center",
@@ -425,9 +790,8 @@ const Profile = () => {
       fontWeight: "600",
       transition: "all 0.3s ease",
       boxSizing: "border-box",
+      fontFamily: "inherit",
     },
-
-    // ─── Content card ───
     content: {
       backgroundColor: T.card,
       backdropFilter: "blur(20px)",
@@ -440,6 +804,15 @@ const Profile = () => {
       width: "100%",
       minWidth: 0,
     },
+    sectionHeader: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.75rem",
+      flexWrap: "wrap",
+      marginTop: "2rem",
+      marginBottom: "1.15rem",
+    },
     sectionTitle: {
       fontSize: isMobile ? "1.05rem" : "1.2rem",
       fontWeight: "800",
@@ -450,9 +823,39 @@ const Profile = () => {
       gap: "0.6rem",
       flexWrap: "wrap",
       letterSpacing: "-0.1px",
+      margin: 0,
     },
-
-    // ─── Info rows ───
+    sectionSubtitle: {
+      color: T.textMuted,
+      marginBottom: "1.15rem",
+      fontSize: "0.9rem",
+      lineHeight: "1.65",
+    },
+    orderBadge: {
+      fontSize: "0.72rem",
+      fontWeight: "800",
+      color: T.textMuted,
+      padding: "0.2rem 0.7rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.06)"
+        : "rgba(62,39,35,0.04)",
+      borderRadius: "50px",
+      letterSpacing: "0.3px",
+    },
+    refreshButton: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      padding: "0.4rem 0.85rem",
+      background: "transparent",
+      color: T.textMuted,
+      border: `1px solid ${T.borderSoft}`,
+      borderRadius: "50px",
+      cursor: "pointer",
+      fontSize: "0.75rem",
+      fontWeight: "700",
+      fontFamily: "inherit",
+    },
     infoRow: {
       display: "flex",
       alignItems: isNarrow ? "flex-start" : "center",
@@ -500,6 +903,7 @@ const Profile = () => {
       outline: "none",
       boxSizing: "border-box",
       transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+      fontFamily: "inherit",
     },
     editActions: {
       display: "flex",
@@ -521,9 +925,8 @@ const Profile = () => {
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
+      fontFamily: "inherit",
     },
-
-    // ─── Order cards ───
     orderCard: {
       backgroundColor: isDarkMode ? brandColors.black : "#fdfaf7",
       borderRadius: "18px",
@@ -608,9 +1011,8 @@ const Profile = () => {
       cursor: "pointer",
       transition: "all 0.3s ease",
       whiteSpace: "nowrap",
+      fontFamily: "inherit",
     },
-
-    // ─── Collection grid ───
     collectionGrid: {
       display: "grid",
       gridTemplateColumns: isMobile
@@ -628,9 +1030,12 @@ const Profile = () => {
       textAlign: "center",
       border: `1px solid ${T.borderSoft}`,
       transition: "all 0.3s ease",
-      cursor: "default",
+      cursor: "pointer",
       position: "relative",
       overflow: "hidden",
+      textDecoration: "none",
+      display: "block",
+      color: T.text,
     },
     collectionIcon: {
       fontSize: isMobile ? "1.85rem" : "2.35rem",
@@ -648,11 +1053,96 @@ const Profile = () => {
       fontWeight: "500",
       letterSpacing: "0.2px",
     },
-
     emptyState: {
       textAlign: "center",
       padding: "2.5rem 1rem",
       color: T.textMuted,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62,39,35,0.02)",
+      borderRadius: "16px",
+      border: `1px dashed ${T.borderSoft}`,
+    },
+    emptyTitle: {
+      fontSize: "1rem",
+      fontWeight: "700",
+      marginBottom: "0.5rem",
+      color: T.text,
+    },
+    emptyText: {
+      margin: "0 0 1.25rem",
+      lineHeight: "1.65",
+      fontSize: "0.88rem",
+    },
+    loadingState: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.6rem",
+      padding: "2rem 1rem",
+      color: T.textMuted,
+      fontSize: "0.92rem",
+      fontWeight: "600",
+    },
+    diagnosticBox: {
+      padding: "0.85rem 1rem",
+      borderRadius: "12px",
+      backgroundColor: isDarkMode
+        ? "rgba(255, 152, 0, 0.1)"
+        : "rgba(255, 152, 0, 0.08)",
+      border: `1px solid ${
+        isDarkMode ? "rgba(255, 152, 0, 0.3)" : "rgba(255, 152, 0, 0.25)"
+      }`,
+      color: isDarkMode ? "#ffb74d" : "#e65100",
+      fontSize: "0.8rem",
+      lineHeight: "1.6",
+      marginBottom: "1rem",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+    },
+    trackLink: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      fontSize: "0.8rem",
+      fontWeight: "700",
+      color: brandColors.primary,
+      textDecoration: "none",
+      marginTop: "0.4rem",
+    },
+    shopCTA: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.75rem 1.6rem",
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      border: "none",
+      borderRadius: "50px",
+      fontWeight: "700",
+      fontSize: "0.9rem",
+      cursor: "pointer",
+      boxShadow: "0 8px 22px rgba(245,52,107,0.35)",
+      fontFamily: "inherit",
+      textDecoration: "none",
+    },
+    wishlistButton: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+      width: "100%",
+      padding: "0.85rem",
+      background: "linear-gradient(135deg, #f7d794, #f5346b)",
+      color: isDarkMode ? brandColors.black : "#ffffff",
+      border: "none",
+      borderRadius: "50px",
+      fontWeight: "700",
+      cursor: "pointer",
+      fontSize: "0.95rem",
+      boxShadow: "0 8px 24px rgba(245, 52, 107, 0.32)",
+      fontFamily: "inherit",
     },
   };
 
@@ -661,111 +1151,83 @@ const Profile = () => {
       <SEO
         title="My Profile | ASudha Beauty"
         description="Manage your ASudha Beauty account, view order history, and explore your natural skincare collection."
+        url="/profile"
+        noindex
       />
-      <div style={themeStyles.container}>
-        <style>{`
-          @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          .profile-back-btn:hover {
-            transform: translateX(-4px);
-            background: linear-gradient(135deg, #f7d794, #f5346b) !important;
-            color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
-            border-color: transparent !important;
-          }
-          .profile-logout:hover {
-            background: ${brandColors.primary} !important;
-            color: #ffffff !important;
-            border-color: ${brandColors.primary} !important;
-            transform: translateY(-2px);
-          }
-          .profile-icon-btn:hover {
-            background: linear-gradient(135deg, #f7d794, #f5346b) !important;
-            color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
-            border-color: transparent !important;
-            transform: translateY(-2px);
-          }
-          .profile-order-card:hover {
-            transform: translateY(-4px);
-            box-shadow: ${T.shadowLift};
-            border-color: rgba(212, 175, 55, 0.4) !important;
-          }
-          .profile-collection-card:hover {
-            transform: translateY(-6px);
-            box-shadow: ${T.shadowLift};
-            border-color: rgba(212, 175, 55, 0.4) !important;
-          }
-          .profile-edit-input:focus {
-            border-color: ${isDarkMode ? brandColors.gold : brandColors.bronze} !important;
-            box-shadow: 0 0 0 3px ${isDarkMode ? "rgba(212, 175, 55, 0.18)" : "rgba(199, 125, 66, 0.12)"};
-          }
-          .profile-wishlist-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 14px 32px rgba(245, 52, 107, 0.4);
-          }
-          .profile-reorder-btn:hover {
-            background: ${brandColors.primary} !important;
-            color: #ffffff !important;
-            transform: translateY(-2px);
-          }
-        `}</style>
 
-        <div style={themeStyles.bgBlob1}></div>
-        <div style={themeStyles.bgBlob2}></div>
+      <div style={themeStyles.container}>
+        <div style={themeStyles.bgBlob1} aria-hidden="true" />
+        <div style={themeStyles.bgBlob2} aria-hidden="true" />
 
         <button
+          type="button"
           onClick={() => navigate(-1)}
           style={themeStyles.backButton}
           className="profile-back-btn"
+          aria-label="Go back to previous page"
         >
-          <FaArrowLeft /> Back
+          <FaArrowLeft aria-hidden="true" /> Back
         </button>
 
         {updateSuccess && (
-          <div style={themeStyles.successMessage}>
-            <FaCheckCircle /> Profile updated successfully!
+          <div
+            style={themeStyles.successMessage}
+            role="status"
+            aria-live="polite"
+          >
+            <FaCheckCircle aria-hidden="true" /> Profile updated successfully!
           </div>
         )}
-
+        {updateError && (
+          <div
+            style={themeStyles.errorMessage}
+            role="alert"
+            aria-live="assertive"
+          >
+            <FaExclamationTriangle aria-hidden="true" /> {updateError}
+          </div>
+        )}
         {reorderMessage && (
-          <div style={themeStyles.reorderMessage}>
-            <FaCheckCircle /> {reorderMessage}
+          <div
+            style={themeStyles.reorderMessage}
+            role="status"
+            aria-live="polite"
+          >
+            <FaCheckCircle aria-hidden="true" /> {reorderMessage}
           </div>
         )}
 
         <div style={themeStyles.profileGrid}>
           {/* Sidebar */}
-          <div style={themeStyles.sidebar}>
-            <div style={themeStyles.sidebarAccent} />
+          <aside style={themeStyles.sidebar} aria-label="Account summary">
+            <div style={themeStyles.sidebarAccent} aria-hidden="true" />
             <div style={themeStyles.avatarWrapper}>
-              <div style={themeStyles.avatar}>
+              <div style={themeStyles.avatar} aria-hidden="true">
                 <FaUser />
               </div>
             </div>
-            <h2 style={themeStyles.userName}>{user?.name || "Guest"}</h2>
+            <h1 style={themeStyles.userName}>{user?.name || "Guest"}</h1>
             <p style={themeStyles.userEmail}>
               {user?.email || "guest@asudha.com"}
             </p>
 
             <div style={themeStyles.naturalBadge}>
-              <FaLeaf /> Natural Skincare Lover
+              <FaLeaf aria-hidden="true" /> Natural Skincare Lover
             </div>
 
+            {/* ✅ Dynamic stats */}
             <div style={themeStyles.stats}>
               <div style={themeStyles.statItem}>
                 <div style={themeStyles.statValue}>
-                  {skincareStats.totalProducts}
+                  {skincareStats.orders}
                 </div>
-                <div style={themeStyles.statLabel}>Products</div>
+                <div style={themeStyles.statLabel}>Orders</div>
               </div>
               <div style={themeStyles.statItem}>
-                <div style={themeStyles.statValue}>100%</div>
-                <div style={themeStyles.statLabel}>Natural</div>
+                <div style={themeStyles.statValue}>
+                  {skincareStats.itemsPurchased}
+                </div>
+                <div style={themeStyles.statLabel}>Items</div>
               </div>
               <div style={themeStyles.statItem}>
                 <div style={themeStyles.statValue}>
@@ -776,31 +1238,34 @@ const Profile = () => {
             </div>
 
             <button
+              type="button"
               style={themeStyles.logoutButton}
               className="profile-logout"
               onClick={handleLogout}
               disabled={loggingOut}
+              aria-label="Logout of your account"
             >
               {loggingOut ? (
                 <>
                   <FaSpinner
-                    style={{ animation: "spin 1s linear infinite" }}
+                    aria-hidden="true"
+                    style={{ animation: "profileSpin 1s linear infinite" }}
                   />{" "}
-                  Logging out...
+                  Logging out…
                 </>
               ) : (
                 <>
-                  <FaSignOutAlt /> Logout
+                  <FaSignOutAlt aria-hidden="true" /> Logout
                 </>
               )}
             </button>
-          </div>
+          </aside>
 
           {/* Main Content */}
-          <div style={themeStyles.content}>
-            <div style={themeStyles.sectionTitle}>
-              <FaUser /> Profile Information
-            </div>
+          <main style={themeStyles.content}>
+            <h2 style={themeStyles.sectionTitle}>
+              <FaUser aria-hidden="true" /> Profile Information
+            </h2>
 
             {/* Name row */}
             <div style={themeStyles.infoRow}>
@@ -814,43 +1279,52 @@ const Profile = () => {
                     style={themeStyles.editInput}
                     className="profile-edit-input"
                     placeholder="Your name"
+                    aria-label="Your name"
                   />
                   <div style={themeStyles.editActions}>
                     <button
+                      type="button"
                       style={themeStyles.iconButton}
                       className="profile-icon-btn"
                       onClick={handleUpdateProfile}
                       disabled={saving}
-                      aria-label="Save"
+                      aria-label="Save changes"
                     >
                       {saving ? (
                         <FaSpinner
-                          style={{ animation: "spin 1s linear infinite" }}
+                          aria-hidden="true"
+                          style={{
+                            animation: "profileSpin 1s linear infinite",
+                          }}
                         />
                       ) : (
-                        <FaSave />
+                        <FaSave aria-hidden="true" />
                       )}
                     </button>
                     <button
+                      type="button"
                       style={themeStyles.iconButton}
                       className="profile-icon-btn"
                       onClick={handleCancelEdit}
-                      aria-label="Cancel"
+                      aria-label="Cancel editing"
                     >
-                      <FaTimes />
+                      <FaTimes aria-hidden="true" />
                     </button>
                   </div>
                 </div>
               ) : (
                 <div style={themeStyles.infoValueRow}>
-                  <span style={themeStyles.infoValue}>{user?.name}</span>
+                  <span style={themeStyles.infoValue}>
+                    {user?.name || "—"}
+                  </span>
                   <button
+                    type="button"
                     style={themeStyles.iconButton}
                     className="profile-icon-btn"
                     onClick={() => setIsEditing(true)}
-                    aria-label="Edit"
+                    aria-label="Edit name and email"
                   >
-                    <FaEdit />
+                    <FaEdit aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -867,56 +1341,143 @@ const Profile = () => {
                   style={themeStyles.editInput}
                   className="profile-edit-input"
                   placeholder="your@email.com"
+                  aria-label="Your email address"
                 />
               ) : (
                 <span style={themeStyles.infoValue}>
                   <FaEnvelope
+                    aria-hidden="true"
                     style={{
                       color: isDarkMode ? T.gold : brandColors.bronze,
                       fontSize: "0.8rem",
                     }}
                   />
-                  {user?.email}
+                  {user?.email || "—"}
                 </span>
               )}
             </div>
 
-            {/* Member since */}
+            {/* Member since — fixed fallback */}
             <div style={themeStyles.infoRow}>
               <span style={themeStyles.infoLabel}>Member Since</span>
               <span style={themeStyles.infoValue}>
                 <FaCalendarAlt
+                  aria-hidden="true"
                   style={{
                     marginRight: "0.5rem",
                     color: isDarkMode ? T.gold : brandColors.bronze,
                     fontSize: "0.8rem",
                   }}
                 />
-                {new Date(user?.createdAt || Date.now()).toLocaleDateString(
-                  "en-IN",
-                  { day: "numeric", month: "long", year: "numeric" }
+                {user?.createdAt ? (
+                  <time dateTime={user.createdAt}>
+                    {new Date(user.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </time>
+                ) : (
+                  "Recently joined"
                 )}
               </span>
             </div>
 
-            {/* Skin type */}
-            <div style={{ ...themeStyles.infoRow, borderBottom: "none" }}>
+            {/* Skin type — emoji replaced */}
+            <div
+              style={{
+                ...themeStyles.infoRow,
+                borderBottom: "none",
+              }}
+            >
               <span style={themeStyles.infoLabel}>Skin Type</span>
-              <span style={themeStyles.infoValue}>All Skin Types 🌿</span>
+              <span style={themeStyles.infoValue}>
+                <FaLeaf
+                  aria-hidden="true"
+                  style={{ color: brandColors.green, fontSize: "0.85rem" }}
+                />
+                All Skin Types
+              </span>
             </div>
 
-            {/* Order History */}
-            <div style={{ ...themeStyles.sectionTitle, marginTop: "2rem" }}>
-              <FaShoppingBag /> Recent Orders
+            {/* ─── Recent Orders — the actual fix ─── */}
+            <div style={themeStyles.sectionHeader}>
+              <h2 style={themeStyles.sectionTitle}>
+                <FaShoppingBag aria-hidden="true" /> Recent Orders
+                {orders.length > 0 && (
+                  <span style={themeStyles.orderBadge}>
+                    {orders.length}
+                  </span>
+                )}
+              </h2>
+              <button
+                type="button"
+                style={themeStyles.refreshButton}
+                className="profile-refresh-btn"
+                onClick={loadOrders}
+                aria-label="Refresh orders"
+              >
+                <FaSyncAlt
+                  aria-hidden="true"
+                  className={ordersLoading ? "spinner" : ""}
+                  style={{
+                    animation: ordersLoading
+                      ? "profileSpin 1s linear infinite"
+                      : "none",
+                  }}
+                />
+                Refresh
+              </button>
             </div>
 
-            {orders.length > 0 ? (
+            {/* Diagnostic warning when orders exist in storage but don't match */}
+            {diagnostic?.type === "no-match" && (
+              <div style={themeStyles.diagnosticBox}>
+                <FaExclamationTriangle
+                  aria-hidden="true"
+                  style={{ flexShrink: 0, marginTop: "0.1rem" }}
+                />
+                <div>
+                  <strong>Couldn&apos;t match your orders.</strong> Found{" "}
+                  {diagnostic.totalStored} order
+                  {diagnostic.totalStored !== 1 ? "s" : ""} in storage, but none
+                  are linked to <strong>{diagnostic.userEmail}</strong>. If
+                  you&apos;re sure you placed an order, try{" "}
+                  <Link to="/track-order" style={{ color: "inherit", textDecoration: "underline" }}>
+                    tracking it by Order ID
+                  </Link>{" "}
+                  or{" "}
+                  <Link to="/contact" style={{ color: "inherit", textDecoration: "underline" }}>
+                    contact support
+                  </Link>
+                  .
+                </div>
+              </div>
+            )}
+
+            {ordersLoading ? (
+              <div style={themeStyles.loadingState} role="status" aria-live="polite">
+                <FaSpinner
+                  aria-hidden="true"
+                  style={{ animation: "profileSpin 1s linear infinite" }}
+                />
+                Loading your orders…
+              </div>
+            ) : orders.length > 0 ? (
               orders.slice(0, 5).map((order) => {
-                const liveStatus = getLiveStatus(order);
+                let liveStatus = "Processing";
+                try {
+                  liveStatus =
+                    typeof getLiveStatus === "function"
+                      ? getLiveStatus(order)
+                      : order.status || "Processing";
+                } catch {
+                  liveStatus = order.status || "Processing";
+                }
                 const statusStyle = getStatusColor(liveStatus);
 
                 return (
-                  <div
+                  <article
                     key={order.id}
                     style={themeStyles.orderCard}
                     className="profile-order-card"
@@ -924,6 +1485,7 @@ const Profile = () => {
                     <div style={themeStyles.orderInfo}>
                       <div style={themeStyles.orderId}>
                         <FaBoxOpen
+                          aria-hidden="true"
                           style={{
                             color: brandColors.primary,
                             fontSize: "0.85rem",
@@ -932,14 +1494,32 @@ const Profile = () => {
                         {order.id}
                       </div>
                       <div style={themeStyles.orderDate}>
-                        <FaCalendarAlt style={{ fontSize: "0.75rem" }} />{" "}
-                        {formatDate(order.date)}
+                        <FaCalendarAlt
+                          aria-hidden="true"
+                          style={{ fontSize: "0.75rem" }}
+                        />{" "}
+                        <time dateTime={order.date}>
+                          {formatDate(order.date)}
+                        </time>
                       </div>
                       <div style={themeStyles.orderItems}>
-                        {order.items
-                          .map((it) => `${it.name} × ${it.quantity}`)
-                          .join(" • ")}
+                        {order.items.length > 0
+                          ? order.items
+                              .map((it) => `${it.name} × ${it.quantity}`)
+                              .join(" • ")
+                          : "No items recorded"}
                       </div>
+                      <Link
+                        to="/track-order"
+                        style={themeStyles.trackLink}
+                        aria-label={`Track order ${order.id}`}
+                      >
+                        <FaTruck aria-hidden="true" /> Track this order{" "}
+                        <FaArrowRight
+                          aria-hidden="true"
+                          style={{ fontSize: "0.65rem" }}
+                        />
+                      </Link>
                     </div>
                     <div style={themeStyles.orderRight}>
                       <div style={themeStyles.orderTotal}>
@@ -954,105 +1534,105 @@ const Profile = () => {
                         {statusStyle.label}
                       </span>
                       <button
+                        type="button"
                         style={themeStyles.reorderButton}
                         className="profile-reorder-btn"
                         onClick={() => handleReorder(order)}
-                        aria-label="Buy again"
+                        aria-label={`Buy again: order ${order.id}`}
                       >
-                        <FaRedo /> Buy Again
+                        <FaRedo aria-hidden="true" /> Buy Again
                       </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })
             ) : (
               <div style={themeStyles.emptyState}>
                 <FaBoxOpen
+                  aria-hidden="true"
                   style={{
                     fontSize: "2.25rem",
                     opacity: 0.3,
                     marginBottom: "0.6rem",
                   }}
                 />
-                <p style={{ margin: "0 0 1.25rem" }}>No orders yet</p>
+                <h3 style={themeStyles.emptyTitle}>No orders yet</h3>
+                <p style={themeStyles.emptyText}>
+                  Once you place an order, it will appear here. Explore our
+                  100% natural Ayurvedic collection to get started.
+                </p>
                 <button
+                  type="button"
                   onClick={() => navigate("/shop")}
-                  style={{
-                    ...themeStyles.logoutButton,
-                    background: "linear-gradient(135deg, #f7d794, #f5346b)",
-                    color: isDarkMode ? brandColors.black : "#ffffff",
-                    border: "none",
-                    fontWeight: "700",
-                    width: "auto",
-                    padding: "0.75rem 1.6rem",
-                    marginTop: 0,
-                    boxShadow: "0 8px 22px rgba(245,52,107,0.35)",
-                  }}
+                  style={themeStyles.shopCTA}
                 >
-                  Start Shopping
+                  <FaShoppingBag aria-hidden="true" /> Start Shopping
                 </button>
               </div>
             )}
 
-            {/* Natural Skincare Collection */}
-            <div style={{ ...themeStyles.sectionTitle, marginTop: "2rem" }}>
-              <FaSpa /> Natural Skincare Collection
-            </div>
+            {/* Natural Skincare Collection — now clickable */}
+            <h2
+              style={{
+                ...themeStyles.sectionTitle,
+                marginTop: "2rem",
+              }}
+            >
+              <FaSpa aria-hidden="true" /> Natural Skincare Collection
+            </h2>
             <div style={themeStyles.collectionGrid}>
-              {[
-                { name: "Multani Mitti", icon: <FaTint />, color: "#8bc34a" },
-                { name: "Ubtan Powder", icon: <FaGem />, color: "#ffb74d" },
-                { name: "Shikakai", icon: <FaLeaf />, color: "#66bb6a" },
-                { name: "Reetha", icon: <FaLeaf />, color: "#a1887f" },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
+              {COLLECTION_ITEMS.map((item) => (
+                <Link
+                  key={item.name}
+                  to={`/shop?q=${encodeURIComponent(item.name)}`}
                   style={themeStyles.collectionCard}
                   className="profile-collection-card"
+                  aria-label={`Browse ${item.name}`}
                 >
                   <div
                     style={{
                       ...themeStyles.collectionIcon,
                       color: item.color,
                     }}
+                    aria-hidden="true"
                   >
                     {item.icon}
                   </div>
                   <div style={themeStyles.collectionName}>{item.name}</div>
                   <div style={themeStyles.collectionSub}>100% Natural</div>
-                </div>
+                </Link>
               ))}
             </div>
 
             {/* Wishlist */}
-            <div style={{ ...themeStyles.sectionTitle, marginTop: "2rem" }}>
-              <FaHeart /> Saved Items
-            </div>
-            <p
+            <h2
               style={{
-                color: T.textMuted,
-                marginBottom: "1.15rem",
-                fontSize: "0.9rem",
-                lineHeight: "1.65",
+                ...themeStyles.sectionTitle,
+                marginTop: "2rem",
               }}
             >
+              <FaHeart aria-hidden="true" /> Saved Items
+            </h2>
+            <p style={themeStyles.sectionSubtitle}>
               View your favorite natural skincare products
+              {wishlistCount > 0
+                ? ` — you have ${wishlistCount} saved ${
+                    wishlistCount === 1 ? "item" : "items"
+                  }`
+                : ""}
+              .
             </p>
             <button
-              style={{
-                ...themeStyles.logoutButton,
-                background: "linear-gradient(135deg, #f7d794, #f5346b)",
-                color: isDarkMode ? brandColors.black : "#ffffff",
-                border: "none",
-                fontWeight: "700",
-                boxShadow: "0 8px 24px rgba(245, 52, 107, 0.32)",
-              }}
+              type="button"
+              style={themeStyles.wishlistButton}
               className="profile-wishlist-btn"
               onClick={() => navigate("/wishlist")}
+              aria-label="Go to your wishlist"
             >
-              <FaHeart /> Go to Wishlist
+              <FaHeart aria-hidden="true" /> Go to Wishlist
+              {wishlistCount > 0 && ` (${wishlistCount})`}
             </button>
-          </div>
+          </main>
         </div>
       </div>
     </>

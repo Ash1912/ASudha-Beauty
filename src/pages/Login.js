@@ -1,5 +1,6 @@
-import React, { useState, useLayoutEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// src/pages/Login.jsx
+import React, { useState, useLayoutEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -10,11 +11,14 @@ import {
   FaArrowLeft,
   FaLeaf,
   FaSpa,
-  FaCheckCircle,
+  FaExclamationTriangle,
+  FaTimesCircle,
+  FaShieldAlt,
+  FaArrowRight,
 } from "react-icons/fa";
 import SEO from "../components/SEO";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -34,15 +38,21 @@ const DARK_SHADOW_LIFT = "0 24px 60px rgba(0, 0, 0, 0.75)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 24px 60px rgba(62, 39, 35, 0.15)";
 
+const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+
 const Login = () => {
   const { isDarkMode } = useTheme();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const emailRef = useRef(null);
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // ─── Theme tokens ───
   const dark = {
@@ -95,20 +105,53 @@ const Login = () => {
 
   const T = isDarkMode ? dark : light;
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+    if (error) setError("");
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+    if (!EMAIL_REGEX.test(formData.email.trim())) {
+      nextErrors.email = "Please enter a valid email address";
+    }
+    if (!formData.password) {
+      nextErrors.password = "Please enter your password";
+    }
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-    const result = await login(formData.email, formData.password);
-    if (result.success) navigate("/");
-    else setError(result.error);
+    if (!validateForm()) {
+      const first = Object.keys(fieldErrors)[0];
+      if (first) document.getElementById(`login-${first}`)?.focus();
+      return;
+    }
+    setLoading(true);
+    const result = await login(formData.email.trim(), formData.password);
     setLoading(false);
+    if (result?.success) {
+      // If user was redirected here by ProtectedRoute, send them back.
+      const from = location.state?.from?.pathname || "/";
+      navigate(from, { replace: true });
+    } else {
+      setError(result?.error || "Invalid email or password. Please try again.");
+      emailRef.current?.focus();
+    }
   };
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-login-styles="true"]')
@@ -132,6 +175,10 @@ const Login = () => {
       @keyframes loginFadeUp {
         from { opacity: 0; transform: translateY(12px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes loginSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
 
       .login-orb-1 { animation: loginFloat1 12s ease-in-out infinite; }
@@ -162,23 +209,36 @@ const Login = () => {
       .login-input::placeholder {
         color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
       }
-
-      .login-back-btn {
-        transition: all 0.25s ease;
+      .login-input[aria-invalid="true"] {
+        border-color: #f44336 !important;
       }
-      .login-back-btn:hover {
+      .login-input[aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15) !important;
+      }
+
+      .login-back-btn { transition: all 0.25s ease; }
+      .login-back-btn:hover,
+      .login-back-btn:focus-visible {
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
         border-color: transparent !important;
         color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         transform: translateX(-4px);
+        outline: none;
       }
 
-      .login-pw-toggle {
-        transition: color 0.25s ease, transform 0.25s ease;
-      }
-      .login-pw-toggle:hover {
+      .login-pw-toggle { transition: color 0.25s ease, transform 0.25s ease; }
+      .login-pw-toggle:hover,
+      .login-pw-toggle:focus-visible {
         color: ${brandColors.primary} !important;
         transform: translateY(-50%) scale(1.1);
+        outline: none;
+      }
+      .login-pw-toggle:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: 2px;
+        border-radius: 50%;
       }
 
       .login-submit-btn {
@@ -187,13 +247,19 @@ const Login = () => {
         position: relative;
         overflow: hidden;
       }
-      .login-submit-btn:hover:not(:disabled) {
+      .login-submit-btn:hover:not(:disabled),
+      .login-submit-btn:focus-visible:not(:disabled) {
         transform: translateY(-3px) scale(1.01);
         box-shadow: 0 16px 42px rgba(245, 52, 107, 0.5);
+        outline: none;
       }
       .login-submit-btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+      }
+      .login-submit-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
       }
 
       /* Shine sweep on the button */
@@ -207,25 +273,68 @@ const Login = () => {
         background: linear-gradient(
           90deg,
           transparent,
-          ${
-            isDarkMode
-              ? "rgba(255,255,255,0.15)"
-              : "rgba(255,255,255,0.5)"
-          },
+          ${isDarkMode ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.5)"},
           transparent
         );
         transition: left 0.7s ease;
       }
-      .login-submit-btn:hover::after {
+      .login-submit-btn:hover:not(:disabled)::after {
         left: 100%;
       }
 
-      .login-link {
-        transition: all 0.25s ease;
-      }
-      .login-link:hover {
+      .login-link { transition: all 0.25s ease; }
+      .login-link:hover,
+      .login-link:focus-visible {
         text-decoration: underline;
         color: ${brandColors.primaryDark};
+        outline: none;
+      }
+
+      .login-forgot-link { transition: color 0.2s ease; }
+      .login-forgot-link:hover,
+      .login-forgot-link:focus-visible {
+        text-decoration: underline;
+        color: ${brandColors.primary};
+        outline: none;
+      }
+
+      .login-checkbox {
+        accent-color: ${brandColors.primary};
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .login-checkbox:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline-offset: 2px;
+      }
+
+      .login-legal-source {
+        transition: color 0.2s ease;
+        text-decoration: underline;
+        color: inherit;
+      }
+      .login-legal-source:hover,
+      .login-legal-source:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary};
+        outline: none;
+      }
+
+      .login-spinner {
+        animation: loginSpin 1s linear infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .login-orb-1, .login-orb-2, .login-orb-3, .login-card {
+          animation: none !important;
+        }
+        .login-input, .login-back-btn, .login-pw-toggle, .login-submit-btn,
+        .login-link, .login-forgot-link, .login-legal-source, .login-spinner {
+          transition: none !important;
+          transform: none !important;
+          animation: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -235,11 +344,9 @@ const Login = () => {
         .querySelectorAll('style[data-login-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -255,8 +362,6 @@ const Login = () => {
       boxSizing: "border-box",
       width: "100%",
     },
-
-    // ─── Background layer ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -326,7 +431,6 @@ const Login = () => {
       opacity: isDarkMode ? 0.42 : 0.32,
     },
 
-    // ─── Login card ───
     loginBox: {
       position: "relative",
       zIndex: 1,
@@ -343,7 +447,6 @@ const Login = () => {
       boxSizing: "border-box",
       overflow: "hidden",
     },
-    // Decorative top accent bar
     cardAccentBar: {
       position: "absolute",
       top: 0,
@@ -354,7 +457,6 @@ const Login = () => {
       opacity: 0.9,
     },
 
-    // ─── Back button ───
     backButton: {
       display: "inline-flex",
       alignItems: "center",
@@ -372,7 +474,6 @@ const Login = () => {
       letterSpacing: "0.2px",
     },
 
-    // ─── Icon ───
     iconWrapper: {
       width: "68px",
       height: "68px",
@@ -387,7 +488,6 @@ const Login = () => {
       boxShadow: "0 16px 40px rgba(245, 52, 107, 0.4)",
     },
 
-    // ─── Title ───
     title: {
       fontSize: "1.9rem",
       fontWeight: "900",
@@ -411,7 +511,6 @@ const Login = () => {
       width: "100%",
     },
 
-    // ─── Error ───
     errorBox: {
       background: T.errorBg,
       color: T.errorText,
@@ -428,7 +527,6 @@ const Login = () => {
       gap: "0.5rem",
     },
 
-    // ─── Form ───
     inputGroup: {
       display: "flex",
       flexDirection: "column",
@@ -483,15 +581,58 @@ const Login = () => {
       alignItems: "center",
       justifyContent: "center",
       borderRadius: "50%",
+      fontFamily: "inherit",
+    },
+    fieldError: {
+      fontSize: "0.75rem",
+      color: T.errorText,
+      fontWeight: "700",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
+      marginTop: "0.1rem",
     },
 
-    // ─── Submit ───
+    // ─── Remember me row ───
+    rememberRow: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "0.75rem",
+      marginBottom: "1.5rem",
+      flexWrap: "wrap",
+    },
+    rememberLabel: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      color: T.textMuted,
+      fontWeight: "600",
+      cursor: "pointer",
+      userSelect: "none",
+    },
+    forgotLink: {
+      fontSize: "0.83rem",
+      color: isDarkMode ? brandColors.gold : brandColors.primary,
+      fontWeight: "700",
+      textDecoration: "none",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.25rem",
+      fontFamily: "inherit",
+      background: "none",
+      border: "none",
+      padding: 0,
+      cursor: "pointer",
+    },
+
     loginButton: {
       width: "100%",
       padding: "1.05rem",
       border: "none",
       borderRadius: "50px",
-      cursor: "pointer",
+      cursor: loading ? "not-allowed" : "pointer",
       background: `linear-gradient(135deg, ${brandColors.gold} 0%, ${brandColors.primary} 100%)`,
       color: isDarkMode ? brandColors.black : "#ffffff",
       fontSize: "1rem",
@@ -504,12 +645,12 @@ const Login = () => {
       alignItems: "center",
       justifyContent: "center",
       gap: "0.5rem",
+      opacity: loading ? 0.65 : 1,
     },
 
-    // ─── Footer ───
     footer: {
       textAlign: "center",
-      marginTop: "2rem",
+      marginTop: "1.5rem",
       fontSize: "0.9rem",
       color: T.textMuted,
       fontWeight: "600",
@@ -520,54 +661,61 @@ const Login = () => {
       textDecoration: "none",
       marginLeft: "0.25rem",
     },
+
+    // ─── Legal footnote ───
+    legalFootnote: {
+      marginTop: "1.5rem",
+      paddingTop: "1.15rem",
+      borderTop: `1px solid ${T.divider}`,
+      fontSize: "0.72rem",
+      color: T.textDim,
+      lineHeight: "1.7",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+    },
   };
 
   return (
     <>
       <SEO
-        title="Login | ASudha Beauty"
-        description="Login to your ASudha Beauty account to continue your natural Ayurvedic journey."
+        title="Login | ASudha Beauty — Access Your Account"
+        description="Login to your ASudha Beauty account to track orders, manage your wishlist, and continue shopping 100% natural Ayurvedic skincare and hair care."
+        keywords="asudha beauty login, sign in, account access, ayurvedic skincare account"
+        url="/login"
+        noindex
       />
+
       <div style={themeStyles.container}>
         {/* Animated background */}
-        <div style={themeStyles.bgLayer}>
+        <div style={themeStyles.bgLayer} aria-hidden="true">
           <div style={themeStyles.bgGradient} />
           <div style={themeStyles.bgGrid} />
-          <div
-            className="login-orb-1"
-            style={themeStyles.bgOrb1}
-            aria-hidden="true"
-          />
-          <div
-            className="login-orb-2"
-            style={themeStyles.bgOrb2}
-            aria-hidden="true"
-          />
-          <div
-            className="login-orb-3"
-            style={themeStyles.bgOrb3}
-            aria-hidden="true"
-          />
+          <div className="login-orb-1" style={themeStyles.bgOrb1} />
+          <div className="login-orb-2" style={themeStyles.bgOrb2} />
+          <div className="login-orb-3" style={themeStyles.bgOrb3} />
         </div>
 
-        <div style={themeStyles.loginBox} className="login-card">
-          <div style={themeStyles.cardAccentBar} />
+        <main style={themeStyles.loginBox} className="login-card">
+          <div style={themeStyles.cardAccentBar} aria-hidden="true" />
 
           <button
+            type="button"
             onClick={() => navigate(-1)}
             style={themeStyles.backButton}
             className="login-back-btn"
-            type="button"
+            aria-label="Go back to previous page"
           >
-            <FaArrowLeft /> Back
+            <FaArrowLeft aria-hidden="true" /> Back
           </button>
 
-          <div style={themeStyles.iconWrapper}>
+          <div style={themeStyles.iconWrapper} aria-hidden="true">
             <FaSpa />
           </div>
           <h1 style={themeStyles.title}>Welcome Back!</h1>
           <p style={themeStyles.subtitle}>
             <FaLeaf
+              aria-hidden="true"
               style={{
                 color: isDarkMode ? brandColors.gold : brandColors.bronze,
                 fontSize: "0.8rem",
@@ -577,20 +725,26 @@ const Login = () => {
           </p>
 
           {error && (
-            <div style={themeStyles.errorBox} role="alert">
-              <FaCheckCircle style={{ transform: "rotate(45deg)" }} />
+            <div
+              style={themeStyles.errorBox}
+              role="alert"
+              aria-live="assertive"
+            >
+              <FaExclamationTriangle aria-hidden="true" />
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
+            {/* Email */}
             <div style={themeStyles.inputGroup}>
               <label style={themeStyles.label} htmlFor="login-email">
                 Email Address
               </label>
               <div style={themeStyles.inputWrapper}>
-                <FaEnvelope style={themeStyles.inputIcon} />
+                <FaEnvelope aria-hidden="true" style={themeStyles.inputIcon} />
                 <input
+                  ref={emailRef}
                   id="login-email"
                   type="email"
                   name="email"
@@ -601,16 +755,32 @@ const Login = () => {
                   onChange={handleChange}
                   required
                   autoComplete="email"
+                  autoFocus
+                  aria-required="true"
+                  aria-invalid={fieldErrors.email ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.email ? "login-email-error" : undefined
+                  }
                 />
               </div>
+              {fieldErrors.email && (
+                <div
+                  id="login-email-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" /> {fieldErrors.email}
+                </div>
+              )}
             </div>
 
+            {/* Password */}
             <div style={themeStyles.inputGroup}>
               <label style={themeStyles.label} htmlFor="login-password">
                 Password
               </label>
               <div style={themeStyles.inputWrapper}>
-                <FaLock style={themeStyles.inputIcon} />
+                <FaLock aria-hidden="true" style={themeStyles.inputIcon} />
                 <input
                   id="login-password"
                   type={showPassword ? "text" : "password"}
@@ -622,17 +792,64 @@ const Login = () => {
                   onChange={handleChange}
                   required
                   autoComplete="current-password"
+                  aria-required="true"
+                  aria-invalid={fieldErrors.password ? "true" : "false"}
+                  aria-describedby={
+                    fieldErrors.password ? "login-password-error" : undefined
+                  }
                 />
                 <button
                   type="button"
                   style={themeStyles.passwordToggle}
                   className="login-pw-toggle"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
+                  aria-pressed={showPassword}
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showPassword ? (
+                    <FaEyeSlash aria-hidden="true" />
+                  ) : (
+                    <FaEye aria-hidden="true" />
+                  )}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <div
+                  id="login-password-error"
+                  style={themeStyles.fieldError}
+                  role="alert"
+                >
+                  <FaTimesCircle aria-hidden="true" />
+                  {fieldErrors.password}
+                </div>
+              )}
+            </div>
+
+            {/* Remember me + Forgot password */}
+            <div style={themeStyles.rememberRow}>
+              <label style={themeStyles.rememberLabel} htmlFor="login-remember">
+                <input
+                  id="login-remember"
+                  type="checkbox"
+                  className="login-checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                Remember me
+              </label>
+              <Link
+                to="/forgot-password"
+                style={themeStyles.forgotLink}
+                className="login-forgot-link"
+              >
+                Forgot password?
+                <FaArrowRight
+                  aria-hidden="true"
+                  style={{ fontSize: "0.65rem" }}
+                />
+              </Link>
             </div>
 
             <button
@@ -640,18 +857,53 @@ const Login = () => {
               style={themeStyles.loginButton}
               className="login-submit-btn"
               disabled={loading}
+              aria-busy={loading}
             >
-              {loading ? "Logging in..." : "Login to Your Account"}
+              {loading ? (
+                <>
+                  <span className="login-spinner" aria-hidden="true">
+                    <FaLock />
+                  </span>
+                  Logging in…
+                </>
+              ) : (
+                "Login to Your Account"
+              )}
             </button>
           </form>
 
           <div style={themeStyles.footer}>
-            New to ASudha Beauty?
+            New to ASudha Beauty?{" "}
             <Link to="/signup" style={themeStyles.link} className="login-link">
               Create an account
             </Link>
           </div>
-        </div>
+
+          {/* ─── Legal footnote ─── */}
+          <div style={themeStyles.legalFootnote}>
+            <FaShieldAlt
+              aria-hidden="true"
+              style={{
+                color: isDarkMode ? brandColors.gold : brandColors.green,
+                fontSize: "0.8rem",
+                marginTop: "0.1rem",
+                flexShrink: 0,
+              }}
+            />
+            <span>
+              By logging in you agree to our{" "}
+              <Link to="/terms" className="login-legal-source">
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link to="/returns" className="login-legal-source">
+                Returns Policy
+              </Link>
+              . Your data is protected — we never share your personal
+              information.
+            </span>
+          </div>
+        </main>
       </div>
     </>
   );

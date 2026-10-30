@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
+// src/pages/Checkout.jsx
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+} from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
@@ -29,13 +34,19 @@ import {
   FaWallet,
   FaShoppingCart,
   FaSpa,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { SiPaytm, SiPhonepe } from "react-icons/si";
 import { usePixelTracking } from "../context/PixelContext";
 import GiftCardInput from "../components/GiftCardInput";
 import { useGiftCard } from "../context/GiftCardContext";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Site constants ───
+// const SITE_URL = "https://www.asudhabeauty.shop";
+const FREE_SHIPPING_THRESHOLD = 500;
+const SHIPPING_FEE = 40;
+
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -77,7 +88,7 @@ const Checkout = () => {
   const [processing, setProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [qrCodeSrc, setQrCodeSrc] = useState(
+  const [qrCodeSrc] = useState(
     "/assets/images/payment/qr-code.jpeg"
   );
   const [qrError, setQrError] = useState(false);
@@ -88,6 +99,7 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
@@ -175,7 +187,7 @@ const Checkout = () => {
     }
   }, [cartItems, navigate, orderComplete]);
 
-  // Lock body scroll when the mobile summary sheet is open
+  // Lock body scroll while mobile summary sheet is open + Escape to close
   useEffect(() => {
     const prev = document.body.style.overflow;
     if (showMobileSummary) {
@@ -188,11 +200,18 @@ const Checkout = () => {
     };
   }, [showMobileSummary]);
 
-  // ============================================================
-  // PRICE CALCULATION (MRP already includes GST — no tax added)
-  // ============================================================
-  const subtotal = getCartTotal();
-  const shipping = subtotal > 500 ? 0 : 40;
+  useEffect(() => {
+    if (!showMobileSummary) return;
+    const handleEscape = (e) => {
+      if (e.key === "Escape") setShowMobileSummary(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showMobileSummary]);
+
+  // ─── Price calculation (MRP already includes GST) ───
+  const subtotal = Number(getCartTotal()) || 0;
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
   const discountFromCoupon = couponApplied ? couponDiscount : 0;
   const totalBeforeGift = subtotal - discountFromCoupon + shipping;
   const applicableGiftCardAmount = Math.min(
@@ -213,6 +232,13 @@ const Checkout = () => {
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const focusFirstError = (errs) => {
+    const firstKey = Object.keys(errs)[0];
+    if (firstKey) {
+      document.getElementById(`co-${firstKey}`)?.focus();
     }
   };
 
@@ -246,14 +272,45 @@ const Checkout = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validatePayment = () => {
+    const newErrors = {};
+
+    if (paymentMethod === "card") {
+      const cleanCard = cardNumber.replace(/\s/g, "");
+      if (!/^\d{16}$/.test(cleanCard)) {
+        newErrors.cardNumber = "Enter a valid 16-digit card number";
+      }
+      if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+        newErrors.expiryDate = "Enter expiry as MM/YY";
+      }
+      if (!/^\d{3,4}$/.test(cvv)) {
+        newErrors.cvv = "Enter a valid CVV";
+      }
+      if (!cardName.trim()) {
+        newErrors.cardName = "Enter the name on the card";
+      }
+    }
+
+    if (paymentMethod === "upi" && !paymentConfirmed) {
+      newErrors.upi = "Please confirm your UPI payment first";
+    }
+
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleNextStep = () => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (Object.keys(errors).length > 0) {
+      focusFirstError(errors);
     }
   };
 
   const handlePreviousStep = () => {
-    setCurrentStep((prev) => prev - 1);
+    setCurrentStep((prev) => Math.max(1, prev - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleApplyCoupon = () => {
@@ -265,11 +322,18 @@ const Checkout = () => {
     };
 
     const code = couponCode.toUpperCase().trim();
+    if (!code) {
+      setCouponError("Enter a coupon code first");
+      return;
+    }
     if (validCoupons[code]) {
       setCouponApplied(true);
       setCouponDiscount(subtotal * (validCoupons[code].discount / 100));
+      setCouponError("");
     } else {
-      alert("Invalid coupon code. Try: ASUDHA10, WELCOME, NATURAL, or GLOW");
+      setCouponError(
+        "Invalid coupon code. Try ASUDHA10, WELCOME, NATURAL, or GLOW"
+      );
     }
   };
 
@@ -337,9 +401,12 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (currentStep === 2) {
-      await initiatePayment();
+    if (currentStep !== 2) return;
+    if (!validatePayment()) {
+      focusFirstError(errors);
+      return;
     }
+    await initiatePayment();
   };
 
   const handleUPIPayment = () => {
@@ -358,18 +425,6 @@ const Checkout = () => {
       setPaymentConfirmed(true);
       setProcessing(false);
     }, 1500);
-  };
-
-  const handleQrUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setQrCodeSrc(reader.result);
-        setQrError(false);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const getStepNumberStyle = (step) => {
@@ -407,19 +462,16 @@ const Checkout = () => {
         fontWeight: step === currentStep ? "800" : "600",
       };
     }
-    return {
-      color: T.textMuted,
-      fontWeight: "500",
-    };
+    return { color: T.textMuted, fontWeight: "500" };
   };
 
-  // Breakpoints
+  // ─── Breakpoints ───
   const isSmallMobile = windowWidth <= 360;
   const isMobile = windowWidth <= 480;
   const isTablet = windowWidth <= 1024;
   const isNarrow = windowWidth <= 768;
 
-  // ─── Injected CSS (theme-dependent) — runs BEFORE paint ───
+  // ─── Injected CSS — only depends on isDarkMode ───
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-checkout-styles="true"]')
@@ -467,12 +519,20 @@ const Checkout = () => {
       .co-input::placeholder {
         color: ${isDarkMode ? "rgba(255,255,255,0.35)" : "rgba(62,39,35,0.35)"};
       }
+      .co-input[aria-invalid="true"] {
+        border-color: #f44336 !important;
+      }
+      .co-input[aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15) !important;
+      }
 
       .co-payment-method {
         transition: transform 0.25s ease, box-shadow 0.25s ease,
                     border-color 0.25s ease, background-color 0.25s ease;
+        font-family: inherit;
       }
-      .co-payment-method:hover {
+      .co-payment-method:hover,
+      .co-payment-method:focus-visible {
         transform: translateY(-3px);
         box-shadow: ${
           isDarkMode
@@ -482,15 +542,28 @@ const Checkout = () => {
         border-color: ${
           isDarkMode ? "rgba(212, 175, 55, 0.3)" : "rgba(199, 125, 66, 0.25)"
         } !important;
+        outline: none;
+      }
+      .co-payment-method:focus-visible {
+        outline: 2px solid ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        };
+        outline-offset: 2px;
       }
 
       .co-primary-btn {
         transition: transform 0.3s ease, box-shadow 0.3s ease, gap 0.3s ease;
       }
-      .co-primary-btn:hover:not(:disabled) {
+      .co-primary-btn:hover:not(:disabled),
+      .co-primary-btn:focus-visible:not(:disabled) {
         transform: translateY(-3px);
         box-shadow: 0 14px 36px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
+      }
+      .co-primary-btn:focus-visible {
+        outline: 2px solid ${isDarkMode ? brandColors.gold : "#ffffff"};
+        outline-offset: 2px;
       }
       .co-primary-btn:disabled {
         opacity: 0.6;
@@ -501,7 +574,8 @@ const Checkout = () => {
         transition: transform 0.25s ease, background-color 0.25s ease,
                     border-color 0.25s ease;
       }
-      .co-secondary-btn:hover {
+      .co-secondary-btn:hover,
+      .co-secondary-btn:focus-visible {
         transform: translateY(-2px);
         border-color: ${
           isDarkMode ? brandColors.gold : brandColors.primary
@@ -509,27 +583,31 @@ const Checkout = () => {
         color: ${
           isDarkMode ? brandColors.gold : brandColors.primary
         } !important;
+        outline: none;
       }
 
       .co-coupon-btn {
         transition: transform 0.25s ease, box-shadow 0.25s ease;
       }
-      .co-coupon-btn:hover:not(:disabled) {
+      .co-coupon-btn:hover:not(:disabled),
+      .co-coupon-btn:focus-visible:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 12px 28px rgba(245, 52, 107, 0.4);
+        outline: none;
       }
 
       .co-back-btn {
         transition: all 0.25s ease;
       }
-      .co-back-btn:hover {
+      .co-back-btn:hover,
+      .co-back-btn:focus-visible {
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
         color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         border-color: transparent !important;
         transform: translateX(-4px);
+        outline: none;
       }
 
-      /* Shimmer on final total */
       .co-total-shine {
         position: relative;
         display: inline-block;
@@ -542,16 +620,22 @@ const Checkout = () => {
         background: linear-gradient(
           90deg,
           transparent,
-          ${
-            isDarkMode
-              ? "rgba(255,255,255,0.2)"
-              : "rgba(255,255,255,0.6)"
-          },
+          ${isDarkMode ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.6)"},
           transparent
         );
         transform: translateX(-120%) skewX(-20deg);
         animation: checkoutShine 4s ease-in-out infinite;
         pointer-events: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .co-orb-1, .co-orb-2, .co-orb-3 { animation: none !important; }
+        .co-total-shine::after { animation: none !important; }
+        .co-input, .co-payment-method, .co-primary-btn,
+        .co-secondary-btn, .co-coupon-btn, .co-back-btn {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -561,11 +645,9 @@ const Checkout = () => {
         .querySelectorAll('style[data-checkout-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -576,8 +658,6 @@ const Checkout = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background layers ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -647,7 +727,6 @@ const Checkout = () => {
       opacity: isDarkMode ? 0.38 : 0.28,
     },
 
-    // ─── Content wrapper ───
     content: {
       position: "relative",
       zIndex: 1,
@@ -664,7 +743,6 @@ const Checkout = () => {
       boxSizing: "border-box",
     },
 
-    // ─── Header ───
     header: {
       display: "flex",
       alignItems: "center",
@@ -733,7 +811,6 @@ const Checkout = () => {
       fontFamily: "inherit",
     },
 
-    // ─── Steps ───
     stepsContainer: {
       marginBottom: isMobile ? "1.5rem" : "2.5rem",
       display: "flex",
@@ -797,7 +874,6 @@ const Checkout = () => {
       boxShadow: "0 0 10px rgba(245, 52, 107, 0.5)",
     },
 
-    // ─── Grid ───
     checkoutGrid: {
       display: "grid",
       gridTemplateColumns: isNarrow
@@ -809,7 +885,6 @@ const Checkout = () => {
       alignItems: "stretch",
     },
 
-    // ─── Form card ───
     formSection: {
       backgroundColor: T.card,
       borderRadius: isMobile ? "20px" : "24px",
@@ -906,6 +981,9 @@ const Checkout = () => {
       marginTop: "0.35rem",
       marginLeft: "0.5rem",
       fontWeight: "600",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.35rem",
     },
     checkboxLabel: {
       display: "flex",
@@ -918,7 +996,6 @@ const Checkout = () => {
       fontWeight: "600",
     },
 
-    // ─── Coupon ───
     couponSection: {
       marginBottom: "1.5rem",
       padding: isMobile ? "1.25rem" : "1.5rem",
@@ -994,8 +1071,26 @@ const Checkout = () => {
       justifyContent: "center",
       gap: "0.5rem",
     },
+    couponError: {
+      marginTop: "0.75rem",
+      padding: "0.7rem 1rem",
+      backgroundColor: isDarkMode
+        ? "rgba(244, 67, 54, 0.15)"
+        : "rgba(244, 67, 54, 0.1)",
+      color: T.danger,
+      border: `1px solid ${
+        isDarkMode ? "rgba(244, 67, 54, 0.3)" : "rgba(244, 67, 54, 0.25)"
+      }`,
+      borderRadius: "14px",
+      textAlign: "center",
+      fontSize: "0.85rem",
+      fontWeight: "700",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+    },
 
-    // ─── Payment methods ───
     paymentMethods: {
       display: "grid",
       gridTemplateColumns: isMobile
@@ -1024,6 +1119,7 @@ const Checkout = () => {
       boxSizing: "border-box",
       width: "100%",
       minWidth: 0,
+      fontFamily: "inherit",
     },
     activePaymentMethod: {
       borderColor: isDarkMode ? brandColors.gold : brandColors.primary,
@@ -1046,7 +1142,6 @@ const Checkout = () => {
       letterSpacing: "0.2px",
     },
 
-    // ─── UPI section ───
     upiSection: {
       marginTop: "1.5rem",
       padding: isMobile ? "1.5rem 1.25rem" : "2rem 2.25rem",
@@ -1143,7 +1238,6 @@ const Checkout = () => {
       fontWeight: "700",
     },
 
-    // ─── Summary (desktop + mobile sheet) ───
     summary: {
       backgroundColor: T.card,
       borderRadius: isMobile ? "20px" : "24px",
@@ -1162,13 +1256,11 @@ const Checkout = () => {
       flexDirection: "column",
       maxHeight: isTablet ? "85vh" : "none",
       overflowY: isTablet ? "auto" : "visible",
-      borderTopLeftRadius: isTablet ? "24px" : "24px",
-      borderTopRightRadius: isTablet ? "24px" : "24px",
+      borderTopLeftRadius: "24px",
+      borderTopRightRadius: "24px",
       borderBottomLeftRadius: isTablet ? "0" : "24px",
       borderBottomRightRadius: isTablet ? "0" : "24px",
-      boxShadow: isTablet
-        ? "0 -12px 40px rgba(0, 0, 0, 0.45)"
-        : T.shadowLift,
+      boxShadow: isTablet ? "0 -12px 40px rgba(0, 0, 0, 0.45)" : T.shadowLift,
       width: isTablet ? "100%" : "auto",
       boxSizing: "border-box",
       border: `1px solid ${T.border}`,
@@ -1215,13 +1307,14 @@ const Checkout = () => {
       justifyContent: "center",
       borderRadius: "50%",
       transition: "all 0.25s ease",
+      fontFamily: "inherit",
     },
     summaryTitle: {
       fontSize: isMobile ? "1.15rem" : "1.3rem",
       fontWeight: "900",
       marginBottom: "1.25rem",
       color: T.text,
-      display: "flex",
+      display: isTablet ? "none" : "flex",
       alignItems: "center",
       gap: "0.55rem",
       letterSpacing: "-0.3px",
@@ -1236,10 +1329,7 @@ const Checkout = () => {
       gap: "0.5rem",
       fontWeight: "600",
     },
-    discountItem: {
-      color: brandColors.green,
-      fontWeight: "800",
-    },
+    discountItem: { color: brandColors.green, fontWeight: "800" },
     giftCardItem: {
       color: isDarkMode ? brandColors.gold : brandColors.primary,
       fontWeight: "800",
@@ -1280,10 +1370,7 @@ const Checkout = () => {
       boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
       border: `1px solid ${T.borderSoft}`,
     },
-    productDetails: {
-      flex: 1,
-      minWidth: 0,
-    },
+    productDetails: { flex: 1, minWidth: 0 },
     productName: {
       fontSize: isMobile ? "0.85rem" : "0.95rem",
       fontWeight: "800",
@@ -1326,7 +1413,6 @@ const Checkout = () => {
       }`,
     },
 
-    // ─── Action buttons ───
     actionButtons: {
       display: "flex",
       flexDirection: isMobile ? "column" : "row",
@@ -1401,7 +1487,6 @@ const Checkout = () => {
       fontWeight: "700",
     },
 
-    // ─── Order complete ───
     orderCompleteWrap: {
       position: "relative",
       zIndex: 1,
@@ -1471,7 +1556,6 @@ const Checkout = () => {
       letterSpacing: "0.5px",
     },
 
-    // ─── Small notes ───
     freeShippingNote: {
       marginTop: "0.85rem",
       padding: "0.65rem 0.85rem",
@@ -1546,48 +1630,41 @@ const Checkout = () => {
     },
   };
 
-  // ─── Shared background ───
-  const BackgroundLayer = () => (
-    <div style={themeStyles.bgLayer}>
+  // ─── Shared background JSX (inline, not a component — avoids remounts) ───
+  const backgroundJSX = (
+    <div style={themeStyles.bgLayer} aria-hidden="true">
       <div style={themeStyles.bgGradient} />
       <div style={themeStyles.bgGrid} />
-      <div
-        className="co-orb-1"
-        style={themeStyles.bgOrb1}
-        aria-hidden="true"
-      />
-      <div
-        className="co-orb-2"
-        style={themeStyles.bgOrb2}
-        aria-hidden="true"
-      />
-      <div
-        className="co-orb-3"
-        style={themeStyles.bgOrb3}
-        aria-hidden="true"
-      />
+      <div className="co-orb-1" style={themeStyles.bgOrb1} />
+      <div className="co-orb-2" style={themeStyles.bgOrb2} />
+      <div className="co-orb-3" style={themeStyles.bgOrb3} />
     </div>
   );
 
   if (orderComplete) {
     return (
       <div style={themeStyles.container}>
-        <BackgroundLayer />
-        <div style={themeStyles.orderCompleteWrap}>
-          <SEO
-            title="Order Confirmed | ASudha Beauty"
-            description="Your order has been placed successfully at ASudha Beauty. Thank you for choosing natural Ayurvedic products."
-            keywords="order confirmation, purchase success, order placed, Ayurvedic beauty"
-            url="/checkout/success"
-            type="website"
-          />
+        <SEO
+          title="Order Confirmed | ASudha Beauty"
+          description="Your order has been placed successfully at ASudha Beauty. Thank you for choosing natural Ayurvedic products."
+          keywords="order confirmation, purchase success, order placed, Ayurvedic beauty"
+          url="/checkout/success"
+          type="website"
+          noindex
+        />
 
+        {backgroundJSX}
+
+        <main style={themeStyles.orderCompleteWrap}>
           <div style={themeStyles.orderComplete}>
-            <div style={themeStyles.orderCompleteAccent} />
-            <div style={themeStyles.successIconWrap}>
+            <div
+              style={themeStyles.orderCompleteAccent}
+              aria-hidden="true"
+            />
+            <div style={themeStyles.successIconWrap} aria-hidden="true">
               <FaCheckCircle style={themeStyles.successIcon} />
             </div>
-            <h2
+            <h1
               style={{
                 fontSize: isMobile ? "1.55rem" : "2rem",
                 marginBottom: "0.85rem",
@@ -1596,8 +1673,8 @@ const Checkout = () => {
                 letterSpacing: "-0.4px",
               }}
             >
-              Order Placed Successfully! 🎉
-            </h2>
+              Order Placed Successfully
+            </h1>
             <p
               style={{
                 color: T.textMuted,
@@ -1610,7 +1687,10 @@ const Checkout = () => {
               products are on their way!
             </p>
             <div style={themeStyles.orderNumber}>
-              <FaLeaf style={{ color: brandColors.green }} />
+              <FaLeaf
+                aria-hidden="true"
+                style={{ color: brandColors.green }}
+              />
               Order ID: {orderId}
             </div>
             <p
@@ -1644,7 +1724,7 @@ const Checkout = () => {
                 }}
                 className="co-primary-btn"
               >
-                <FaTruck style={{ marginRight: "0.4rem" }} />
+                <FaTruck aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                 Track Order
               </Link>
               <Link
@@ -1662,35 +1742,46 @@ const Checkout = () => {
               </Link>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
     <div style={themeStyles.container}>
-      <BackgroundLayer />
-      <div style={themeStyles.content}>
-        <SEO
-          title="Checkout | ASudha Beauty"
-          description="Secure checkout at ASudha Beauty. Complete your purchase safely with multiple payment options."
-          keywords="checkout, payment, secure checkout, buy Ayurvedic products"
-          url="/checkout"
-          type="website"
-        />
+      <SEO
+        title="Checkout | ASudha Beauty — Secure Payment"
+        description="Secure checkout at ASudha Beauty. Complete your purchase safely with multiple payment options — card, UPI, netbanking, and wallets."
+        keywords="checkout, secure payment, buy ayurvedic products online, natural skincare checkout"
+        url="/checkout"
+        type="website"
+        noindex
+      />
 
-        {/* Backdrop for mobile summary sheet */}
-        <div
-          style={themeStyles.summaryBackdrop}
-          onClick={() => setShowMobileSummary(false)}
-        />
+      {backgroundJSX}
 
+      {/* Backdrop for mobile summary sheet */}
+      <div
+        style={themeStyles.summaryBackdrop}
+        onClick={() => setShowMobileSummary(false)}
+        aria-hidden="true"
+      />
+
+      <main style={themeStyles.content}>
         <div style={themeStyles.header}>
-          <Link to="/cart" style={themeStyles.backButton} className="co-back-btn">
-            <FaArrowLeft /> Back
+          <Link
+            to="/cart"
+            style={themeStyles.backButton}
+            className="co-back-btn"
+            aria-label="Back to cart"
+          >
+            <FaArrowLeft aria-hidden="true" /> Back
           </Link>
           <h1 style={themeStyles.title}>
-            <FaShoppingCart style={themeStyles.titleIcon} />
+            <FaShoppingCart
+              aria-hidden="true"
+              style={themeStyles.titleIcon}
+            />
             Checkout
           </h1>
           {isTablet && (
@@ -1698,18 +1789,24 @@ const Checkout = () => {
               style={themeStyles.mobileSummaryToggle}
               onClick={() => setShowMobileSummary(!showMobileSummary)}
               type="button"
+              aria-expanded={showMobileSummary}
+              aria-controls="checkout-summary"
             >
-              {showMobileSummary ? "Hide" : "Show"} Summary
+              {showMobileSummary ? "Hide Summary" : "Show Summary"}
             </button>
           )}
         </div>
 
         {/* Steps */}
-        <div style={themeStyles.stepsContainer}>
-          <div style={themeStyles.stepLine} />
-          <div style={themeStyles.stepLineFill} />
+        <div
+          style={themeStyles.stepsContainer}
+          role="list"
+          aria-label="Checkout progress"
+        >
+          <div style={themeStyles.stepLine} aria-hidden="true" />
+          <div style={themeStyles.stepLineFill} aria-hidden="true" />
 
-          <div style={themeStyles.step}>
+          <div style={themeStyles.step} role="listitem">
             <div style={{ ...themeStyles.stepNumber, ...getStepNumberStyle(1) }}>
               1
             </div>
@@ -1717,7 +1814,7 @@ const Checkout = () => {
               Shipping
             </div>
           </div>
-          <div style={themeStyles.step}>
+          <div style={themeStyles.step} role="listitem">
             <div style={{ ...themeStyles.stepNumber, ...getStepNumberStyle(2) }}>
               2
             </div>
@@ -1725,7 +1822,7 @@ const Checkout = () => {
               Payment
             </div>
           </div>
-          <div style={themeStyles.step}>
+          <div style={themeStyles.step} role="listitem">
             <div style={{ ...themeStyles.stepNumber, ...getStepNumberStyle(3) }}>
               3
             </div>
@@ -1739,220 +1836,397 @@ const Checkout = () => {
           <div style={{ minWidth: 0 }}>
             {currentStep === 1 && (
               <div style={themeStyles.formSection}>
-                <div style={themeStyles.formAccentBar} />
+                <div
+                  style={themeStyles.formAccentBar}
+                  aria-hidden="true"
+                />
                 <h2 style={themeStyles.sectionTitle}>
-                  <span style={themeStyles.sectionIconWrap}>
+                  <span
+                    style={themeStyles.sectionIconWrap}
+                    aria-hidden="true"
+                  >
                     <FaTruck />
                   </span>
                   Shipping Information
                 </h2>
 
-                <div style={themeStyles.formGrid}>
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaEnvelope style={themeStyles.labelIcon} /> Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="your@email.com"
-                    />
-                    {errors.email && (
-                      <div style={themeStyles.error}>{errors.email}</div>
-                    )}
-                  </div>
-
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaPhone style={themeStyles.labelIcon} /> Phone *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="10 digit mobile number"
-                    />
-                    {errors.phone && (
-                      <div style={themeStyles.error}>{errors.phone}</div>
-                    )}
-                  </div>
-
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaUser style={themeStyles.labelIcon} /> First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="First name"
-                    />
-                    {errors.firstName && (
-                      <div style={themeStyles.error}>{errors.firstName}</div>
-                    )}
-                  </div>
-
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaUser style={themeStyles.labelIcon} /> Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="Last name"
-                    />
-                    {errors.lastName && (
-                      <div style={themeStyles.error}>{errors.lastName}</div>
-                    )}
-                  </div>
-
-                  <div
-                    style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
-                  >
-                    <label style={themeStyles.label}>
-                      <FaMapMarkerAlt style={themeStyles.labelIcon} /> Address *
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="Street address"
-                    />
-                    {errors.address && (
-                      <div style={themeStyles.error}>{errors.address}</div>
-                    )}
-                  </div>
-
-                  <div
-                    style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
-                  >
-                    <label style={themeStyles.label}>
-                      <FaBuilding style={themeStyles.labelIcon} /> Apartment
-                      (optional)
-                    </label>
-                    <input
-                      type="text"
-                      name="apartment"
-                      value={formData.apartment}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="Apartment, suite, etc."
-                    />
-                  </div>
-
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaCity style={themeStyles.labelIcon} /> City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="City"
-                    />
-                    {errors.city && (
-                      <div style={themeStyles.error}>{errors.city}</div>
-                    )}
-                  </div>
-
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaRegAddressCard style={themeStyles.labelIcon} /> State *
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="State"
-                    />
-                    {errors.state && (
-                      <div style={themeStyles.error}>{errors.state}</div>
-                    )}
-                  </div>
-
-                  <div style={themeStyles.formGroup}>
-                    <label style={themeStyles.label}>
-                      <FaMapMarkerAlt style={themeStyles.labelIcon} /> Pincode *
-                    </label>
-                    <input
-                      type="text"
-                      name="pincode"
-                      value={formData.pincode}
-                      onChange={handleInputChange}
-                      style={themeStyles.input}
-                      className="co-input"
-                      placeholder="6 digit pincode"
-                    />
-                    {errors.pincode && (
-                      <div style={themeStyles.error}>{errors.pincode}</div>
-                    )}
-                  </div>
-
-                  <div
-                    style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
-                  >
-                    <label style={themeStyles.checkboxLabel}>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleNextStep();
+                  }}
+                  noValidate
+                >
+                  <div style={themeStyles.formGrid}>
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-email">
+                        <FaEnvelope
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        Email *
+                      </label>
                       <input
-                        type="checkbox"
-                        name="saveInfo"
-                        checked={formData.saveInfo}
+                        id="co-email"
+                        type="email"
+                        name="email"
+                        value={formData.email}
                         onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="your@email.com"
+                        autoComplete="email"
+                        aria-required="true"
+                        aria-invalid={errors.email ? "true" : "false"}
+                        aria-describedby={
+                          errors.email ? "co-email-error" : undefined
+                        }
                       />
-                      Save this information for next time
-                    </label>
-                  </div>
-                </div>
+                      {errors.email && (
+                        <div
+                          id="co-email-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.email}
+                        </div>
+                      )}
+                    </div>
 
-                <div style={themeStyles.actionButtons}>
-                  <Link
-                    to="/cart"
-                    style={themeStyles.secondaryButton}
-                    className="co-secondary-btn"
-                  >
-                    Cancel
-                  </Link>
-                  <button
-                    onClick={handleNextStep}
-                    style={themeStyles.primaryButton}
-                    className="co-primary-btn"
-                    type="button"
-                  >
-                    Continue to Payment{" "}
-                    <FaArrowRight style={{ marginLeft: "0.35rem" }} />
-                  </button>
-                </div>
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-phone">
+                        <FaPhone
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        Phone *
+                      </label>
+                      <input
+                        id="co-phone"
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="10 digit mobile number"
+                        autoComplete="tel"
+                        aria-required="true"
+                        aria-invalid={errors.phone ? "true" : "false"}
+                        aria-describedby={
+                          errors.phone ? "co-phone-error" : undefined
+                        }
+                      />
+                      {errors.phone && (
+                        <div
+                          id="co-phone-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.phone}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-firstName">
+                        <FaUser
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        First Name *
+                      </label>
+                      <input
+                        id="co-firstName"
+                        type="text"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="First name"
+                        autoComplete="given-name"
+                        aria-required="true"
+                        aria-invalid={errors.firstName ? "true" : "false"}
+                        aria-describedby={
+                          errors.firstName ? "co-firstName-error" : undefined
+                        }
+                      />
+                      {errors.firstName && (
+                        <div
+                          id="co-firstName-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.firstName}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-lastName">
+                        <FaUser
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        Last Name *
+                      </label>
+                      <input
+                        id="co-lastName"
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                        aria-required="true"
+                        aria-invalid={errors.lastName ? "true" : "false"}
+                        aria-describedby={
+                          errors.lastName ? "co-lastName-error" : undefined
+                        }
+                      />
+                      {errors.lastName && (
+                        <div
+                          id="co-lastName-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.lastName}
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
+                    >
+                      <label style={themeStyles.label} htmlFor="co-address">
+                        <FaMapMarkerAlt
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        Address *
+                      </label>
+                      <input
+                        id="co-address"
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="Street address"
+                        autoComplete="street-address"
+                        aria-required="true"
+                        aria-invalid={errors.address ? "true" : "false"}
+                        aria-describedby={
+                          errors.address ? "co-address-error" : undefined
+                        }
+                      />
+                      {errors.address && (
+                        <div
+                          id="co-address-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.address}
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
+                    >
+                      <label style={themeStyles.label} htmlFor="co-apartment">
+                        <FaBuilding
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        Apartment (optional)
+                      </label>
+                      <input
+                        id="co-apartment"
+                        type="text"
+                        name="apartment"
+                        value={formData.apartment}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="Apartment, suite, etc."
+                        autoComplete="address-line2"
+                      />
+                    </div>
+
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-city">
+                        <FaCity
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        City *
+                      </label>
+                      <input
+                        id="co-city"
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="City"
+                        autoComplete="address-level2"
+                        aria-required="true"
+                        aria-invalid={errors.city ? "true" : "false"}
+                        aria-describedby={
+                          errors.city ? "co-city-error" : undefined
+                        }
+                      />
+                      {errors.city && (
+                        <div
+                          id="co-city-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.city}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-state">
+                        <FaRegAddressCard
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        State *
+                      </label>
+                      <input
+                        id="co-state"
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="State"
+                        autoComplete="address-level1"
+                        aria-required="true"
+                        aria-invalid={errors.state ? "true" : "false"}
+                        aria-describedby={
+                          errors.state ? "co-state-error" : undefined
+                        }
+                      />
+                      {errors.state && (
+                        <div
+                          id="co-state-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.state}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={themeStyles.formGroup}>
+                      <label style={themeStyles.label} htmlFor="co-pincode">
+                        <FaMapMarkerAlt
+                          aria-hidden="true"
+                          style={themeStyles.labelIcon}
+                        />{" "}
+                        Pincode *
+                      </label>
+                      <input
+                        id="co-pincode"
+                        type="text"
+                        name="pincode"
+                        value={formData.pincode}
+                        onChange={handleInputChange}
+                        style={themeStyles.input}
+                        className="co-input"
+                        placeholder="6 digit pincode"
+                        autoComplete="postal-code"
+                        inputMode="numeric"
+                        aria-required="true"
+                        aria-invalid={errors.pincode ? "true" : "false"}
+                        aria-describedby={
+                          errors.pincode ? "co-pincode-error" : undefined
+                        }
+                      />
+                      {errors.pincode && (
+                        <div
+                          id="co-pincode-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.pincode}
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
+                    >
+                      <label
+                        style={themeStyles.checkboxLabel}
+                        htmlFor="co-saveInfo"
+                      >
+                        <input
+                          id="co-saveInfo"
+                          type="checkbox"
+                          name="saveInfo"
+                          checked={formData.saveInfo}
+                          onChange={handleInputChange}
+                        />
+                        Save this information for next time
+                      </label>
+                    </div>
+                  </div>
+
+                  <div style={themeStyles.actionButtons}>
+                    <Link
+                      to="/cart"
+                      style={themeStyles.secondaryButton}
+                      className="co-secondary-btn"
+                    >
+                      Cancel
+                    </Link>
+                    <button
+                      onClick={handleNextStep}
+                      style={themeStyles.primaryButton}
+                      className="co-primary-btn"
+                      type="button"
+                    >
+                      Continue to Payment{" "}
+                      <FaArrowRight
+                        aria-hidden="true"
+                        style={{ marginLeft: "0.35rem" }}
+                      />
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
 
             {currentStep === 2 && (
               <div style={themeStyles.formSection}>
-                <div style={themeStyles.formAccentBar} />
+                <div
+                  style={themeStyles.formAccentBar}
+                  aria-hidden="true"
+                />
                 <h2 style={themeStyles.sectionTitle}>
-                  <span style={themeStyles.sectionIconWrap}>
+                  <span
+                    style={themeStyles.sectionIconWrap}
+                    aria-hidden="true"
+                  >
                     <FaCreditCard />
                   </span>
                   Payment Method
@@ -1961,6 +2235,7 @@ const Checkout = () => {
                 <div style={themeStyles.couponSection}>
                   <h3 style={themeStyles.couponTitle}>
                     <FaGift
+                      aria-hidden="true"
                       style={{
                         color: isDarkMode
                           ? brandColors.gold
@@ -1976,7 +2251,12 @@ const Checkout = () => {
                       className="co-input"
                       placeholder="Enter code (ASUDHA10, WELCOME...)"
                       value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value);
+                        if (couponError) setCouponError("");
+                      }}
+                      aria-label="Coupon code"
+                      aria-invalid={couponError ? "true" : "false"}
                     />
                     <button
                       style={themeStyles.applyCouponButton}
@@ -1985,26 +2265,45 @@ const Checkout = () => {
                       disabled={couponApplied}
                       type="button"
                     >
-                      {couponApplied ? "Applied ✓" : "Apply"}
+                      {couponApplied ? "Applied" : "Apply"}
                     </button>
                   </div>
                   {couponApplied && (
-                    <div style={themeStyles.couponSuccess}>
-                      <FaCheckCircle /> Discount applied!
+                    <div
+                      style={themeStyles.couponSuccess}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <FaCheckCircle aria-hidden="true" /> Discount applied!
+                    </div>
+                  )}
+                  {couponError && (
+                    <div
+                      style={themeStyles.couponError}
+                      role="alert"
+                      aria-live="assertive"
+                    >
+                      <FaExclamationTriangle aria-hidden="true" />{" "}
+                      {couponError}
                     </div>
                   )}
                 </div>
 
                 <GiftCardInput
                   orderTotal={totalBeforeGift}
-                  onApply={(result) => {}}
+                  onApply={() => {}}
                   onRemove={() => {
                     removeAppliedGiftCard();
                   }}
                 />
 
-                <div style={themeStyles.paymentMethods}>
-                  <div
+                <div
+                  style={themeStyles.paymentMethods}
+                  role="radiogroup"
+                  aria-label="Select payment method"
+                >
+                  <button
+                    type="button"
                     style={{
                       ...themeStyles.paymentMethod,
                       ...(paymentMethod === "card" &&
@@ -2012,13 +2311,17 @@ const Checkout = () => {
                     }}
                     className="co-payment-method"
                     onClick={() => setPaymentMethod("card")}
-                    role="button"
+                    aria-pressed={paymentMethod === "card"}
                   >
-                    <FaCreditCard style={themeStyles.paymentIcon} />
+                    <FaCreditCard
+                      aria-hidden="true"
+                      style={themeStyles.paymentIcon}
+                    />
                     <span style={themeStyles.paymentName}>Card</span>
-                  </div>
+                  </button>
 
-                  <div
+                  <button
+                    type="button"
                     style={{
                       ...themeStyles.paymentMethod,
                       ...(paymentMethod === "upi" &&
@@ -2026,13 +2329,17 @@ const Checkout = () => {
                     }}
                     className="co-payment-method"
                     onClick={() => setPaymentMethod("upi")}
-                    role="button"
+                    aria-pressed={paymentMethod === "upi"}
                   >
-                    <FaQrcode style={themeStyles.paymentIcon} />
+                    <FaQrcode
+                      aria-hidden="true"
+                      style={themeStyles.paymentIcon}
+                    />
                     <span style={themeStyles.paymentName}>UPI</span>
-                  </div>
+                  </button>
 
-                  <div
+                  <button
+                    type="button"
                     style={{
                       ...themeStyles.paymentMethod,
                       ...(paymentMethod === "netbanking" &&
@@ -2040,13 +2347,17 @@ const Checkout = () => {
                     }}
                     className="co-payment-method"
                     onClick={() => setPaymentMethod("netbanking")}
-                    role="button"
+                    aria-pressed={paymentMethod === "netbanking"}
                   >
-                    <FaUniversity style={themeStyles.paymentIcon} />
+                    <FaUniversity
+                      aria-hidden="true"
+                      style={themeStyles.paymentIcon}
+                    />
                     <span style={themeStyles.paymentName}>Net Banking</span>
-                  </div>
+                  </button>
 
-                  <div
+                  <button
+                    type="button"
                     style={{
                       ...themeStyles.paymentMethod,
                       ...(paymentMethod === "wallet" &&
@@ -2054,11 +2365,14 @@ const Checkout = () => {
                     }}
                     className="co-payment-method"
                     onClick={() => setPaymentMethod("wallet")}
-                    role="button"
+                    aria-pressed={paymentMethod === "wallet"}
                   >
-                    <FaWallet style={themeStyles.paymentIcon} />
+                    <FaWallet
+                      aria-hidden="true"
+                      style={themeStyles.paymentIcon}
+                    />
                     <span style={themeStyles.paymentName}>Wallet</span>
-                  </div>
+                  </button>
                 </div>
 
                 {paymentMethod === "card" && (
@@ -2066,32 +2380,79 @@ const Checkout = () => {
                     <div
                       style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
                     >
-                      <label style={themeStyles.label}>Card Number</label>
+                      <label style={themeStyles.label} htmlFor="co-cardNumber">
+                        Card Number *
+                      </label>
                       <input
+                        id="co-cardNumber"
                         type="text"
                         style={themeStyles.input}
                         className="co-input"
                         placeholder="1234 5678 9012 3456"
                         value={cardNumber}
                         onChange={(e) => setCardNumber(e.target.value)}
+                        inputMode="numeric"
+                        autoComplete="cc-number"
+                        aria-required="true"
+                        aria-invalid={errors.cardNumber ? "true" : "false"}
+                        aria-describedby={
+                          errors.cardNumber
+                            ? "co-cardNumber-error"
+                            : undefined
+                        }
                       />
+                      {errors.cardNumber && (
+                        <div
+                          id="co-cardNumber-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.cardNumber}
+                        </div>
+                      )}
                     </div>
 
                     <div style={themeStyles.formGroup}>
-                      <label style={themeStyles.label}>Expiry Date</label>
+                      <label style={themeStyles.label} htmlFor="co-expiryDate">
+                        Expiry Date *
+                      </label>
                       <input
+                        id="co-expiryDate"
                         type="text"
                         style={themeStyles.input}
                         className="co-input"
                         placeholder="MM/YY"
                         value={expiryDate}
                         onChange={(e) => setExpiryDate(e.target.value)}
+                        inputMode="numeric"
+                        autoComplete="cc-exp"
+                        aria-required="true"
+                        aria-invalid={errors.expiryDate ? "true" : "false"}
+                        aria-describedby={
+                          errors.expiryDate
+                            ? "co-expiryDate-error"
+                            : undefined
+                        }
                       />
+                      {errors.expiryDate && (
+                        <div
+                          id="co-expiryDate-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.expiryDate}
+                        </div>
+                      )}
                     </div>
 
                     <div style={themeStyles.formGroup}>
-                      <label style={themeStyles.label}>CVV</label>
+                      <label style={themeStyles.label} htmlFor="co-cvv">
+                        CVV *
+                      </label>
                       <input
+                        id="co-cvv"
                         type="password"
                         style={themeStyles.input}
                         className="co-input"
@@ -2099,21 +2460,57 @@ const Checkout = () => {
                         maxLength="4"
                         value={cvv}
                         onChange={(e) => setCvv(e.target.value)}
+                        inputMode="numeric"
+                        autoComplete="cc-csc"
+                        aria-required="true"
+                        aria-invalid={errors.cvv ? "true" : "false"}
+                        aria-describedby={
+                          errors.cvv ? "co-cvv-error" : undefined
+                        }
                       />
+                      {errors.cvv && (
+                        <div
+                          id="co-cvv-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.cvv}
+                        </div>
+                      )}
                     </div>
 
                     <div
                       style={{ ...themeStyles.formGroup, gridColumn: "1 / -1" }}
                     >
-                      <label style={themeStyles.label}>Name on Card</label>
+                      <label style={themeStyles.label} htmlFor="co-cardName">
+                        Name on Card *
+                      </label>
                       <input
+                        id="co-cardName"
                         type="text"
                         style={themeStyles.input}
                         className="co-input"
                         placeholder="As shown on card"
                         value={cardName}
                         onChange={(e) => setCardName(e.target.value)}
+                        autoComplete="cc-name"
+                        aria-required="true"
+                        aria-invalid={errors.cardName ? "true" : "false"}
+                        aria-describedby={
+                          errors.cardName ? "co-cardName-error" : undefined
+                        }
                       />
+                      {errors.cardName && (
+                        <div
+                          id="co-cardName-error"
+                          style={themeStyles.error}
+                          role="alert"
+                        >
+                          <FaExclamationTriangle aria-hidden="true" />{" "}
+                          {errors.cardName}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2121,35 +2518,32 @@ const Checkout = () => {
                 {paymentMethod === "upi" && (
                   <div style={themeStyles.upiSection}>
                     <h3 style={themeStyles.upiTitle}>
-                      <FaQrcode /> Scan QR Code to Pay
+                      <FaQrcode aria-hidden="true" /> Scan QR Code to Pay
                     </h3>
 
                     <div style={themeStyles.qrCode}>
                       {!qrError ? (
                         <img
                           src={qrCodeSrc}
-                          alt="Payment QR Code"
+                          alt="UPI payment QR code for ASudha Beauty"
                           style={themeStyles.qrImage}
                           onError={() => setQrError(true)}
                         />
                       ) : (
                         <div style={themeStyles.qrPlaceholder}>
                           <FaQrcode
-                            style={{ fontSize: "2rem", marginBottom: "0.5rem" }}
+                            aria-hidden="true"
+                            style={{
+                              fontSize: "2rem",
+                              marginBottom: "0.5rem",
+                            }}
                           />
-                          <p>QR Code not found</p>
+                          <p>QR Code not available</p>
+                          <p style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                            Use UPI ID below
+                          </p>
                         </div>
                       )}
-                    </div>
-
-                    <div>
-                      <input
-                        type="file"
-                        id="qr-upload"
-                        accept="image/*"
-                        style={{ display: "none" }}
-                        onChange={handleQrUpload}
-                      />
                     </div>
 
                     <p
@@ -2170,6 +2564,7 @@ const Checkout = () => {
                         placeholder="username@okhdfcbank"
                         value={upiId}
                         onChange={(e) => setUpiId(e.target.value)}
+                        aria-label="Your UPI ID"
                       />
                       <button
                         style={themeStyles.verifyButton}
@@ -2183,8 +2578,13 @@ const Checkout = () => {
                     </div>
 
                     {paymentConfirmed && (
-                      <div style={themeStyles.paymentConfirmed}>
-                        <FaCheckCircle /> Payment Successful!
+                      <div
+                        style={themeStyles.paymentConfirmed}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <FaCheckCircle aria-hidden="true" /> Payment
+                        Successful!
                       </div>
                     )}
 
@@ -2203,14 +2603,29 @@ const Checkout = () => {
                         I have scanned and paid
                       </button>
                     )}
+
+                    {errors.upi && (
+                      <div
+                        style={{ ...themeStyles.error, justifyContent: "center" }}
+                        role="alert"
+                      >
+                        <FaExclamationTriangle aria-hidden="true" />{" "}
+                        {errors.upi}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {paymentMethod === "netbanking" && (
                   <div>
+                    <label style={themeStyles.label} htmlFor="co-bank">
+                      Select Your Bank
+                    </label>
                     <select
+                      id="co-bank"
                       style={{ ...themeStyles.input, marginBottom: "1rem" }}
                       className="co-input"
+                      aria-label="Select your bank"
                     >
                       <option value="">Select your bank</option>
                       <option value="sbi">State Bank of India</option>
@@ -2227,38 +2642,30 @@ const Checkout = () => {
 
                 {paymentMethod === "wallet" && (
                   <div style={themeStyles.paymentMethods}>
-                    <div
-                      style={themeStyles.paymentMethod}
-                      className="co-payment-method"
-                    >
+                    <div style={themeStyles.paymentMethod}>
                       <SiPhonepe
+                        aria-hidden="true"
                         style={{ ...themeStyles.paymentIcon, color: "#5F259F" }}
                       />
                       <span style={themeStyles.paymentName}>PhonePe</span>
                     </div>
-                    <div
-                      style={themeStyles.paymentMethod}
-                      className="co-payment-method"
-                    >
+                    <div style={themeStyles.paymentMethod}>
                       <SiPaytm
+                        aria-hidden="true"
                         style={{ ...themeStyles.paymentIcon, color: "#00BAF2" }}
                       />
                       <span style={themeStyles.paymentName}>Paytm</span>
                     </div>
-                    <div
-                      style={themeStyles.paymentMethod}
-                      className="co-payment-method"
-                    >
+                    <div style={themeStyles.paymentMethod}>
                       <FaGooglePay
+                        aria-hidden="true"
                         style={{ ...themeStyles.paymentIcon, color: "#4285F4" }}
                       />
                       <span style={themeStyles.paymentName}>Google Pay</span>
                     </div>
-                    <div
-                      style={themeStyles.paymentMethod}
-                      className="co-payment-method"
-                    >
+                    <div style={themeStyles.paymentMethod}>
                       <FaAmazonPay
+                        aria-hidden="true"
                         style={{ ...themeStyles.paymentIcon, color: "#FF9900" }}
                       />
                       <span style={themeStyles.paymentName}>Amazon Pay</span>
@@ -2295,6 +2702,7 @@ const Checkout = () => {
 
                 <div style={themeStyles.securityBadge}>
                   <FaLock
+                    aria-hidden="true"
                     style={{
                       color: isDarkMode
                         ? brandColors.gold
@@ -2302,6 +2710,7 @@ const Checkout = () => {
                     }}
                   />
                   <FaShieldAlt
+                    aria-hidden="true"
                     style={{
                       color: isDarkMode
                         ? brandColors.gold
@@ -2309,7 +2718,7 @@ const Checkout = () => {
                     }}
                   />
                   <span>256-bit encrypted</span>
-                  <span>•</span>
+                  <span aria-hidden="true">•</span>
                   <span>Secure checkout</span>
                 </div>
               </div>
@@ -2317,8 +2726,18 @@ const Checkout = () => {
           </div>
 
           {/* Summary */}
-          <div style={themeStyles.summary}>
-            <div style={themeStyles.summaryAccentBar} />
+          <aside
+            id="checkout-summary"
+            style={themeStyles.summary}
+            role={isTablet ? "dialog" : "complementary"}
+            aria-modal={isTablet && showMobileSummary ? "true" : undefined}
+            aria-labelledby="checkout-summary-title"
+            aria-hidden={isTablet && !showMobileSummary ? "true" : undefined}
+          >
+            <div
+              style={themeStyles.summaryAccentBar}
+              aria-hidden="true"
+            />
             {isTablet && (
               <div style={themeStyles.summaryHeader}>
                 <h3
@@ -2337,13 +2756,17 @@ const Checkout = () => {
                   aria-label="Close summary"
                   type="button"
                 >
-                  <FaTimes />
+                  <FaTimes aria-hidden="true" />
                 </button>
               </div>
             )}
 
-            <h2 style={themeStyles.summaryTitle}>
+            <h2
+              id="checkout-summary-title"
+              style={themeStyles.summaryTitle}
+            >
               <FaSpa
+                aria-hidden="true"
                 style={{
                   fontSize: "1rem",
                   color: isDarkMode ? brandColors.gold : brandColors.bronze,
@@ -2359,20 +2782,28 @@ const Checkout = () => {
                   item.category === "Hair Care";
                 return (
                   <div
-                    key={`${item.id}-${item.selectedShade}`}
+                    key={`${item.id}-${item.selectedShade || "default"}`}
                     style={themeStyles.productItem}
                   >
                     <img
                       src={item.image}
-                      alt={item.name}
+                      alt={`${item.name}${
+                        item.selectedShade ? ` — ${item.selectedShade}` : ""
+                      }`}
                       style={themeStyles.productImage}
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div style={themeStyles.productDetails}>
                       <div style={themeStyles.productName}>
                         {item.name}
                         {isNatural && (
                           <span style={themeStyles.naturalBadge}>
-                            <FaLeaf style={{ fontSize: "0.45rem" }} /> Natural
+                            <FaLeaf
+                              aria-hidden="true"
+                              style={{ fontSize: "0.45rem" }}
+                            />{" "}
+                            Natural
                           </span>
                         )}
                       </div>
@@ -2420,9 +2851,13 @@ const Checkout = () => {
                 }}
               >
                 <span
-                  style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
                 >
-                  <FaGift /> Gift Card
+                  <FaGift aria-hidden="true" /> Gift Card
                 </span>
                 <span>-₹{applicableGiftCardAmount.toFixed(2)}</span>
               </div>
@@ -2433,7 +2868,10 @@ const Checkout = () => {
               <span>
                 {shipping === 0 ? (
                   <span
-                    style={{ color: brandColors.green, fontWeight: "800" }}
+                    style={{
+                      color: brandColors.green,
+                      fontWeight: "800",
+                    }}
                   >
                     Free
                   </span>
@@ -2444,40 +2882,54 @@ const Checkout = () => {
             </div>
 
             <div style={themeStyles.mrpNote}>
-              <FaCheckCircle style={{ fontSize: "0.7rem" }} />
+              <FaCheckCircle
+                aria-hidden="true"
+                style={{ fontSize: "0.7rem" }}
+              />
               All prices include GST
             </div>
 
             <div style={themeStyles.summaryDivider} />
 
-            <div style={themeStyles.summaryTotal}>
+            <div
+              style={themeStyles.summaryTotal}
+              role="status"
+              aria-live="polite"
+            >
               <span>Total</span>
-              <span style={themeStyles.totalAmount} className="co-total-shine">
+              <span
+                style={themeStyles.totalAmount}
+                className="co-total-shine"
+              >
                 ₹{total.toFixed(2)}
               </span>
             </div>
 
             {hasNaturalItems && (
               <div style={themeStyles.naturalBadgeNote}>
-                <FaLeaf /> Includes 100% Natural Products
+                <FaLeaf aria-hidden="true" /> Includes 100% Natural Products
               </div>
             )}
 
-            {subtotal > 500 && (
+            {subtotal >= FREE_SHIPPING_THRESHOLD && (
               <div style={themeStyles.freeShippingNote}>
-                <FaTruck /> Free Shipping Applied! 🎉
+                <FaCheckCircle aria-hidden="true" /> Free Shipping Applied
               </div>
             )}
 
             {applicableGiftCardAmount > 0 && (
               <div style={themeStyles.giftCardNote}>
-                🎁 Gift Card Applied! You saved ₹
+                <FaGift
+                  aria-hidden="true"
+                  style={{ marginRight: "0.35rem" }}
+                />
+                Gift Card Applied — You saved ₹
                 {applicableGiftCardAmount.toFixed(0)}
               </div>
             )}
-          </div>
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

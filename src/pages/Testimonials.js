@@ -1,4 +1,4 @@
-// src/pages/Testimonials.js
+// src/pages/Testimonials.jsx
 import React, {
   useState,
   useEffect,
@@ -21,11 +21,21 @@ import {
   FaTimes,
   FaQuoteRight,
   FaPenNib,
+  FaBookOpen,
+  FaExternalLinkAlt,
+  FaArrowRight,
+  FaLeaf,
+  FaShieldAlt,
+  FaSpa,
+  FaFlask,
 } from "react-icons/fa";
+
+// ─── Site constants ───
+const SITE_URL = "https://www.asudhabeauty.shop";
 
 const HELPFUL_STORAGE_KEY = "asudha_helpful_reviews";
 
-// ─── Brand palette (module-scope: stable references) ───
+// ─── Brand palette (module scope: stable) ───
 const brandColors = {
   primary: "#f5346b",
   primaryDark: "#cf2a57",
@@ -46,10 +56,188 @@ const DARK_SHADOW_LIFT = "0 22px 48px rgba(0, 0, 0, 0.7)";
 const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
+// ─── Testimonials data (module scope: reused by schema + UI) ───
+const ALL_TESTIMONIALS = [
+  {
+    id: 1,
+    name: "Sarah Johnson",
+    location: "New York, USA",
+    rating: 5,
+    date: "March 15, 2026",
+    dateISO: "2026-03-15",
+    title: "My skin has never felt this clean!",
+    content:
+      "Multani Mitti is a game changer! I mix it with rose water and use it twice a week. My oily skin has finally found its match. It deep cleanses without over-drying. ASudha's powder is so pure and fine!",
+    productPurchased: "Multani Mitti Powder",
+    productLink: "/product/11001",
+    verified: true,
+    helpful: 124,
+  },
+  {
+    id: 2,
+    name: "Priya Sharma",
+    location: "Mumbai, India",
+    rating: 5,
+    date: "February 28, 2026",
+    dateISO: "2026-02-28",
+    title: "Traditional radiance in a pack!",
+    content:
+      "The Ubtan powder instantly gave my face a glow. It smells incredible, and my skin feels so soft and bright after every use. Perfect for special occasions or just a weekend pamper session!",
+    productPurchased: "Ubtan Powder",
+    productLink: "/product/11002",
+    verified: true,
+    helpful: 89,
+  },
+  {
+    id: 3,
+    name: "Emily Chen",
+    location: "Singapore",
+    rating: 5,
+    date: "January 20, 2026",
+    dateISO: "2026-01-20",
+    title: "My hair fall has reduced drastically!",
+    content:
+      "I've been using ASudha's Amla powder mixed with coconut oil. My hair feels thicker and has a beautiful natural shine. The fact that it is 100% natural with no chemicals makes it a must-have for me!",
+    productPurchased: "Amla Powder",
+    productLink: "/product/12001",
+    verified: true,
+    helpful: 56,
+  },
+  {
+    id: 4,
+    name: "Rajesh Kumar",
+    location: "Delhi, India",
+    rating: 4,
+    date: "June 10, 2026",
+    dateISO: "2026-06-10",
+    title: "Amazing natural cleanser!",
+    content:
+      "Reetha powder is wonderful. It gently cleanses my hair without stripping away natural oils. My scalp feels much healthier now. Shipping was fast and the packaging was great!",
+    productPurchased: "Reetha Powder",
+    productLink: "/product/12002",
+    verified: true,
+    helpful: 34,
+  },
+  {
+    id: 5,
+    name: "Anita Desai",
+    location: "Bangalore, India",
+    rating: 5,
+    date: "July 5, 2026",
+    dateISO: "2026-07-05",
+    title: "My hair is finally silky and strong!",
+    content:
+      "The Herbal Mix Hair Pack is a hidden gem! It has transformed my dry, dull hair into soft, shiny locks. I love that it has Bhringraj and Amla mixed together. ASudha Beauty is now my go-to for hair care!",
+    productPurchased: "Herbal Mix Hair Pack",
+    productLink: "/product/12004",
+    verified: true,
+    helpful: 78,
+  },
+  {
+    id: 6,
+    name: "Michael Brown",
+    location: "London, UK",
+    rating: 5,
+    date: "October 18, 2026",
+    dateISO: "2026-10-18",
+    title: "Shikakai is pure magic!",
+    content:
+      "Finally a brand that offers pure, unadulterated Shikakai powder! It strengthens my roots and gives me the perfect natural shine. Shipping to the UK was fast and the quality is impeccable.",
+    productPurchased: "Shikakai Powder",
+    productLink: "/product/12003",
+    verified: true,
+    helpful: 45,
+  },
+  {
+    id: 7,
+    name: "Neha Gupta",
+    location: "Pune, India",
+    rating: 5,
+    date: "September 22, 2026",
+    dateISO: "2026-09-22",
+    title: "Perfect for my budget and my skin!",
+    content:
+      "As a student, I love that these natural powders are affordable but deliver amazing results. The Multani Mitti controls my excess oil perfectly. My skin feels so fresh and clean!",
+    productPurchased: "Multani Mitti Powder",
+    productLink: "/product/11001",
+    verified: true,
+    helpful: 29,
+  },
+  {
+    id: 8,
+    name: "Sophia Martinez",
+    location: "Los Angeles, USA",
+    rating: 4,
+    date: "August 30, 2026",
+    dateISO: "2026-08-30",
+    title: "Lovely glow, lovely ingredients!",
+    content:
+      "Using Ubtan for my face has become a Sunday ritual. The traditional blend of herbs gives me a lovely glow. Only giving 4 stars because I wish the packs were a bit bigger!",
+    productPurchased: "Ubtan Powder",
+    productLink: "/product/11002",
+    verified: true,
+    helpful: 23,
+  },
+];
+
+// ─── Internal blog backlinks (reviews mention these products) ───
+const RELATED_GUIDES = [
+  {
+    to: "/blog/1",
+    label: "Multani Mitti benefits for oily skin",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/2",
+    label: "Ubtan for glowing skin — the Ayurvedic ritual",
+    icon: <FaSpa />,
+  },
+  {
+    to: "/blog/3",
+    label: "Amla-Reetha-Shikakai hair care science",
+    icon: <FaLeaf />,
+  },
+  {
+    to: "/blog/6",
+    label: "Herbal face packs for every skin type",
+    icon: <FaFlask />,
+  },
+  {
+    to: "/blog/7",
+    label: "The science behind Ayurvedic herbs",
+    icon: <FaFlask />,
+  },
+];
+
+// ─── Authoritative external hyperlinks ───
+const TRUSTED_SOURCES = [
+  {
+    label:
+      "Consumer Protection (E-Commerce) Rules 2020 — Department of Consumer Affairs",
+    href: "https://consumeraffairs.nic.in/",
+    domain: "consumeraffairs.nic.in",
+  },
+  {
+    label: "National Consumer Helpline — Government of India",
+    href: "https://consumerhelpline.gov.in/",
+    domain: "consumerhelpline.gov.in",
+  },
+  {
+    label: "Bureau of Indian Standards — Quality & Safety",
+    href: "https://www.bis.gov.in/",
+    domain: "bis.gov.in",
+  },
+  {
+    label: "Ministry of Electronics & IT — Intermediary Guidelines",
+    href: "https://www.meity.gov.in/",
+    domain: "meity.gov.in",
+  },
+];
+
 const Testimonials = () => {
   const { isDarkMode } = useTheme();
   const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1440
+    typeof window !== "undefined" ? window.innerWidth : 1440,
   );
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -128,145 +316,28 @@ const Testimonials = () => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  const allTestimonials = useMemo(
-    () => [
-      {
-        id: 1,
-        name: "Sarah Johnson",
-        location: "New York, USA",
-        rating: 5,
-        date: "March 15, 2026",
-        title: "My skin has never felt this clean!",
-        content:
-          "Multani Mitti is a game changer! I mix it with rose water and use it twice a week. My oily skin has finally found its match. It deep cleanses without over-drying. ASudha's powder is so pure and fine!",
-        productPurchased: "Multani Mitti Powder",
-        productLink: "/product/11001",
-        verified: true,
-        helpful: 124,
-      },
-      {
-        id: 2,
-        name: "Priya Sharma",
-        location: "Mumbai, India",
-        rating: 5,
-        date: "February 28, 2026",
-        title: "Traditional radiance in a pack!",
-        content:
-          "The Ubtan powder instantly gave my face a glow. It smells incredible, and my skin feels so soft and bright after every use. Perfect for special occasions or just a weekend pamper session!",
-        productPurchased: "Ubtan Powder",
-        productLink: "/product/11002",
-        verified: true,
-        helpful: 89,
-      },
-      {
-        id: 3,
-        name: "Emily Chen",
-        location: "Singapore",
-        rating: 5,
-        date: "January 20, 2026",
-        title: "My hair fall has reduced drastically!",
-        content:
-          "I've been using ASudha's Amla powder mixed with coconut oil. My hair feels thicker and has a beautiful natural shine. The fact that it is 100% natural with no chemicals makes it a must-have for me!",
-        productPurchased: "Amla Powder",
-        productLink: "/product/12001",
-        verified: true,
-        helpful: 56,
-      },
-      {
-        id: 4,
-        name: "Rajesh Kumar",
-        location: "Delhi, India",
-        rating: 4,
-        date: "June 10, 2026",
-        title: "Amazing natural cleanser!",
-        content:
-          "Reetha powder is wonderful. It gently cleanses my hair without stripping away natural oils. My scalp feels much healthier now. Shipping was fast and the packaging was great!",
-        productPurchased: "Reetha Powder",
-        productLink: "/product/12002",
-        verified: true,
-        helpful: 34,
-      },
-      {
-        id: 5,
-        name: "Anita Desai",
-        location: "Bangalore, India",
-        rating: 5,
-        date: "July 5, 2026",
-        title: "My hair is finally silky and strong!",
-        content:
-          "The Herbal Mix Hair Pack is a hidden gem! It has transformed my dry, dull hair into soft, shiny locks. I love that it has Bhringraj and Amla mixed together. ASudha Beauty is now my go-to for hair care!",
-        productPurchased: "Herbal Mix Hair Pack",
-        productLink: "/product/12004",
-        verified: true,
-        helpful: 78,
-      },
-      {
-        id: 6,
-        name: "Michael Brown",
-        location: "London, UK",
-        rating: 5,
-        date: "October 18, 2026",
-        title: "Shikakai is pure magic!",
-        content:
-          "Finally a brand that offers pure, unadulterated Shikakai powder! It strengthens my roots and gives me the perfect natural shine. Shipping to the UK was fast and the quality is impeccable.",
-        productPurchased: "Shikakai Powder",
-        productLink: "/product/12003",
-        verified: true,
-        helpful: 45,
-      },
-      {
-        id: 7,
-        name: "Neha Gupta",
-        location: "Pune, India",
-        rating: 5,
-        date: "September 22, 2026",
-        title: "Perfect for my budget and my skin!",
-        content:
-          "As a student, I love that these natural powders are affordable but deliver amazing results. The Multani Mitti controls my excess oil perfectly. My skin feels so fresh and clean!",
-        productPurchased: "Multani Mitti Powder",
-        productLink: "/product/11001",
-        verified: true,
-        helpful: 29,
-      },
-      {
-        id: 8,
-        name: "Sophia Martinez",
-        location: "Los Angeles, USA",
-        rating: 4,
-        date: "August 30, 2026",
-        title: "Lovely glow, lovely ingredients!",
-        content:
-          "Using Ubtan for my face has become a Sunday ritual. The traditional blend of herbs gives me a lovely glow. Only giving 4 stars because I wish the packs were a bit bigger!",
-        productPurchased: "Ubtan Powder",
-        productLink: "/product/11002",
-        verified: true,
-        helpful: 23,
-      },
-    ],
-    []
-  );
-
+  // ─── Stats ───
   const stats = useMemo(() => {
-    const total = allTestimonials.length;
-    const five = allTestimonials.filter((t) => t.rating === 5).length;
-    const four = allTestimonials.filter((t) => t.rating === 4).length;
-    const three = allTestimonials.filter((t) => t.rating === 3).length;
-    const two = allTestimonials.filter((t) => t.rating === 2).length;
-    const one = allTestimonials.filter((t) => t.rating === 1).length;
+    const total = ALL_TESTIMONIALS.length;
+    const five = ALL_TESTIMONIALS.filter((t) => t.rating === 5).length;
+    const four = ALL_TESTIMONIALS.filter((t) => t.rating === 4).length;
+    const three = ALL_TESTIMONIALS.filter((t) => t.rating === 3).length;
+    const two = ALL_TESTIMONIALS.filter((t) => t.rating === 2).length;
+    const one = ALL_TESTIMONIALS.filter((t) => t.rating === 1).length;
     const avg =
       total > 0
         ? (
-            allTestimonials.reduce((sum, t) => sum + t.rating, 0) / total
+            ALL_TESTIMONIALS.reduce((sum, t) => sum + t.rating, 0) / total
           ).toFixed(1)
         : "0.0";
 
     return { total, five, four, three, two, one, avg };
-  }, [allTestimonials]);
+  }, []);
 
   const filteredTestimonials = useMemo(() => {
     const q = debouncedSearch.toLowerCase().trim();
 
-    return allTestimonials.filter((testimonial) => {
+    return ALL_TESTIMONIALS.filter((testimonial) => {
       const matchesFilter =
         filter === "all" ||
         (filter === "5star" && testimonial.rating === 5) ||
@@ -283,7 +354,7 @@ const Testimonials = () => {
         testimonial.productPurchased.toLowerCase().includes(q)
       );
     });
-  }, [allTestimonials, filter, debouncedSearch]);
+  }, [filter, debouncedSearch]);
 
   const handleHelpful = useCallback((id) => {
     setHelpfulVotes((prev) => {
@@ -294,15 +365,6 @@ const Testimonials = () => {
 
   const hasVoted = (id) => Boolean(helpfulVotes[id]);
 
-  const renderStars = (rating, size = 14) =>
-    [...Array(5)].map((_, i) => (
-      <FaStar
-        key={i}
-        color={i < rating ? T.star : T.starEmpty}
-        size={size}
-      />
-    ));
-
   const clearFilters = () => {
     setFilter("all");
     setSearchTerm("");
@@ -310,7 +372,103 @@ const Testimonials = () => {
 
   const hasActiveFilters = filter !== "all" || searchTerm.trim() !== "";
 
-  // ─── Injected CSS ───
+  // ─── JSON-LD ───
+  const testimonialsJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/testimonials#webpage`,
+          url: `${SITE_URL}/testimonials`,
+          name: "Customer Reviews & Testimonials | ASudha Beauty",
+          description:
+            "Verified customer reviews of ASudha Beauty's 100% natural Ayurvedic skincare and hair care products.",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          inLanguage: "en-IN",
+          breadcrumb: { "@id": `${SITE_URL}/testimonials#breadcrumb` },
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/assets/images/og-default.png`,
+          },
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": `${SITE_URL}/testimonials#breadcrumb`,
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Customer Reviews",
+              item: `${SITE_URL}/testimonials`,
+            },
+          ],
+        },
+        {
+          "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
+          name: "ASudha Beauty",
+          url: SITE_URL,
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: stats.avg,
+            reviewCount: String(stats.total),
+            bestRating: "5",
+            worstRating: "1",
+          },
+        },
+        {
+          "@type": "ItemList",
+          "@id": `${SITE_URL}/testimonials#reviews`,
+          name: "Verified Customer Reviews",
+          numberOfItems: ALL_TESTIMONIALS.length,
+          itemListElement: ALL_TESTIMONIALS.map((t, idx) => ({
+            "@type": "ListItem",
+            position: idx + 1,
+            item: {
+              "@type": "Review",
+              "@id": `${SITE_URL}/testimonials#review-${t.id}`,
+              name: t.title,
+              reviewBody: t.content,
+              datePublished: t.dateISO,
+              author: { "@type": "Person", name: t.name },
+              reviewRating: {
+                "@type": "Rating",
+                ratingValue: String(t.rating),
+                bestRating: "5",
+                worstRating: "1",
+              },
+              itemReviewed: {
+                "@type": "Product",
+                name: t.productPurchased,
+                url: `${SITE_URL}${t.productLink}`,
+              },
+              publisher: { "@id": `${SITE_URL}/#organization` },
+            },
+          })),
+        },
+      ],
+    }),
+    [stats.avg, stats.total],
+  );
+
+  const breadcrumb = useMemo(
+    () => [
+      { name: "Home", url: "/" },
+      { name: "Customer Reviews", url: "/testimonials" },
+    ],
+    [],
+  );
+
+  const citations = useMemo(
+    () => TRUSTED_SOURCES.map((s) => ({ label: s.label, href: s.href })),
+    [],
+  );
+
+  // ─── Injected CSS — only depends on isDarkMode ───
+  // T.text and T.textDim are inlined as literals/ternaries so ESLint's
+  // exhaustive-deps rule sees only `isDarkMode` as a dependency.
   useLayoutEffect(() => {
     document
       .querySelectorAll('style[data-testimonials-styles="true"]')
@@ -342,8 +500,14 @@ const Testimonials = () => {
       }
       .tm-stat-card:hover {
         transform: translateY(-5px);
-        box-shadow: ${T.shadowLift};
-        border-color: ${isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"} !important;
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
+        border-color: ${
+          isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
+        } !important;
       }
 
       .tm-testimonial-card {
@@ -352,8 +516,14 @@ const Testimonials = () => {
       }
       .tm-testimonial-card:hover {
         transform: translateY(-6px);
-        box-shadow: ${T.shadowLift};
-        border-color: ${isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"} !important;
+        box-shadow: ${
+          isDarkMode
+            ? "0 22px 48px rgba(0, 0, 0, 0.7)"
+            : "0 22px 48px rgba(62, 39, 35, 0.12)"
+        };
+        border-color: ${
+          isDarkMode ? "rgba(212, 175, 55, 0.4)" : "rgba(199, 125, 66, 0.3)"
+        } !important;
       }
       .tm-testimonial-card:hover .tm-quote-mark {
         color: ${isDarkMode ? brandColors.gold : brandColors.primary};
@@ -368,57 +538,102 @@ const Testimonials = () => {
       .tm-filter-btn {
         transition: all 0.25s ease;
       }
-      .tm-filter-btn:hover {
+      .tm-filter-btn:hover,
+      .tm-filter-btn:focus-visible {
         transform: translateY(-2px);
         border-color: ${brandColors.primary};
         color: ${brandColors.primary};
+        outline: none;
       }
 
       .tm-product-link {
         transition: all 0.3s ease;
       }
-      .tm-product-link:hover {
+      .tm-product-link:hover,
+      .tm-product-link:focus-visible {
         background: linear-gradient(135deg, ${brandColors.gold}, ${brandColors.primary}) !important;
         color: ${isDarkMode ? brandColors.black : "#ffffff"} !important;
         border-color: transparent !important;
         transform: translateY(-2px);
         box-shadow: 0 10px 24px rgba(245, 52, 107, 0.35);
+        outline: none;
       }
 
       .tm-helpful-btn {
         transition: all 0.25s ease;
       }
-      .tm-helpful-btn:hover:not(:disabled) {
-        background: ${isDarkMode ? "rgba(255, 255, 255, 0.06)" : "rgba(62, 39, 35, 0.05)"} !important;
+      .tm-helpful-btn:hover:not(:disabled),
+      .tm-helpful-btn:focus-visible:not(:disabled) {
+        background: ${
+          isDarkMode ? "rgba(255, 255, 255, 0.06)" : "rgba(62, 39, 35, 0.05)"
+        } !important;
         color: ${brandColors.primary};
         transform: translateY(-1px);
+        outline: none;
       }
       .tm-helpful-btn:disabled { cursor: default; }
 
       .tm-clear-btn {
         transition: all 0.25s ease;
       }
-      .tm-clear-btn:hover {
+      .tm-clear-btn:hover,
+      .tm-clear-btn:focus-visible {
         background: ${brandColors.primary} !important;
         color: #ffffff !important;
         transform: translateY(-2px);
+        outline: none;
       }
 
       .tm-cta-btn {
         transition: all 0.3s ease;
       }
-      .tm-cta-btn:hover {
+      .tm-cta-btn:hover,
+      .tm-cta-btn:focus-visible {
         transform: translateY(-3px);
         box-shadow: 0 16px 42px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
+        outline: none;
       }
       .tm-cta-btn:hover svg { transform: scale(1.1); }
 
+      /* ✅ Inlined — removed T.textDim and T.text references */
       .tm-search-input::placeholder {
-        color: ${T.textDim};
+        color: #8d7d76;
       }
       .tm-search-input:focus {
-        color: ${T.text};
+        color: ${isDarkMode ? "#f5f0eb" : "#3e2723"};
+      }
+
+      /* Related / citation links */
+      .tm-related-link {
+        transition: color 0.25s ease, gap 0.25s ease;
+      }
+      .tm-related-link:hover,
+      .tm-related-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        border-color: ${
+          isDarkMode ? brandColors.gold : brandColors.primary
+        } !important;
+        gap: 0.6rem;
+        outline: none;
+      }
+      .tm-citation-link:hover,
+      .tm-citation-link:focus-visible {
+        color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important;
+        outline: none;
+      }
+      .tm-breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .tm-orb-1, .tm-orb-2, .tm-orb-3 { animation: none !important; }
+        .tm-stat-card, .tm-testimonial-card, .tm-quote-mark,
+        .tm-filter-btn, .tm-product-link, .tm-helpful-btn,
+        .tm-clear-btn, .tm-cta-btn, .tm-related-link, .tm-citation-link {
+          transition: none !important;
+          transform: none !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -428,11 +643,9 @@ const Testimonials = () => {
         .querySelectorAll('style[data-testimonials-styles="true"]')
         .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDarkMode]);
 
   const themeStyles = {
-    // ─── Page wrapper ───
     container: {
       position: "relative",
       minHeight: "100%",
@@ -443,8 +656,6 @@ const Testimonials = () => {
       width: "100%",
       overflowX: "hidden",
     },
-
-    // ─── Animated background ───
     bgLayer: {
       position: "fixed",
       inset: 0,
@@ -514,16 +725,35 @@ const Testimonials = () => {
       opacity: isDarkMode ? 0.38 : 0.28,
     },
 
-    // ─── Header ───
+    breadcrumb: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "0 auto",
+      padding: isMobile ? "1rem 1rem 0" : "1.5rem 2rem 0",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.4rem",
+      fontSize: "0.78rem",
+      color: T.textDim,
+      flexWrap: "wrap",
+      fontWeight: "600",
+    },
+    breadcrumbLink: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      textDecoration: "none",
+      fontWeight: "700",
+    },
+
     header: {
       position: "relative",
       zIndex: 1,
       textAlign: "center",
       padding: isMobile
-        ? "2rem 1rem 1.5rem"
+        ? "1.5rem 1rem 1.5rem"
         : isNarrow
-        ? "2.5rem 1.5rem 1.5rem"
-        : "3.5rem 2rem 2rem",
+          ? "2rem 1.5rem 1.5rem"
+          : "2.5rem 2rem 2rem",
       maxWidth: "900px",
       margin: "0 auto",
     },
@@ -556,7 +786,6 @@ const Testimonials = () => {
       lineHeight: "1.7",
     },
 
-    // ─── Stats ───
     statsSection: {
       position: "relative",
       zIndex: 1,
@@ -614,7 +843,6 @@ const Testimonials = () => {
       letterSpacing: "0.2px",
     },
 
-    // ─── Rating breakdown ───
     breakdown: {
       position: "relative",
       zIndex: 1,
@@ -681,7 +909,6 @@ const Testimonials = () => {
       textAlign: "right",
     },
 
-    // ─── Filter bar ───
     filterBar: {
       position: "relative",
       zIndex: 1,
@@ -763,7 +990,33 @@ const Testimonials = () => {
       letterSpacing: "0.2px",
     },
 
-    // ─── Grid & cards ───
+    sectionTitle: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "0 auto 1.25rem",
+      padding: isMobile ? "0 1rem" : isNarrow ? "0 1.5rem" : "0 2rem",
+      boxSizing: "border-box",
+      fontSize: isMobile ? "1.15rem" : "1.35rem",
+      fontWeight: "900",
+      color: T.text,
+      display: "flex",
+      alignItems: "center",
+      gap: "0.6rem",
+      letterSpacing: "-0.3px",
+      flexWrap: "wrap",
+    },
+    resultsCount: {
+      fontSize: "0.8rem",
+      color: T.textMuted,
+      fontWeight: "700",
+      padding: "0.2rem 0.75rem",
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.05)"
+        : "rgba(62,39,35,0.04)",
+      borderRadius: "50px",
+    },
+
     grid: {
       position: "relative",
       zIndex: 1,
@@ -771,8 +1024,8 @@ const Testimonials = () => {
       gridTemplateColumns: isMobile
         ? "minmax(0, 1fr)"
         : isNarrow
-        ? "repeat(2, minmax(0, 1fr))"
-        : "repeat(3, minmax(0, 1fr))",
+          ? "repeat(2, minmax(0, 1fr))"
+          : "repeat(3, minmax(0, 1fr))",
       gap: isMobile ? "1.15rem" : "1.4rem",
       maxWidth: "1100px",
       margin: "0 auto",
@@ -948,7 +1201,6 @@ const Testimonials = () => {
       fontWeight: "600",
     },
 
-    // ─── Empty state ───
     emptyState: {
       textAlign: "center",
       padding: isMobile ? "2.5rem 1.5rem" : "3.5rem 2rem",
@@ -1000,7 +1252,6 @@ const Testimonials = () => {
       margin: "0 auto 1.5rem",
     },
 
-    // ─── CTA (redesigned — no more floating inline icon) ───
     ctaWrapper: {
       position: "relative",
       zIndex: 1,
@@ -1075,46 +1326,162 @@ const Testimonials = () => {
       letterSpacing: "0.2px",
       fontFamily: "inherit",
     },
-    ctaButtonIcon: {
-      display: "inline-flex",
+
+    relatedSection: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "2rem auto 0",
+      padding: isMobile ? "0 1rem" : isNarrow ? "0 1.5rem" : "0 2rem",
+      boxSizing: "border-box",
+    },
+    relatedCard: {
+      backgroundColor: T.card,
+      borderRadius: "22px",
+      border: `1px solid ${T.border}`,
+      boxShadow: T.shadow,
+      padding: isMobile ? "1.5rem" : "2rem",
+    },
+    relatedTitle: {
+      fontSize: "1.05rem",
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: "1.15rem",
+      display: "flex",
       alignItems: "center",
-      justifyContent: "center",
-      transition: "transform 0.3s ease",
+      gap: "0.5rem",
+      letterSpacing: "-0.2px",
+    },
+    relatedList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
+    relatedLink: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "10px",
+      fontSize: "0.9rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      border: `1px solid ${T.borderSoft}`,
+      backgroundColor: isDarkMode
+        ? "rgba(255,255,255,0.02)"
+        : "rgba(62, 39, 35, 0.02)",
+    },
+    relatedIcon: {
+      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+      flexShrink: 0,
+      fontSize: "0.8rem",
+    },
+
+    citationSection: {
+      position: "relative",
+      zIndex: 1,
+      maxWidth: "1100px",
+      margin: "1.5rem auto 3rem",
+      padding: isMobile ? "0 1rem" : isNarrow ? "0 1.5rem" : "0 2rem",
+      boxSizing: "border-box",
+    },
+    citationCard: {
+      backgroundColor: isDarkMode
+        ? "rgba(212, 175, 55, 0.06)"
+        : "rgba(212, 175, 55, 0.04)",
+      borderRadius: "18px",
+      padding: isMobile ? "1.5rem" : "1.75rem",
+      border: isDarkMode
+        ? "1px solid rgba(212, 175, 55, 0.15)"
+        : "1px solid rgba(212, 175, 55, 0.12)",
+      borderLeft: `4px solid ${brandColors.goldDark}`,
+    },
+    citationTitle: {
+      fontSize: "0.88rem",
+      fontWeight: "800",
+      color: isDarkMode ? brandColors.gold : brandColors.earthDark,
+      marginBottom: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+    },
+    citationList: {
+      listStyle: "none",
+      padding: 0,
+      margin: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.55rem",
+    },
+    citationLink: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.5rem",
+      fontSize: "0.83rem",
+      fontWeight: "600",
+      color: T.textMuted,
+      textDecoration: "none",
+      lineHeight: 1.5,
+    },
+    citationDomain: {
+      fontSize: "0.7rem",
+      color: T.textDim,
+      marginTop: "0.1rem",
     },
   };
+
+  // ─── Stars renderer (accessible) ───
+  const renderStars = (rating, size = 14, ariaLabel = null) => (
+    <div
+      style={{ display: "flex", gap: "0.15rem" }}
+      role="img"
+      aria-label={ariaLabel || `${rating} out of 5 stars`}
+    >
+      {[...Array(5)].map((_, i) => (
+        <FaStar
+          key={i}
+          color={i < rating ? T.star : T.starEmpty}
+          size={size}
+          aria-hidden="true"
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div style={themeStyles.container}>
       <SEO
-        title="Customer Reviews & Testimonials | ASudha Beauty"
-        description="Read verified customer reviews of ASudha Beauty's 100% natural Ayurvedic skincare and hair care products. See why thousands of customers love our herbal powders."
-        keywords="customer reviews, testimonials, ASudha Beauty reviews, natural skincare reviews, Ayurvedic products"
+        title="Customer Reviews & Testimonials | Verified Ayurvedic Skincare | ASudha"
+        description="Read verified customer reviews of ASudha Beauty's 100% natural Ayurvedic skincare and hair care products — Multani Mitti, Ubtan, Amla, Reetha, Shikakai. See why thousands of customers love our herbal powders."
+        keywords="customer reviews, testimonials, asudha beauty reviews, natural skincare reviews, ayurvedic products reviews, multani mitti reviews, ubtan powder reviews, amla reetha shikakai reviews, verified customer testimonials, best ayurvedic skincare india"
         url="/testimonials"
+        breadcrumb={breadcrumb}
+        citations={citations}
       />
 
-      {/* Animated background */}
-      <div style={themeStyles.bgLayer}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(testimonialsJsonLd),
+        }}
+      />
+
+      <div style={themeStyles.bgLayer} aria-hidden="true">
         <div style={themeStyles.bgGradient} />
         <div style={themeStyles.bgGrid} />
-        <div
-          className="tm-orb-1"
-          style={themeStyles.bgOrb1}
-          aria-hidden="true"
-        />
-        <div
-          className="tm-orb-2"
-          style={themeStyles.bgOrb2}
-          aria-hidden="true"
-        />
-        <div
-          className="tm-orb-3"
-          style={themeStyles.bgOrb3}
-          aria-hidden="true"
-        />
+        <div className="tm-orb-1" style={themeStyles.bgOrb1} />
+        <div className="tm-orb-2" style={themeStyles.bgOrb2} />
+        <div className="tm-orb-3" style={themeStyles.bgOrb3} />
       </div>
 
-      {/* Header */}
-      <div style={themeStyles.header}>
+      <header style={themeStyles.header}>
         <h1 style={themeStyles.title}>
           Customer Reviews
           <span style={themeStyles.titleAccent} aria-hidden="true" />
@@ -1123,39 +1490,41 @@ const Testimonials = () => {
           Join thousands of happy customers who love our 100% natural Ayurvedic
           powders.
         </p>
-      </div>
+      </header>
 
-      {/* Stats */}
-      <div style={themeStyles.statsSection}>
+      <section style={themeStyles.statsSection} aria-label="Review statistics">
         <div style={themeStyles.statCard} className="tm-stat-card">
-          <div style={themeStyles.statCardAccent} />
+          <div style={themeStyles.statCardAccent} aria-hidden="true" />
           <div style={themeStyles.statNumber}>{stats.avg}</div>
           <div style={themeStyles.statRatingRow}>
-            {renderStars(Math.round(parseFloat(stats.avg)), 12)}
+            {renderStars(
+              Math.round(parseFloat(stats.avg)),
+              12,
+              `Average rating ${stats.avg} out of 5 stars`,
+            )}
           </div>
           <div style={themeStyles.statLabel}>Average Rating</div>
         </div>
         <div style={themeStyles.statCard} className="tm-stat-card">
-          <div style={themeStyles.statCardAccent} />
+          <div style={themeStyles.statCardAccent} aria-hidden="true" />
           <div style={themeStyles.statNumber}>{stats.total}+</div>
           <div style={themeStyles.statLabel}>Verified Reviews</div>
         </div>
         <div style={themeStyles.statCard} className="tm-stat-card">
-          <div style={themeStyles.statCardAccent} />
+          <div style={themeStyles.statCardAccent} aria-hidden="true" />
           <div style={themeStyles.statNumber}>98%</div>
           <div style={themeStyles.statLabel}>Would Recommend</div>
         </div>
         <div style={themeStyles.statCard} className="tm-stat-card">
-          <div style={themeStyles.statCardAccent} />
+          <div style={themeStyles.statCardAccent} aria-hidden="true" />
           <div style={themeStyles.statNumber}>10k+</div>
           <div style={themeStyles.statLabel}>Happy Customers</div>
         </div>
-      </div>
+      </section>
 
-      {/* Rating Breakdown */}
-      <div style={themeStyles.breakdown}>
+      <section style={themeStyles.breakdown} aria-label="Rating breakdown">
         <div style={themeStyles.breakdownCard}>
-          <div style={themeStyles.breakdownAccentBar} />
+          <div style={themeStyles.breakdownAccentBar} aria-hidden="true" />
           {[
             { label: "5 Star", count: stats.five, key: 5 },
             { label: "4 Star", count: stats.four, key: 4 },
@@ -1167,7 +1536,16 @@ const Testimonials = () => {
             return (
               <div key={row.key} style={themeStyles.breakdownRow}>
                 <span style={themeStyles.breakdownLabel}>{row.label}</span>
-                <div style={themeStyles.breakdownBarOuter}>
+                <div
+                  style={themeStyles.breakdownBarOuter}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(pct)}
+                  aria-label={`${row.label} reviews: ${row.count} (${Math.round(
+                    pct,
+                  )}%)`}
+                >
                   <div
                     style={{
                       ...themeStyles.breakdownBarInner,
@@ -1180,11 +1558,14 @@ const Testimonials = () => {
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* Filter Bar */}
       <div style={themeStyles.filterBar}>
-        <div style={themeStyles.filterButtons}>
+        <div
+          style={themeStyles.filterButtons}
+          role="group"
+          aria-label="Filter reviews by rating"
+        >
           {[
             { id: "all", label: "All Reviews" },
             { id: "5star", label: "5 Star" },
@@ -1193,6 +1574,7 @@ const Testimonials = () => {
           ].map((f) => (
             <button
               key={f.id}
+              type="button"
               style={{
                 ...themeStyles.filterButton,
                 ...(filter === f.id ? themeStyles.activeFilterButton : {}),
@@ -1201,49 +1583,67 @@ const Testimonials = () => {
               onClick={() => setFilter(f.id)}
               aria-label={`Filter by ${f.label}`}
               aria-pressed={filter === f.id}
-              type="button"
             >
               {f.label}
             </button>
           ))}
           {hasActiveFilters && (
             <button
+              type="button"
               style={themeStyles.clearFiltersBtn}
               className="tm-clear-btn"
               onClick={clearFilters}
               aria-label="Clear all filters"
-              type="button"
             >
-              <FaTimes style={{ fontSize: "0.7rem" }} /> Clear
+              <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />{" "}
+              Clear
             </button>
           )}
         </div>
 
         <div style={themeStyles.searchBox}>
-          <FaSearch color={T.textMuted} style={{ flexShrink: 0 }} />
+          <FaSearch
+            aria-hidden="true"
+            color={T.textMuted}
+            style={{ flexShrink: 0 }}
+          />
           <input
-            type="text"
-            placeholder="Search reviews or products..."
+            type="search"
+            placeholder="Search reviews or products…"
             style={themeStyles.searchInput}
             className="tm-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Search reviews"
+            aria-label="Search reviews by name, title, content, or product"
           />
         </div>
       </div>
 
-      {/* Reviews Grid */}
+      <h2 style={themeStyles.sectionTitle}>
+        <FaQuoteRight aria-hidden="true" style={{ fontSize: "0.85em" }} />
+        Verified Customer Testimonials
+        <span
+          style={themeStyles.resultsCount}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {filteredTestimonials.length}{" "}
+          {filteredTestimonials.length === 1 ? "review" : "reviews"}
+        </span>
+      </h2>
+
       <div style={themeStyles.grid}>
         {filteredTestimonials.length > 0 ? (
           filteredTestimonials.map((testimonial) => {
             const voted = hasVoted(testimonial.id);
             const totalHelpful = testimonial.helpful + (voted ? 1 : 0);
             return (
-              <div
+              <article
                 key={testimonial.id}
                 style={themeStyles.testimonialCard}
                 className="tm-testimonial-card"
+                aria-labelledby={`review-title-${testimonial.id}`}
               >
                 <FaQuoteRight
                   style={themeStyles.quoteMark}
@@ -1252,7 +1652,7 @@ const Testimonials = () => {
                 />
                 <div style={themeStyles.cardHeader}>
                   <div style={themeStyles.userInfo}>
-                    <div style={themeStyles.avatar}>
+                    <div style={themeStyles.avatar} aria-hidden="true">
                       <FaUserCircle />
                     </div>
                     <div style={themeStyles.nameSection}>
@@ -1262,31 +1662,42 @@ const Testimonials = () => {
                       </div>
                       {testimonial.verified && (
                         <div style={themeStyles.verifiedBadge}>
-                          <FaCheckCircle size={10} /> Verified
+                          <FaCheckCircle aria-hidden="true" size={10} />{" "}
+                          Verified
                         </div>
                       )}
                     </div>
                   </div>
                   <div style={themeStyles.rating}>
-                    {renderStars(testimonial.rating, isMobile ? 12 : 13)}
+                    {renderStars(
+                      testimonial.rating,
+                      isMobile ? 12 : 13,
+                      `${testimonial.name} rated ${testimonial.rating} out of 5 stars`,
+                    )}
                   </div>
                 </div>
 
-                <h3 style={themeStyles.reviewTitle}>{testimonial.title}</h3>
-                <p style={themeStyles.reviewContent}>
-                  {testimonial.content}
-                </p>
+                <h3
+                  id={`review-title-${testimonial.id}`}
+                  style={themeStyles.reviewTitle}
+                >
+                  {testimonial.title}
+                </h3>
+                <p style={themeStyles.reviewContent}>{testimonial.content}</p>
 
                 <Link
                   to={testimonial.productLink}
                   style={themeStyles.productLink}
                   className="tm-product-link"
+                  aria-label={`View ${testimonial.productPurchased}`}
                 >
-                  <FaShoppingBag size={11} /> {testimonial.productPurchased}
+                  <FaShoppingBag aria-hidden="true" size={11} />{" "}
+                  {testimonial.productPurchased}
                 </Link>
 
                 <div style={themeStyles.cardFooter}>
                   <button
+                    type="button"
                     style={{
                       ...themeStyles.helpfulButton,
                       ...(voted ? themeStyles.helpfulButtonActive : {}),
@@ -1294,22 +1705,28 @@ const Testimonials = () => {
                     className="tm-helpful-btn"
                     onClick={() => handleHelpful(testimonial.id)}
                     disabled={voted}
-                    aria-label="Mark review as helpful"
-                    type="button"
+                    aria-label={
+                      voted
+                        ? `You marked ${testimonial.name}'s review as helpful`
+                        : `Mark ${testimonial.name}'s review as helpful`
+                    }
                   >
-                    <FaThumbsUp /> Helpful ({totalHelpful})
+                    <FaThumbsUp aria-hidden="true" /> Helpful ({totalHelpful})
                   </button>
                   <div style={themeStyles.dateText}>
-                    <FaRegClock /> {testimonial.date}
+                    <FaRegClock aria-hidden="true" />{" "}
+                    <time dateTime={testimonial.dateISO}>
+                      {testimonial.date}
+                    </time>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })
         ) : (
           <div style={themeStyles.emptyState}>
-            <div style={themeStyles.emptyAccentBar} />
-            <div style={themeStyles.emptyIconWrap}>
+            <div style={themeStyles.emptyAccentBar} aria-hidden="true" />
+            <div style={themeStyles.emptyIconWrap} aria-hidden="true">
               <FaSearch />
             </div>
             <h3 style={themeStyles.emptyTitle}>No reviews found</h3>
@@ -1317,25 +1734,108 @@ const Testimonials = () => {
               Try adjusting your search or filter criteria.
             </p>
             <button
+              type="button"
               style={themeStyles.clearFiltersBtn}
               className="tm-clear-btn"
               onClick={clearFilters}
-              type="button"
             >
-              <FaTimes style={{ fontSize: "0.7rem" }} /> Clear Filters
+              <FaTimes aria-hidden="true" style={{ fontSize: "0.7rem" }} />{" "}
+              Clear Filters
             </button>
           </div>
         )}
       </div>
 
-      {/* CTA — redesigned, no more floating inline icon */}
+      <section
+        style={themeStyles.relatedSection}
+        aria-labelledby="testimonials-related-title"
+      >
+        <div style={themeStyles.relatedCard}>
+          <h2 id="testimonials-related-title" style={themeStyles.relatedTitle}>
+            <FaBookOpen aria-hidden="true" /> Learn About the Products
+            You&apos;re Reading About
+          </h2>
+          <ul style={themeStyles.relatedList}>
+            {RELATED_GUIDES.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
+                  style={themeStyles.relatedLink}
+                  className="tm-related-link"
+                  aria-label={`Read: ${link.label}`}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.6rem",
+                    }}
+                  >
+                    <span style={themeStyles.relatedIcon} aria-hidden="true">
+                      {link.icon}
+                    </span>
+                    {link.label}
+                  </span>
+                  <FaArrowRight
+                    aria-hidden="true"
+                    style={{ fontSize: "0.65rem", flexShrink: 0 }}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section
+        style={themeStyles.citationSection}
+        aria-labelledby="testimonials-sources-title"
+      >
+        <div style={themeStyles.citationCard}>
+          <h2 id="testimonials-sources-title" style={themeStyles.citationTitle}>
+            <FaShieldAlt aria-hidden="true" /> Review Authenticity &amp;
+            Consumer Protection
+          </h2>
+          <ul style={themeStyles.citationList}>
+            {TRUSTED_SOURCES.map((source) => (
+              <li key={source.href}>
+                <a
+                  href={source.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.citationLink}
+                  className="tm-citation-link"
+                  aria-label={`${source.label} — opens in new tab`}
+                >
+                  <FaExternalLinkAlt
+                    aria-hidden="true"
+                    style={{
+                      fontSize: "0.65rem",
+                      marginTop: "0.2rem",
+                      flexShrink: 0,
+                      color: isDarkMode ? brandColors.gold : brandColors.bronze,
+                    }}
+                  />
+                  <span>
+                    {source.label}
+                    <div style={themeStyles.citationDomain}>
+                      {source.domain}
+                    </div>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       <div style={themeStyles.ctaWrapper}>
         <div style={themeStyles.ctaCard}>
-          <div style={themeStyles.ctaAccentBar} />
-          <div style={themeStyles.ctaIconWrap}>
+          <div style={themeStyles.ctaAccentBar} aria-hidden="true" />
+          <div style={themeStyles.ctaIconWrap} aria-hidden="true">
             <FaPenNib />
           </div>
-          <h3 style={themeStyles.ctaTitle}>Share Your Experience</h3>
+          <h2 style={themeStyles.ctaTitle}>Share Your Experience</h2>
           <p style={themeStyles.ctaText}>
             Love our natural products? Let us know! Your review helps others
             glow naturally.
@@ -1346,9 +1846,7 @@ const Testimonials = () => {
             className="tm-cta-btn"
           >
             Write a Review
-            <span style={themeStyles.ctaButtonIcon}>
-              <FaHeart />
-            </span>
+            <FaHeart aria-hidden="true" />
           </Link>
         </div>
       </div>
