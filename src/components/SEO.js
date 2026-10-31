@@ -152,10 +152,7 @@ const SEO = ({
   const safeCitations = safeArray(citations);
   const safeBreadcrumb = safeArray(breadcrumb);
 
-  // Resolve FAQs safely — this is the crash that was happening on Home.
-  //   faqs prop (if provided)      → use it
-  //   else if product exists       → use DEFAULT_PRODUCT_FAQS
-  //   else                         → empty array (no FAQ schema emitted)
+  // Resolve FAQs safely
   const resolvedFaqs =
     Array.isArray(faqs) && faqs.length > 0
       ? faqs
@@ -188,6 +185,9 @@ const SEO = ({
   const effectiveSection = articleSection || section;
 
   // ─── Breadcrumb schema items ───
+  // If the page is the homepage, a BreadcrumbList is typically omitted,
+  // unless explicitly provided. This logic ensures we NEVER output a
+  // BreadcrumbList without itemListElement.
   const breadcrumbItems =
     safeBreadcrumb.length > 0
       ? safeBreadcrumb.map((item, idx) => ({
@@ -476,7 +476,6 @@ const SEO = ({
                   },
                 }
               : {}),
-            // Safely handle product.weight whether string OR number
             ...(product.weight != null
               ? {
                   weight: {
@@ -508,7 +507,6 @@ const SEO = ({
       )}
 
       {/* ===== FAQ PAGE SCHEMA ===== */}
-      {/* FIX: resolvedFaqs is always an array, never null — no more crash */}
       {resolvedFaqs.length > 0 && (
         <script type="application/ld+json">
           {JSON.stringify({
@@ -525,6 +523,7 @@ const SEO = ({
       )}
 
       {/* ===== BREADCRUMB SCHEMA ===== */}
+      {/* Only renders if there are breadcrumb items, ensuring itemListElement is NEVER missing */}
       {breadcrumbItems.length > 0 && (
         <script type="application/ld+json">
           {JSON.stringify({
