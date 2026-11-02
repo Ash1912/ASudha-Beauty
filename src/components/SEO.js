@@ -6,7 +6,6 @@ import { Helmet } from "react-helmet-async";
 const SITE_URL = "https://www.asudhabeauty.shop";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/images/og-default.png`;
 const LOGO_URL = `${SITE_URL}/assets/images/Logo.png`;
-const TWITTER_HANDLE = "@asudha_beauty";
 
 // ─── Brand colors ───
 const brandColors = {
@@ -185,9 +184,6 @@ const SEO = ({
   const effectiveSection = articleSection || section;
 
   // ─── Breadcrumb schema items ───
-  // If the page is the homepage, a BreadcrumbList is typically omitted,
-  // unless explicitly provided. This logic ensures we NEVER output a
-  // BreadcrumbList without itemListElement.
   const breadcrumbItems =
     safeBreadcrumb.length > 0
       ? safeBreadcrumb.map((item, idx) => ({
@@ -269,8 +265,6 @@ const SEO = ({
 
       {/* ===== TWITTER CARD ===== */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content={TWITTER_HANDLE} />
-      <meta name="twitter:creator" content={TWITTER_HANDLE} />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={fullDescription} />
       <meta name="twitter:image" content={fullImage} />
@@ -328,11 +322,8 @@ const SEO = ({
             },
           ],
           sameAs: [
-            "https://www.instagram.com/asudha_beauty",
-            "https://www.facebook.com/asudhabeauty",
-            "https://www.youtube.com/@asudhabeauty",
-            "https://twitter.com/asudha_beauty",
-            "https://in.pinterest.com/asudhabeauty",
+            "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
+            "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
           ],
         })}
       </script>
@@ -523,7 +514,6 @@ const SEO = ({
       )}
 
       {/* ===== BREADCRUMB SCHEMA ===== */}
-      {/* Only renders if there are breadcrumb items, ensuring itemListElement is NEVER missing */}
       {breadcrumbItems.length > 0 && (
         <script type="application/ld+json">
           {JSON.stringify({

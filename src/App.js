@@ -55,8 +55,6 @@ const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/images/og-default.png`;
 const LOGO_URL = `${SITE_URL}/assets/logo.png`;
 
 // ─── Global JSON-LD ───
-// Powers Google Knowledge Panel, Sitelinks Search Box, contact rich results,
-// and brand-entity recognition. Runs on EVERY page.
 const GLOBAL_JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
@@ -74,11 +72,8 @@ const GLOBAL_JSON_LD = {
       description:
         "ASudha Beauty crafts 100% natural, chemical-free Ayurvedic skincare and hair care products — Multani Mitti, Ubtan, Amla, Reetha & Shikakai — backed by 5,000 years of tradition and modern science.",
       sameAs: [
-        "https://www.instagram.com/asudabeauty",
-        "https://www.facebook.com/asudabeauty",
-        "https://www.youtube.com/@asudabeauty",
-        "https://twitter.com/asudabeauty",
-        "https://in.pinterest.com/asudabeauty",
+        "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
+        "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
       ],
       contactPoint: [
         {
@@ -125,9 +120,6 @@ const ScrollToTop = () => {
 };
 
 // ─── Dynamic default canonical ───
-// Pages can override this by rendering their own <link rel="canonical"> in Helmet.
-// The deepest rendered canonical wins — so /blog/all correctly canonicalizes to /blog
-// because the Blog component sets its own canonical.
 const DefaultCanonical = () => {
   const { pathname } = useLocation();
   const cleanPath = pathname === "/" ? "" : pathname;
@@ -139,7 +131,6 @@ const DefaultCanonical = () => {
 };
 
 // ─── 404 Page ───
-// Prevents "soft 404" SEO penalty on unknown routes by marking them noindex.
 const NotFound = () => (
   <>
     <Helmet>
@@ -339,8 +330,6 @@ function App() {
 
         {/* Twitter defaults */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@asudabeauty" />
-        <meta name="twitter:creator" content="@asudabeauty" />
         <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
 
         {/* Google Search Console verification — uncomment & paste your token */}
