@@ -477,6 +477,7 @@ const Shop = () => {
     []
   );
 
+  // ✅ FIXED: Nested ItemList properly so Google doesn't confuse it with BreadcrumbList
   const shopJsonLd = useMemo(
     () => ({
       "@context": "https://schema.org",
@@ -497,6 +498,7 @@ const Shop = () => {
             "@type": "ImageObject",
             url: `${SITE_URL}/assets/images/og-shop.png`,
           },
+          breadcrumb: { "@id": `${SITE_URL}/shop#breadcrumb` },
         },
         {
           "@type": "ItemList",
@@ -509,21 +511,24 @@ const Shop = () => {
           itemListElement: products.map((p, i) => ({
             "@type": "ListItem",
             position: i + 1,
-            url: `${SITE_URL}/product/${p.id}`,
-            name: p.name,
-            image: `${SITE_URL}${p.image}`,
-            ...(p.price > 0 && {
-              offers: {
-                "@type": "Offer",
-                price: String(p.price),
-                priceCurrency: "INR",
-                availability:
-                  p.inStock !== false
-                    ? "https://schema.org/InStock"
-                    : "https://schema.org/OutOfStock",
-                url: `${SITE_URL}/product/${p.id}`,
-              },
-            }),
+            item: {
+              "@type": "Product",
+              name: p.name,
+              url: `${SITE_URL}/product/${p.id}`,
+              image: `${SITE_URL}${p.image}`,
+              ...(p.price > 0 && {
+                offers: {
+                  "@type": "Offer",
+                  price: String(p.price),
+                  priceCurrency: "INR",
+                  availability:
+                    p.inStock !== false
+                      ? "https://schema.org/InStock"
+                      : "https://schema.org/OutOfStock",
+                  url: `${SITE_URL}/product/${p.id}`,
+                },
+              }),
+            }
           })),
         },
         {
