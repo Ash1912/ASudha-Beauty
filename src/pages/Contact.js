@@ -144,54 +144,16 @@ const Contact = () => {
     setTimeout(() => setIsSubmitted(false), 6000);
   };
 
-  // ─── JSON-LD: ContactPage + Organization ───
+  // ─── JSON-LD: ContactPage ───
+  // (Organization schema is handled globally by SEO.jsx)
   const contactJsonLd = {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "ContactPage",
-        "@id": `${SITE_URL}/contact#webpage`,
-        url: `${SITE_URL}/contact`,
-        name: "Contact Us | ASudha Beauty",
-        description: "Get in touch with ASudha Beauty for product questions, support, and wholesale inquiries.",
-        isPartOf: { "@id": `${SITE_URL}/#website` },
-      },
-      {
-        "@type": "Organization",
-        "@id": `${SITE_URL}/#organization`,
-        name: "ASudha Beauty",
-        url: SITE_URL,
-        logo: `${SITE_URL}/assets/images/Logo.png`,
-        contactPoint: [
-          {
-            "@type": "ContactPoint",
-            telephone: "+91-7518217726",
-            contactType: "customer service",
-            areaServed: "IN",
-            availableLanguage: ["English", "Hindi"],
-          },
-          {
-            "@type": "ContactPoint",
-            telephone: "+91-9335975525",
-            contactType: "sales",
-            areaServed: "IN",
-            availableLanguage: ["English", "Hindi"],
-          }
-        ],
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: "Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf",
-          addressLocality: "Gorakhpur",
-          addressRegion: "UP",
-          postalCode: "273001",
-          addressCountry: "IN",
-        },
-        sameAs: [
-          "https://www.instagram.com/asudha_beauty",
-          "https://www.facebook.com/asudhabeauty",
-        ],
-      },
-    ],
+    "@type": "ContactPage",
+    "@id": `${SITE_URL}/contact#webpage`,
+    url: `${SITE_URL}/contact`,
+    name: "Contact Us | ASudha Beauty",
+    description: "Get in touch with ASudha Beauty for product questions, support, and wholesale inquiries.",
+    isPartOf: { "@id": `${SITE_URL}/#website` },
   };
 
   // ─── Injected CSS ───
@@ -978,7 +940,7 @@ const Contact = () => {
               <p style={themeStyles.socialTitle}>Follow Us</p>
               <div style={themeStyles.socialLinks}>
                 <a
-                  href="https://www.instagram.com/asudha_beauty"
+                  href="https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={themeStyles.socialLink}
@@ -988,7 +950,7 @@ const Contact = () => {
                   <FaInstagram aria-hidden="true" />
                 </a>
                 <a
-                  href="https://www.facebook.com/asudhabeauty"
+                  href="https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={themeStyles.socialLink}
