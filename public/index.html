@@ -1,41 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <script>
       (function () {
         try {
           var stored = localStorage.getItem("theme");
-          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var prefersDark = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+          ).matches;
           var isDark = stored ? stored === "dark" : prefersDark;
           var cls = isDark ? "dark-mode" : "light-mode";
           document.documentElement.classList.add(cls);
           if (document.body) document.body.classList.add(cls);
-          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+          document.documentElement.style.colorScheme = isDark
+            ? "dark"
+            : "light";
         } catch (e) {}
       })();
     </script>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/Logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <link rel="icon" type="image/png" href="%PUBLIC_URL%/Logo.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/Logo.png" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=5"
+    />
     <meta name="theme-color" content="#f5346b" />
-    
+
     <!-- Primary Meta Tags (Fallbacks: React Helmet overrides these dynamically) -->
     <title>ASudha Beauty - Premium Color Cosmetics & Beauty Products</title>
-    <meta name="description" content="Discover premium quality, cruelty-free color cosmetics at ASudha Beauty. Shop our wide range of lipsticks, foundations, eyeliners, and more. 100% authentic products with free shipping on orders above ₹500." />
+    <meta
+      name="description"
+      content="Discover premium quality, cruelty-free color cosmetics at ASudha Beauty. Shop our wide range of lipsticks, foundations, eyeliners, and more. 100% authentic products with free shipping on orders above ₹500."
+    />
     <meta name="author" content="ASudha Beauty" />
-    
+
     <!-- Open Graph / Facebook (Fallbacks) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="ASudha Beauty - Premium Color Cosmetics & Beauty Products" />
-    <meta property="og:description" content="Discover premium quality, cruelty-free color cosmetics at ASudha Beauty." />
+    <meta
+      property="og:title"
+      content="ASudha Beauty - Premium Color Cosmetics & Beauty Products"
+    />
+    <meta
+      property="og:description"
+      content="Discover premium quality, cruelty-free color cosmetics at ASudha Beauty."
+    />
     <meta property="og:image" content="%PUBLIC_URL%/og-image.jpg" />
     <meta property="og:site_name" content="ASudha Beauty" />
     <meta property="og:locale" content="en_IN" />
 
     <!-- Twitter (Fallbacks) -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ASudha Beauty - Premium Color Cosmetics & Beauty Products" />
-    <meta name="twitter:description" content="Discover premium quality, cruelty-free color cosmetics at ASudha Beauty." />
+    <meta
+      name="twitter:title"
+      content="ASudha Beauty - Premium Color Cosmetics & Beauty Products"
+    />
+    <meta
+      name="twitter:description"
+      content="Discover premium quality, cruelty-free color cosmetics at ASudha Beauty."
+    />
     <meta name="twitter:image" content="%PUBLIC_URL%/twitter-image.jpg" />
 
     <!-- Mobile App Meta Tags -->
@@ -44,59 +67,83 @@
     <meta name="apple-mobile-web-app-title" content="ASudha Beauty" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
-    
+
     <!-- Favicon and App Icons -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/Logo.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/apple-touch-icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon-180x180.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
-    
+    <link
+      rel="apple-touch-icon"
+      sizes="152x152"
+      href="%PUBLIC_URL%/apple-touch-icon-152x152.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="%PUBLIC_URL%/apple-touch-icon-180x180.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="%PUBLIC_URL%/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="%PUBLIC_URL%/favicon-16x16.png"
+    />
+
     <!-- Manifest for PWA -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    
+
     <!-- Preconnect to External Domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
+
     <!-- Font Awesome (Optional) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Organization Schema -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "ASudha Beauty",
-      "url": "https://www.asudhabeauty.shop",
-      "logo": "https://www.asudhabeauty.shop/Logo.png",
-      "sameAs": [
-        "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
-        "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
-      ],
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "telephone": "+91-7518217726",
-        "contactType": "customer service",
-        "areaServed": "IN",
-        "availableLanguage": ["en", "hi"]
-      },
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf",
-        "addressLocality": "Gorakhpur",
-        "postalCode": "273001",
-        "addressCountry": "IN"
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "ASudha Beauty",
+        "url": "https://www.asudhabeauty.shop",
+        "logo": "https://www.asudhabeauty.shop/Logo.png",
+        "sameAs": [
+          "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
+          "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+91-7518217726",
+          "contactType": "customer service",
+          "areaServed": "IN",
+          "availableLanguage": ["en", "hi"]
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf",
+          "addressLocality": "Gorakhpur",
+          "postalCode": "273001",
+          "addressCountry": "IN"
+        }
       }
-    }
     </script>
-    
+
     <!-- Verification for Google Search Console (Optional) -->
     <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE" />
-    
+
     <!-- Verification for Bing Webmaster Tools (Optional) -->
     <meta name="msvalidate.01" content="YOUR_BING_VERIFICATION_CODE" />
   </head>

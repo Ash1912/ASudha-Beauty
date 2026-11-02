@@ -560,9 +560,8 @@ const SEO = ({
 
       {/* ===== MANIFEST & FAVICONS ===== */}
       <link rel="manifest" href="/manifest.json" />
-      <link rel="icon" href="/favicon.ico" sizes="any" />
-      <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-      <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      <link rel="icon" type="image/png" href="/Logo.png" />
+      <link rel="apple-touch-icon" href="/Logo.png" />
 
       {/* ===== RESOURCE HINTS ===== */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
