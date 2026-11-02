@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { FaWhatsapp } from "react-icons/fa";
+import ReactGA from "react-ga4"; // 👈 Added import for GA4
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { WishlistProvider } from "./context/WishlistContext";
@@ -116,6 +117,21 @@ const ScrollToTop = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
+  return null;
+};
+
+// ─── Google Analytics Page Tracker ───
+// This component listens for route changes and sends a pageview event to GA4.
+const RouteTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    ReactGA.send({
+      hitType: "pageview",
+      page: location.pathname + location.search,
+    });
+  }, [location]);
+
   return null;
 };
 
@@ -344,6 +360,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <DefaultCanonical />
+        <RouteTracker /> {/* 👈 Added GA4 Route Tracker here */}
 
         <ThemeProvider>
           <AuthProvider>
