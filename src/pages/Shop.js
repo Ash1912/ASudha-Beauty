@@ -477,7 +477,7 @@ const Shop = () => {
     []
   );
 
-  // ✅ FIXED: Nested ItemList properly so Google doesn't confuse it with BreadcrumbList
+  // ✅ FIXED: Added conditional aggregateRating to resolve GSC warnings (if data exists)
   const shopJsonLd = useMemo(
     () => ({
       "@context": "https://schema.org",
@@ -528,6 +528,18 @@ const Shop = () => {
                   url: `${SITE_URL}/product/${p.id}`,
                 },
               }),
+              // Add rating conditionally to fix GSC warnings
+              ...(p.rating
+                ? {
+                    aggregateRating: {
+                      "@type": "AggregateRating",
+                      ratingValue: String(p.rating),
+                      reviewCount: String(p.reviews || 1),
+                      bestRating: "5",
+                      worstRating: "1",
+                    },
+                  }
+                : {}),
             }
           })),
         },
