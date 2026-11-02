@@ -125,6 +125,17 @@ const safeArray = (value) => (Array.isArray(value) ? value : []);
 const safeString = (value, fallback = "") =>
   typeof value === "string" ? value : value == null ? fallback : String(value);
 
+/**
+ * SEO Component
+ * 
+ * HOW TO USE FOR ON-PAGE SEO RANKING:
+ * 1. `title`: Keep under 60 chars. Put Primary Keyword first. (e.g., "Buy Multani Mitti Powder for Oily Skin")
+ * 2. `description`: Keep under 160 chars. Include Primary & Secondary keywords naturally. Write like an ad.
+ * 3. `keywords`: Pass an array of your secondary keywords for this specific page.
+ * 4. `url`: Always start with a slash (e.g., "/product/multani-mitti").
+ * 5. `product`: Pass the product object to generate Product Schema (Google Shopping/Rich Results).
+ * 6. `faqs`: Pass an array of Q&A objects to generate FAQ Schema.
+ */
 const SEO = ({
   title,
   description,
@@ -159,13 +170,19 @@ const SEO = ({
       ? DEFAULT_PRODUCT_FAQS
       : [];
 
+  // Append Brand Name if not already present to prevent duplicate brand names
   const fullTitle = title
-    ? `${title} | ASudha Beauty`
+    ? title.includes("ASudha")
+      ? title
+      : `${title} | ASudha Beauty`
     : "ASudha Beauty | Pure. Natural. You.";
+    
   const fullDescription =
     description ||
     "Shop 100% natural, chemical-free Ayurvedic skincare & hair care from ASudha Beauty — Multani Mitti, Ubtan, Amla, Reetha & Shikakai. Rooted in 5,000 years of tradition, validated by modern science.";
   const fullImage = image || DEFAULT_OG_IMAGE;
+  
+  // Ensure absolute URL for canonical and OG tags
   const fullUrl = url
     ? url.startsWith("http")
       ? url
@@ -237,6 +254,7 @@ const SEO = ({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={fullDescription} />
       <meta property="og:image" content={fullImage} />
+      <meta property="og:image:secure_url" content={fullImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta

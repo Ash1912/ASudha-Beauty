@@ -1,3 +1,4 @@
+// src/pages/About.jsx
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
@@ -1287,15 +1288,24 @@ const About = () => {
 
   return (
     <div style={themeStyles.container}>
+      {/* ─── SEO: Upgraded with Breadcrumbs, E-E-A-T Citations, and Keywords ─── */}
       <SEO
-        title="About Us | ASudha Beauty"
+        title="About Us | ASudha Beauty — Our Ayurvedic Story"
         description="Learn about ASudha Beauty — rooted in Ayurvedic wisdom, delivering 100% natural, chemical-free herbal skincare and hair care powders from Gorakhpur, India."
-        keywords="about ASudha Beauty, Ayurvedic brand, natural skincare brand, chemical-free beauty, Gorakhpur"
+        keywords="about asudha beauty, ayurvedic skincare brand india, natural beauty products gorakhpur, chemical free beauty brand, ayurvedic herbs skincare"
         url="/about"
+        breadcrumb={[
+          { name: "Home", url: "/" },
+          { name: "About Us", url: "/about" }
+        ]}
+        citations={[
+          { label: "NIH NCCIH — Ayurvedic Medicine: In Depth", href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth" },
+          { label: "Ministry of AYUSH — Government of India", href: "https://ayush.gov.in/" }
+        ]}
       />
 
       {/* ─── HERO ─── */}
-      <section style={themeStyles.hero}>
+      <section style={themeStyles.hero} aria-label="About ASudha Beauty">
         <div
           className="about-hero-conic"
           style={themeStyles.heroConic}
@@ -1355,7 +1365,7 @@ const About = () => {
       </section>
 
       {/* ─── STORY ─── */}
-      <section id="story" style={themeStyles.storySection}>
+      <section id="story" style={themeStyles.storySection} aria-label="Our Story">
         <div>
           <div style={themeStyles.storyBadge}>
             <FaSeedling style={{ fontSize: "0.65rem" }} /> Our Story
@@ -1411,7 +1421,7 @@ const About = () => {
       </section>
 
       {/* ─── MISSION ─── */}
-      <section id="mission" style={themeStyles.missionSection}>
+      <section id="mission" style={themeStyles.missionSection} aria-label="Our Mission and Vision">
         <div style={themeStyles.missionContainer}>
           <div style={themeStyles.missionCard} className="about-mission-card">
             <div style={themeStyles.missionAccent} />
@@ -1462,7 +1472,7 @@ const About = () => {
       </section>
 
       {/* ─── VALUES ─── */}
-      <section id="values" style={themeStyles.valuesSection}>
+      <section id="values" style={themeStyles.valuesSection} aria-label="Our Core Values">
         <div style={themeStyles.sectionTitleRow}>
           <h2 style={themeStyles.sectionTitle}>Our Core Values</h2>
           <div style={themeStyles.sectionTitleUnderline} />
@@ -1509,7 +1519,7 @@ const About = () => {
       </section>
 
       {/* ─── TEAM ─── */}
-      <section id="team" style={themeStyles.teamSection}>
+      <section id="team" style={themeStyles.teamSection} aria-label="Meet the Founder">
         <div style={themeStyles.teamOrb} aria-hidden="true" />
         <div style={themeStyles.teamContainer}>
           <div style={themeStyles.sectionTitleRow}>
@@ -1566,7 +1576,7 @@ const About = () => {
                       <>
                         <img
                           src={member.image}
-                          alt={member.name}
+                          alt={`${member.name} - ${member.role} of ASudha Beauty`}
                           style={themeStyles.teamPhotoImg}
                           onError={() => handleImageError(`team-${index}`)}
                         />
@@ -1587,7 +1597,7 @@ const About = () => {
       </section>
 
       {/* ─── CTA ─── */}
-      <section style={themeStyles.ctaSection}>
+      <section style={themeStyles.ctaSection} aria-label="Explore the Collection">
         <div style={themeStyles.ctaOrb} />
         <div style={themeStyles.ctaRing} aria-hidden="true" />
         <div style={themeStyles.ctaRingInner} aria-hidden="true" />

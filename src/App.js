@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { FaWhatsapp } from "react-icons/fa";
-import ReactGA from "react-ga4"; // 👈 Added import for GA4
+import ReactGA from "react-ga4"; // 👈 GA4
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { WishlistProvider } from "./context/WishlistContext";
@@ -53,7 +53,7 @@ const WHATSAPP_MESSAGE = encodeURIComponent(
 );
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
 const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/images/og-default.png`;
-const LOGO_URL = `${SITE_URL}/assets/logo.png`;
+const LOGO_URL = `${SITE_URL}/assets/images/Logo.png`; // ✅ Fixed path
 
 // ─── Global JSON-LD ───
 const GLOBAL_JSON_LD = {
@@ -121,7 +121,6 @@ const ScrollToTop = () => {
 };
 
 // ─── Google Analytics Page Tracker ───
-// This component listens for route changes and sends a pageview event to GA4.
 const RouteTracker = () => {
   const location = useLocation();
 
@@ -360,7 +359,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <DefaultCanonical />
-        <RouteTracker /> {/* 👈 Added GA4 Route Tracker here */}
+        <RouteTracker />
 
         <ThemeProvider>
           <AuthProvider>
@@ -380,8 +379,9 @@ function App() {
                         <Routes>
                           <Route path="/" element={<Home />} />
                           <Route path="/shop" element={<Shop />} />
+                          {/* ✅ Using :slug allows for SEO friendly URLs while still functioning with IDs */}
                           <Route
-                            path="/product/:id"
+                            path="/product/:slug"
                             element={<ProductDetail />}
                           />
                           <Route path="/cart" element={<Cart />} />

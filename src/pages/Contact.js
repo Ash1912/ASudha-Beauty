@@ -20,11 +20,15 @@ import {
   FaPaperPlane,
   FaHeadset,
   FaExclamationTriangle,
+  FaSpinner, // 👈 Added spinner icon for loading state
 } from "react-icons/fa";
 
 // ─── Site constants ───
 const SITE_URL = "https://www.asudhabeauty.shop";
 const WA_NUMBER = "917518217726";
+
+// 👇 PASTE YOUR WEB3FORMS ACCESS KEY HERE 👇
+const WEB3FORMS_ACCESS_KEY = "9cabea26-5fe3-48de-9063-d4eafbc8b677";
 
 // ─── Brand palette (module scope: stable) ───
 const brandColors = {
@@ -54,6 +58,8 @@ const Contact = () => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // 👈 Loading state
+  const [submitError, setSubmitError] = useState(""); // 👈 Error state
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
@@ -109,10 +115,10 @@ const Contact = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    
+    // Clear errors on change
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (submitError) setSubmitError("");
   };
 
   const validateForm = () => {
@@ -130,22 +136,50 @@ const Contact = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      // Focus the first invalid field
       const firstError = Object.keys(errors)[0];
       if (firstError) document.getElementById(firstError)?.focus();
       return;
     }
 
-    setIsSubmitted(true);
-    setFormData({ name: "", email: "", message: "" });
-    setTimeout(() => setIsSubmitted(false), 6000);
+    setIsLoading(true);
+    setSubmitError("");
+
+    try {
+      // 👇 Sends data to Web3Forms API 👇
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsSubmitted(true);
+        setFormData({ name: "", email: "", message: "" });
+        setTimeout(() => setIsSubmitted(false), 8000);
+      } else {
+        setSubmitError("Something went wrong. Please try again or email us directly.");
+      }
+    } catch (error) {
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ─── JSON-LD: ContactPage ───
-  // (Organization schema is handled globally by SEO.jsx)
   const contactJsonLd = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
@@ -154,6 +188,20 @@ const Contact = () => {
     name: "Contact Us | ASudha Beauty",
     description: "Get in touch with ASudha Beauty for product questions, support, and wholesale inquiries.",
     isPartOf: { "@id": `${SITE_URL}/#website` },
+    about: {
+      "@type": "Organization",
+      name: "ASudha Beauty",
+      telephone: "+91-7518217726",
+      email: "asudhabeauty@gmail.com",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Shop No. 51/T-11/28, Pandariba Gali, Shahmaruf",
+        addressLocality: "Gorakhpur",
+        addressRegion: "UP",
+        postalCode: "273001",
+        addressCountry: "IN",
+      }
+    }
   };
 
   // ─── Injected CSS ───
@@ -199,6 +247,18 @@ const Contact = () => {
         box-shadow: 0 14px 36px rgba(245, 52, 107, 0.5);
         gap: 0.7rem;
         outline: none;
+      }
+      .submit-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      .spinner {
+        animation: spin 1s linear infinite;
       }
 
       .chat-btn {
@@ -247,9 +307,10 @@ const Contact = () => {
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .submit-btn, .chat-btn, .social-link, .info-item, .info-icon-wrap {
+        .submit-btn, .chat-btn, .social-link, .info-item, .info-icon-wrap, .spinner {
           transition: none !important;
           transform: none !important;
+          animation: none !important;
         }
       }
     `;
@@ -414,6 +475,24 @@ const Contact = () => {
       marginBottom: "1.25rem",
       border: `1px solid ${
         isDarkMode ? "rgba(76, 175, 80, 0.25)" : "rgba(76, 175, 80, 0.18)"
+      }`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+      fontSize: "0.9rem",
+      fontWeight: "700",
+    },
+    errorMessage: {
+      backgroundColor: isDarkMode
+        ? "rgba(244, 67, 54, 0.15)"
+        : "rgba(244, 67, 54, 0.1)",
+      color: isDarkMode ? "#ff8a80" : "#c62828",
+      padding: "0.85rem 1rem",
+      borderRadius: "14px",
+      marginBottom: "1.25rem",
+      border: `1px solid ${
+        isDarkMode ? "rgba(244, 67, 54, 0.25)" : "rgba(244, 67, 54, 0.18)"
       }`,
       display: "flex",
       alignItems: "center",
@@ -704,11 +783,16 @@ const Contact = () => {
 
   return (
     <div style={themeStyles.container}>
+      {/* ✅ SEO Added Breadcrumbs */}
       <SEO
         title="Contact Us | ASudha Beauty — Natural Ayurvedic Skincare Support"
         description="Get in touch with ASudha Beauty for product questions, order support, and wholesale inquiries. Call, email, or chat with us on WhatsApp. Visit our store in Gorakhpur."
         keywords="contact asudha beauty, ayurvedic skincare support, natural beauty store gorakhpur, wholesale ayurvedic products contact"
         url="/contact"
+        breadcrumb={[
+          { name: "Home", url: "/" },
+          { name: "Contact Us", url: "/contact" }
+        ]}
         citations={[
           { label: "Consumer Protection Act, 2019", href: "https://consumeraffairs.nic.in/" },
           { label: "National Consumer Helpline", href: "https://consumerhelpline.gov.in/" }
@@ -763,6 +847,16 @@ const Contact = () => {
               </div>
             )}
 
+            {submitError && (
+              <div
+                style={themeStyles.errorMessage}
+                role="alert"
+                aria-live="assertive"
+              >
+                <FaExclamationTriangle aria-hidden="true" /> {submitError}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} style={themeStyles.form} noValidate>
               <div style={themeStyles.formGroup}>
                 <label htmlFor="name" style={themeStyles.label}>
@@ -780,6 +874,7 @@ const Contact = () => {
                   aria-required="true"
                   aria-invalid={errors.name ? "true" : "false"}
                   aria-describedby={errors.name ? "name-error" : undefined}
+                  disabled={isLoading}
                 />
                 {errors.name && (
                   <div id="name-error" style={themeStyles.fieldError} role="alert">
@@ -804,6 +899,7 @@ const Contact = () => {
                   aria-required="true"
                   aria-invalid={errors.email ? "true" : "false"}
                   aria-describedby={errors.email ? "email-error" : undefined}
+                  disabled={isLoading}
                 />
                 {errors.email && (
                   <div id="email-error" style={themeStyles.fieldError} role="alert">
@@ -828,6 +924,7 @@ const Contact = () => {
                   aria-required="true"
                   aria-invalid={errors.message ? "true" : "false"}
                   aria-describedby={errors.message ? "message-error" : undefined}
+                  disabled={isLoading}
                 />
                 {errors.message && (
                   <div id="message-error" style={themeStyles.fieldError} role="alert">
@@ -836,9 +933,22 @@ const Contact = () => {
                 )}
               </div>
 
-              <button type="submit" style={themeStyles.submitButton} className="submit-btn">
-                <FaPaperPlane aria-hidden="true" style={{ fontSize: "0.9rem" }} />
-                Send Message <FaArrowRight aria-hidden="true" style={{ fontSize: "0.8rem" }} />
+              <button 
+                type="submit" 
+                style={themeStyles.submitButton} 
+                className="submit-btn"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <FaSpinner aria-hidden="true" className="spinner" /> Sending...
+                  </>
+                ) : (
+                  <>
+                    <FaPaperPlane aria-hidden="true" style={{ fontSize: "0.9rem" }} />
+                    Send Message <FaArrowRight aria-hidden="true" style={{ fontSize: "0.8rem" }} />
+                  </>
+                )}
               </button>
             </form>
           </section>

@@ -3,11 +3,10 @@ import React, {
   useState,
   useEffect,
   useLayoutEffect,
-  useMemo,
 } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { useTheme } from "../context/ThemeContext";
+import SEO from "../components/SEO"; 
 import {
   FaArrowLeft,
   FaUser,
@@ -37,7 +36,6 @@ import {
 
 // ─── Site constants ───
 const SITE_URL = "https://www.asudhabeauty.shop";
-const SITE_NAME = "ASudha Beauty";
 
 // ─── Brand palette (module scope: stable) ───
 const brandColors = {
@@ -60,8 +58,6 @@ const LIGHT_SHADOW = "0 10px 30px rgba(62, 39, 35, 0.06)";
 const LIGHT_SHADOW_LIFT = "0 22px 48px rgba(62, 39, 35, 0.12)";
 
 // ─── Authoritative citations (E-E-A-T) ───
-// Multani Mitti: MDPI Cosmetics 2025 — first scientific evidence for anti-aging
-//   mechanisms (hyaluronidase IC50 18 μg/mL, tyrosinase IC50 27 μg/mL).
 const CITATIONS = {
   mdpiMultani: {
     label:
@@ -120,6 +116,108 @@ const RELATED_PRODUCTS = [
   },
 ];
 
+// ─── Mock Database for Blog Posts ───
+const POST_DATA = {
+  1: {
+    id: 1,
+    title:
+      "Multani Mitti & Ubtan for Glowing Skin: The Complete Ayurvedic Guide",
+    excerpt:
+      "Evidence-backed guide to Multani Mitti benefits for oily skin and Ubtan for glowing skin. Learn how this 5,000-year-old Ayurvedic duo deep-cleanses, controls oil, and restores natural radiance — validated by peer-reviewed research.",
+    slug: "multani-mitti-ubtan-glowing-skin",
+    image: "/assets/images/blog/multani-ubtan-guide.png",
+    category: "Skincare",
+    tags: [
+      "Multani Mitti",
+      "Ubtan",
+      "Multani Mitti benefits for skin",
+      "Ubtan for glowing skin",
+      "Fuller's Earth",
+      "Ayurveda",
+      "Natural Skincare",
+      "Chemical Free",
+      "Oil Control",
+    ],
+    author: "Ashram Mishra",
+    authorAvatar: "/assets/images/founders/ashram.jpeg",
+    authorBio:
+      "Ashram Mishra is the founder of ASudha Beauty, driven by a passion for Ayurvedic wellness and a mission to bring 100% natural, chemical-free beauty products to every home. He believes that true beauty comes from the earth.",
+    date: "March 15, 2026",
+    modifiedDate: "March 20, 2026",
+    readTime: "7 min read",
+    views: 1245,
+    likes: 89,
+    primaryKeyword: "multani mitti benefits for skin",
+    secondaryKeywords: [
+      "ubtan for glowing skin",
+      "fuller's earth for oily skin",
+      "multani mitti face pack",
+      "ayurvedic skincare routine",
+    ],
+    faqs: [
+      {
+        q: "What are the benefits of Multani Mitti for oily skin?",
+        a: "Multani Mitti (Fuller's Earth) absorbs up to 200% of its weight in oil, deep-cleans pores, and gently exfoliates — making it ideal for oily and acne-prone skin. A 2025 MDPI study also confirmed its anti-aging enzyme inhibition.",
+      },
+      {
+        q: "How do I use Ubtan for glowing skin?",
+        a: "Mix 2 tablespoons of Ubtan powder with milk, curd, or rose water to form a paste. Apply to damp skin, leave for 10 minutes, then gently scrub while rinsing. Use 2–3 times per week.",
+      },
+      {
+        q: "Can I use Multani Mitti and Ubtan together?",
+        a: "Yes. Use Multani Mitti first to deep-cleanse and control oil, then apply Ubtan to nourish and brighten. This two-step ritual is the traditional Ayurvedic approach.",
+      },
+    ],
+    content: `
+      <p>In a world of 10-step routines and synthetic actives, the most powerful skincare solutions are often the ones our grandmothers swore by. <strong>Multani Mitti (Fuller's Earth)</strong> and <strong>Ubtan</strong> are two such ancient Ayurvedic formulations — and modern science is finally catching up. A 2025 study in <em>Cosmetics</em> (MDPI) confirmed that Multani Mitti inhibits key aging-related enzymes, including hyaluronidase (IC50 18 μg/mL) and tyrosinase (IC50 27 μg/mL), providing the first scientific evidence for its traditional anti-aging use <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:0]</a>.</p>
+
+      <div class="highlight-box">
+        <p><strong>Key takeaway:</strong> Multani Mitti controls excess oil and gently exfoliates; Ubtan brightens and nourishes. Together they form a complete, chemical-free skincare ritual.</p>
+      </div>
+
+      <h2>What Is Multani Mitti (Fuller's Earth)?</h2>
+      <p>Multani Mitti is a mineral-rich calcium bentonite clay that has been used in India and the Middle East for over 2,000 years. It is best known for absorbing excess sebum — up to 200% of its weight in oil — making it the go-to remedy for <strong>oily and combination skin</strong> <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:1]</a>. Unlike harsh cleansers, it draws out impurities without stripping the skin barrier, which is why dermatologists still recommend <strong>Multani Mitti face packs</strong> for acne-prone skin.</p>
+
+      <div class="benefits-grid">
+        <div class="benefit-item">Deep cleansing of pores</div>
+        <div class="benefit-item">Oil and sebum control</div>
+        <div class="benefit-item">Gentle exfoliation</div>
+        <div class="benefit-item">Cooling and soothing</div>
+      </div>
+
+      <h2>What Is Ubtan?</h2>
+      <p>Ubtan is a traditional Ayurvedic blend of turmeric, sandalwood, gram flour (besan), and herbs. A PubMed-indexed evaluation of traditional Indian Ubtan formulations found significant <strong>antioxidant, sun-protection (SPF), and anti-tyrosinase activity</strong> — the latter being the mechanism behind its skin-brightening reputation <a href="https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation" target="_blank" rel="noopener noreferrer"></a>. In short, <strong>Ubtan for glowing skin</strong> is not folklore; it is measurable biochemistry.</p>
+
+      <h2>Why Multani Mitti and Ubtan Work Better Together</h2>
+      <p>Multani Mitti is the <em>detoxifier</em>; Ubtan is the <em>nourisher</em>. Multani Mitti pulls out excess oil and debris, while Ubtan delivers antioxidants, mild exfoliation, and a natural glow. Together they address the two most common skincare concerns — <strong>oiliness and dullness</strong> — without a single synthetic chemical.</p>
+
+      <ul>
+        <li><strong>Step 1 — Cleanse:</strong> Mix 2 tbsp Multani Mitti with rose water. Apply, leave 10–15 minutes, rinse. This removes oil and blackheads.</li>
+        <li><strong>Step 2 — Nourish:</strong> Mix 2 tbsp Ubtan with milk or curd. Apply, leave 10 minutes, scrub gently while rinsing. This brightens and exfoliates.</li>
+        <li><strong>Step 3 — Moisturise:</strong> Follow with a light, natural moisturiser.</li>
+      </ul>
+      <p>Use this ritual 2–3 times per week. Consistency matters more than intensity.</p>
+
+      <div class="tip-box">
+        <p><strong>ASudha tip:</strong> For an extra glow, add a pinch of turmeric to your Ubtan paste. Turmeric's curcuminoids are well-documented anti-inflammatory agents.</p>
+      </div>
+
+      <h2>The Science Behind the Glow</h2>
+      <p>Ayurvedic skincare is often dismissed as “traditional,” but the evidence is mounting. The MDPI study identified beta-sitosterol and other bioactive compounds in Multani Mitti that bind strongly to tyrosinase and hyaluronidase — enzymes involved in pigmentation and skin aging <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:3]</a>. Similarly, Ubtan's anti-tyrosinase activity explains its traditional use for tan removal and uneven skin tone <a href="https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation" target="_blank" rel="noopener noreferrer">[reference:4]</a>.</p>
+
+      <h2>The ASudha Promise</h2>
+      <p>ASudha Beauty crafts 100% natural, paraben-free, cruelty-free Multani Mitti and Ubtan powders. No fillers, no synthetic fragrance — just the pure goodness of Ayurveda. <em>Pure. Natural. You.</em></p>
+    `,
+  },
+  // Fallback for other IDs (so the page doesn't crash)
+  2: { id: 2, title: "Ubtan for Glowing Skin", category: "Ayurveda", date: "March 10, 2026", author: "Ashish Kumar Mishra", authorAvatar: "/assets/images/founders/ashish.jpg", authorBio: "Co-founder of ASudha Beauty.", image: "/assets/images/blog/ubtan-guide.png", excerpt: "Coming soon...", content: "<p>This article is being updated.</p>", tags: [] },
+  3: { id: 3, title: "Amla, Reetha & Shikakai for Hair", category: "Hair Care", date: "March 5, 2026", author: "Ashram Mishra", authorAvatar: "/assets/images/founders/ashram.jpeg", authorBio: "Founder of ASudha Beauty.", image: "/assets/images/blog/hair-care-trio.png", excerpt: "Coming soon...", content: "<p>This article is being updated.</p>", tags: [] },
+  4: { id: 4, title: "5 Simple Ways to Add Ayurvedic Powders", category: "Beauty Tips", date: "February 28, 2026", author: "Ashish Kumar Mishra", authorAvatar: "/assets/images/founders/ashish.jpg", authorBio: "Co-founder of ASudha Beauty.", image: "/assets/images/blog/daily-ayurvedic-routine.png", excerpt: "Coming soon...", content: "<p>This article is being updated.</p>", tags: [] },
+  5: { id: 5, title: "Clean Beauty in India", category: "Beauty Trends", date: "February 20, 2026", author: "Ashram Mishra", authorAvatar: "/assets/images/founders/ashram.jpeg", authorBio: "Founder of ASudha Beauty.", image: "/assets/images/blog/clean-beauty-ayurveda.png", excerpt: "Coming soon...", content: "<p>This article is being updated.</p>", tags: [] },
+  6: { id: 6, title: "Herbal Face Pack Guide", category: "Skincare", date: "February 12, 2026", author: "Ashish Kumar Mishra", authorAvatar: "/assets/images/founders/ashish.jpg", authorBio: "Co-founder of ASudha Beauty.", image: "/assets/images/blog/herbal-face-packs.png", excerpt: "Coming soon...", content: "<p>This article is being updated.</p>", tags: [] },
+  7: { id: 7, title: "Science Behind Ayurvedic Herbs", category: "Ayurveda", date: "February 5, 2026", author: "Ashram Mishra", authorAvatar: "/assets/images/founders/ashram.jpeg", authorBio: "Founder of ASudha Beauty.", image: "/assets/images/blog/ayurvedic-science.png", excerpt: "Coming soon...", content: "<p>This article is being updated.</p>", tags: [] },
+};
+
 const BlogPost = () => {
   const { id } = useParams();
   const { isDarkMode } = useTheme();
@@ -131,6 +229,9 @@ const BlogPost = () => {
   const [comment, setComment] = useState("");
   const [isCommentPosted, setIsCommentPosted] = useState(false);
   const [avatarErrors, setAvatarErrors] = useState({});
+  
+  // ✅ ADDED: State to handle author avatar load errors
+  const [authorAvatarError, setAuthorAvatarError] = useState(false);
 
   const [comments, setComments] = useState([
     {
@@ -206,199 +307,15 @@ const BlogPost = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ─── Post data with keyword-optimised copy + citations ───
-  const post = {
-    id: 1,
-    title:
-      "Multani Mitti & Ubtan for Glowing Skin: The Complete Ayurvedic Guide",
-    excerpt:
-      "Evidence-backed guide to Multani Mitti benefits for oily skin and Ubtan for glowing skin. Learn how this 5,000-year-old Ayurvedic duo deep-cleanses, controls oil, and restores natural radiance — validated by peer-reviewed research.",
-    slug: "multani-mitti-ubtan-glowing-skin",
-    image: "/assets/images/blog/multani-ubtan-guide.png",
-    category: "Skincare",
-    tags: [
-      "Multani Mitti",
-      "Ubtan",
-      "Multani Mitti benefits for skin",
-      "Ubtan for glowing skin",
-      "Fuller's Earth",
-      "Ayurveda",
-      "Natural Skincare",
-      "Chemical Free",
-      "Oil Control",
-    ],
-    author: "Ashram Mishra",
-    authorAvatar: "/assets/images/founders/ashram.jpeg",
-    authorBio:
-      "Ashram Mishra is the founder of ASudha Beauty, driven by a passion for Ayurvedic wellness and a mission to bring 100% natural, chemical-free beauty products to every home. He believes that true beauty comes from the earth.",
-    date: "March 15, 2026",
-    modifiedDate: "March 20, 2026",
-    readTime: "7 min read",
-    views: 1245,
-    likes: 89,
-    primaryKeyword: "multani mitti benefits for skin",
-    secondaryKeywords: [
-      "ubtan for glowing skin",
-      "fuller's earth for oily skin",
-      "multani mitti face pack",
-      "ayurvedic skincare routine",
-    ],
-    content: `
-      <p>In a world of 10-step routines and synthetic actives, the most powerful skincare solutions are often the ones our grandmothers swore by. <strong>Multani Mitti (Fuller's Earth)</strong> and <strong>Ubtan</strong> are two such ancient Ayurvedic formulations — and modern science is finally catching up. A 2025 study in <em>Cosmetics</em> (MDPI) confirmed that Multani Mitti inhibits key aging-related enzymes, including hyaluronidase (IC50 18 μg/mL) and tyrosinase (IC50 27 μg/mL), providing the first scientific evidence for its traditional anti-aging use <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:0]</a>.</p>
+  // Dynamically load the post based on the URL id
+  const post = POST_DATA[id] || POST_DATA[1];
 
-      <div class="highlight-box">
-        <p><strong>Key takeaway:</strong> Multani Mitti controls excess oil and gently exfoliates; Ubtan brightens and nourishes. Together they form a complete, chemical-free skincare ritual.</p>
-      </div>
+  // ✅ Reset author avatar error state when the post changes
+  useEffect(() => {
+    setAuthorAvatarError(false);
+  }, [id]);
 
-      <h2>What Is Multani Mitti (Fuller's Earth)?</h2>
-      <p>Multani Mitti is a mineral-rich calcium bentonite clay that has been used in India and the Middle East for over 2,000 years. It is best known for absorbing excess sebum — up to 200% of its weight in oil — making it the go-to remedy for <strong>oily and combination skin</strong> <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:1]</a>. Unlike harsh cleansers, it draws out impurities without stripping the skin barrier, which is why dermatologists still recommend <strong>Multani Mitti face packs</strong> for acne-prone skin.</p>
-
-      <div class="benefits-grid">
-        <div class="benefit-item">Deep cleansing of pores</div>
-        <div class="benefit-item">Oil and sebum control</div>
-        <div class="benefit-item">Gentle exfoliation</div>
-        <div class="benefit-item">Cooling and soothing</div>
-      </div>
-
-      <h2>What Is Ubtan?</h2>
-      <p>Ubtan is a traditional Ayurvedic blend of turmeric, sandalwood, gram flour (besan), and herbs. A PubMed-indexed evaluation of traditional Indian Ubtan formulations found significant <strong>antioxidant, sun-protection (SPF), and anti-tyrosinase activity</strong> — the latter being the mechanism behind its skin-brightening reputation <a href="https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation" target="_blank" rel="noopener noreferrer"></a>. In short, <strong>Ubtan for glowing skin</strong> is not folklore; it is measurable biochemistry.</p>
-
-      <h2>Why Multani Mitti and Ubtan Work Better Together</h2>
-      <p>Multani Mitti is the <em>detoxifier</em>; Ubtan is the <em>nourisher</em>. Multani Mitti pulls out excess oil and debris, while Ubtan delivers antioxidants, mild exfoliation, and a natural glow. Together they address the two most common skincare concerns — <strong>oiliness and dullness</strong> — without a single synthetic chemical.</p>
-
-      <ul>
-        <li><strong>Step 1 — Cleanse:</strong> Mix 2 tbsp Multani Mitti with rose water. Apply, leave 10–15 minutes, rinse. This removes oil and blackheads.</li>
-        <li><strong>Step 2 — Nourish:</strong> Mix 2 tbsp Ubtan with milk or curd. Apply, leave 10 minutes, scrub gently while rinsing. This brightens and exfoliates.</li>
-        <li><strong>Step 3 — Moisturise:</strong> Follow with a light, natural moisturiser.</li>
-      </ul>
-      <p>Use this ritual 2–3 times per week. Consistency matters more than intensity.</p>
-
-      <div class="tip-box">
-        <p><strong>ASudha tip:</strong> For an extra glow, add a pinch of turmeric to your Ubtan paste. Turmeric's curcuminoids are well-documented anti-inflammatory agents.</p>
-      </div>
-
-      <h2>The Science Behind the Glow</h2>
-      <p>Ayurvedic skincare is often dismissed as “traditional,” but the evidence is mounting. The MDPI study identified beta-sitosterol and other bioactive compounds in Multani Mitti that bind strongly to tyrosinase and hyaluronidase — enzymes involved in pigmentation and skin aging <a href="https://www.mdpi.com/2079-9284/12/3/124" target="_blank" rel="noopener noreferrer">[reference:3]</a>. Similarly, Ubtan's anti-tyrosinase activity explains its traditional use for tan removal and uneven skin tone <a href="https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation" target="_blank" rel="noopener noreferrer">[reference:4]</a>.</p>
-
-      <h2>The ASudha Promise</h2>
-      <p>ASudha Beauty crafts 100% natural, paraben-free, cruelty-free Multani Mitti and Ubtan powders. No fillers, no synthetic fragrance — just the pure goodness of Ayurveda. <em>Pure. Natural. You.</em></p>
-    `,
-  };
-
-  // ─── JSON-LD: BlogPosting + FAQ + BreadcrumbList ───
-  const articleUrl = `${SITE_URL}/blog/${post.id}/${post.slug}`;
-
-  const articleJsonLd = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BlogPosting",
-          "@id": `${articleUrl}#article`,
-          headline: post.title,
-          description: post.excerpt,
-          image: `${SITE_URL}${post.image}`,
-          datePublished: new Date(post.date).toISOString().split("T")[0],
-          dateModified: new Date(post.modifiedDate).toISOString().split("T")[0],
-          author: {
-            "@type": "Person",
-            name: post.author,
-            url: `${SITE_URL}/about`,
-            jobTitle: "Founder, ASudha Beauty",
-          },
-          publisher: {
-            "@type": "Organization",
-            name: SITE_NAME,
-            url: SITE_URL,
-            logo: {
-              "@type": "ImageObject",
-              url: `${SITE_URL}/assets/images/Logo.png`,
-            },
-          },
-          mainEntityOfPage: {
-            "@type": "WebPage",
-            "@id": articleUrl,
-          },
-          articleSection: post.category,
-          keywords: post.tags.join(", "),
-          inLanguage: "en-IN",
-          citation: [
-            {
-              "@type": "CreativeWork",
-              name: CITATIONS.mdpiMultani.label,
-              url: CITATIONS.mdpiMultani.url,
-            },
-            {
-              "@type": "CreativeWork",
-              name: CITATIONS.pubmedUbtan.label,
-              url: CITATIONS.pubmedUbtan.url,
-            },
-            {
-              "@type": "CreativeWork",
-              name: CITATIONS.nccihAyurveda.label,
-              url: CITATIONS.nccihAyurveda.url,
-            },
-          ],
-          isBasedOn: [
-            CITATIONS.mdpiMultani.url,
-            CITATIONS.pubmedUbtan.url,
-          ],
-          wordCount: post.content.replace(/<[^>]*>/g, "").split(/\s+/).length,
-        },
-        {
-          "@type": "FAQPage",
-          "@id": `${articleUrl}#faq`,
-          mainEntity: [
-            {
-              "@type": "Question",
-              name: "What are the benefits of Multani Mitti for oily skin?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Multani Mitti (Fuller's Earth) absorbs up to 200% of its weight in oil, deep-cleans pores, and gently exfoliates — making it ideal for oily and acne-prone skin. A 2025 MDPI study also confirmed its anti-aging enzyme inhibition.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "How do I use Ubtan for glowing skin?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Mix 2 tablespoons of Ubtan powder with milk, curd, or rose water to form a paste. Apply to damp skin, leave for 10 minutes, then gently scrub while rinsing. Use 2–3 times per week.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Can I use Multani Mitti and Ubtan together?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Yes. Use Multani Mitti first to deep-cleanse and control oil, then apply Ubtan to nourish and brighten. This two-step ritual is the traditional Ayurvedic approach.",
-              },
-            },
-          ],
-        },
-        {
-          "@type": "BreadcrumbList",
-          "@id": `${articleUrl}#breadcrumb`,
-          itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-            {
-              "@type": "ListItem",
-              position: 2,
-              name: "Ayurvedic Beauty Blog",
-              item: `${SITE_URL}/blog`,
-            },
-            {
-              "@type": "ListItem",
-              position: 3,
-              name: post.title,
-              item: articleUrl,
-            },
-          ],
-        },
-      ],
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  const articleUrl = `${SITE_URL}/blog/${post.id}/${post.slug || ""}`;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -1223,57 +1140,29 @@ const BlogPost = () => {
 
   return (
     <div style={themeStyles.container}>
-      {/* ─── SEO: Meta + JSON-LD ─── */}
-      <Helmet htmlAttributes={{ lang: "en-IN" }}>
-        <title>
-          Multani Mitti Benefits for Skin &amp; Ubtan for Glowing Skin | ASudha
-        </title>
-        <meta
-          name="description"
-          content="Evidence-backed guide to Multani Mitti benefits for oily skin and Ubtan for glowing skin. Learn the Ayurvedic ritual validated by peer-reviewed research."
-        />
-        <meta
-          name="keywords"
-          content="multani mitti benefits for skin, multani mitti for oily skin, ubtan for glowing skin, fuller's earth for oily skin, multani mitti face pack, ayurvedic skincare routine, chemical free skincare"
-        />
-        <link rel="canonical" href={articleUrl} />
-        <meta
-          name="robots"
-          content="index, follow, max-image-preview:large, max-snippet:-1"
-        />
-        <meta name="author" content={post.author} />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="article" />
-        <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.excerpt} />
-        <meta property="og:image" content={`${SITE_URL}${post.image}`} />
-        <meta property="og:url" content={articleUrl} />
-        <meta property="og:site_name" content={SITE_NAME} />
-        <meta property="og:locale" content="en_IN" />
-        <meta
-          property="article:published_time"
-          content={new Date(post.date).toISOString()}
-        />
-        <meta
-          property="article:modified_time"
-          content={new Date(post.modifiedDate).toISOString()}
-        />
-        {post.tags.map((tag) => (
-          <meta property="article:tag" content={tag} key={tag} />
-        ))}
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.title} />
-        <meta name="twitter:description" content={post.excerpt} />
-        <meta name="twitter:image" content={`${SITE_URL}${post.image}`} />
-
-        {/* JSON-LD */}
-        <script type="application/ld+json">
-          {JSON.stringify(articleJsonLd)}
-        </script>
-      </Helmet>
+      {/* ─── SEO: Meta + JSON-LD handled by SEO Component ─── */}
+      <SEO
+        title={post.title}
+        description={post.excerpt}
+        keywords={post.secondaryKeywords || post.tags}
+        url={`/blog/${post.id}`}
+        type="article"
+        publishedTime={new Date(post.date).toISOString()}
+        modifiedTime={new Date(post.modifiedDate || post.date).toISOString()}
+        author={post.author}
+        authorUrl={`${SITE_URL}/about`}
+        tags={post.tags}
+        citations={Object.values(CITATIONS).map((c) => ({
+          label: c.label,
+          href: c.url,
+        }))}
+        faqs={post.faqs} 
+        breadcrumb={[
+          { name: "Home", url: "/" },
+          { name: "Blog", url: "/blog" },
+          { name: post.title, url: `/blog/${post.id}` }
+        ]}
+      />
 
       {/* Hero */}
       <section style={themeStyles.hero} aria-label="Article cover image">
@@ -1317,7 +1206,7 @@ const BlogPost = () => {
           </span>
           <span style={themeStyles.metaItem}>
             <FaClock aria-hidden="true" style={themeStyles.metaIcon} />{" "}
-            {post.readTime}
+            {post.readTime || "5 min read"}
           </span>
           <span style={themeStyles.metaItem}>
             <FaComment aria-hidden="true" style={themeStyles.metaIcon} />{" "}
@@ -1325,25 +1214,21 @@ const BlogPost = () => {
           </span>
           <span style={themeStyles.metaItem}>
             <FaEye aria-hidden="true" style={themeStyles.metaIcon} />{" "}
-            {post.views} views
+            {post.views || 1245} views
           </span>
         </div>
 
         {/* Author card */}
         <div style={themeStyles.authorInfo}>
           <div style={themeStyles.authorAccent} aria-hidden="true" />
-          {post.authorAvatar ? (
+          {/* ✅ FIXED: Handles missing images gracefully with a React icon fallback */}
+          {post.authorAvatar && !authorAvatarError ? (
             <div style={themeStyles.authorAvatar}>
               <img
                 src={post.authorAvatar}
                 alt={`${post.author} — founder of ASudha Beauty`}
                 style={themeStyles.authorAvatarInner}
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src =
-                    "https://via.placeholder.com/64x64/fcf8f5/3e2723?text=" +
-                    post.author.charAt(0);
-                }}
+                onError={() => setAuthorAvatarError(true)}
               />
             </div>
           ) : (
@@ -1362,7 +1247,9 @@ const BlogPost = () => {
                 Verified
               </span>
             </div>
-            <div style={themeStyles.authorBio}>{post.authorBio}</div>
+            <div style={themeStyles.authorBio}>
+              {post.authorBio || "Ayurvedic beauty expert."}
+            </div>
           </div>
         </div>
 
@@ -1390,7 +1277,7 @@ const BlogPost = () => {
             Explore More Ayurvedic Topics
           </h4>
           <div style={themeStyles.tagsContainer}>
-            {post.tags.map((tag) => (
+            {(post.tags || []).map((tag) => (
               <Link
                 key={tag}
                 to={`/blog?tag=${encodeURIComponent(tag)}`}
@@ -1421,7 +1308,7 @@ const BlogPost = () => {
               aria-label={liked ? "Unlike this article" : "Like this article"}
             >
               <FaHeart aria-hidden="true" /> {liked ? "Liked" : "Like"} (
-              {post.likes + (liked ? 1 : 0)})
+              {(post.likes || 0) + (liked ? 1 : 0)})
             </button>
           </div>
           <div style={themeStyles.shareButtons}>

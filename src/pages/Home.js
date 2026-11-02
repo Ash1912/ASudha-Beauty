@@ -1,9 +1,10 @@
+// src/pages/Home.jsx
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
 import ProductCard from "../components/ProductCard";
-import SEO from "../components/SEO"; // ✅ Added for SEO optimization
+import SEO from "../components/SEO"; 
 import { products } from "../data/products";
 import {
   FaArrowRight,
@@ -20,7 +21,6 @@ import {
   FaShieldAlt,
   FaHeart,
   FaRegSnowflake,
-  // ✅ New icons replacing emojis
   FaSpa,
   FaTint,
   FaSun,
@@ -50,7 +50,9 @@ const Home = () => {
   const [touchEnd, setTouchEnd] = useState(0);
   const [testimonialTouchStart, setTestimonialTouchStart] = useState(0);
   const [testimonialTouchEnd, setTestimonialTouchEnd] = useState(0);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1440
+  );
   const [imageErrors, setImageErrors] = useState({});
 
   const brandColors = {
@@ -400,42 +402,42 @@ const Home = () => {
   const sliderImages = [
     {
       url: "/assets/images/home/MultaniMitti_Hero.jpeg",
-      alt: "Multani Mitti Powder",
+      alt: "ASudha Beauty Multani Mitti Powder - Deep Cleansing & Oil Control",
       title: "Multani Mitti",
       subtitle: "Deep Cleansing & Oil Control",
       link: "/product/11001",
     },
     {
       url: "/assets/images/home/UbtanPowder_Hero.jpeg",
-      alt: "Ubtan Powder",
+      alt: "ASudha Beauty Ubtan Powder - Traditional Glow & Radiance",
       title: "Ubtan Powder",
       subtitle: "Traditional Glow & Radiance",
       link: "/product/11002",
     },
     {
       url: "/assets/images/home/AmlaPowder_Hero.jpeg",
-      alt: "Amla Powder",
+      alt: "ASudha Beauty Amla Powder - Stronger, Shinier Hair",
       title: "Amla Powder",
       subtitle: "Stronger, Shinier Hair",
       link: "/product/12001",
     },
     {
       url: "/assets/images/home/ReethaPowder_Hero.jpeg",
-      alt: "Reetha Powder",
+      alt: "ASudha Beauty Reetha Powder - Natural Hair Cleanser",
       title: "Reetha Powder",
       subtitle: "Natural Hair Cleanser",
       link: "/product/12002",
     },
     {
       url: "/assets/images/home/ShikakaiPowder_Hero.jpeg",
-      alt: "Shikakai Powder",
+      alt: "ASudha Beauty Shikakai Powder - Soft Silky & Shiny Hair",
       title: "Shikakai Powder",
       subtitle: "Soft Silky & Shiny Hair",
       link: "/product/12003",
     },
     {
       url: "/assets/images/home/HerbalMix_Hero.jpeg",
-      alt: "Herbal Mix",
+      alt: "ASudha Beauty Herbal Mix - Complete Hair Care Pack",
       title: "Herbal Mix",
       subtitle: "Complete Hair Care Pack",
       link: "/product/12004",
@@ -531,7 +533,6 @@ const Home = () => {
       ? explicitBestSellers.slice(0, 8)
       : allProducts.slice(0, 4);
 
-  // ✅ Emojis replaced with proper React Icons
   const values = [
     {
       icon: <FaLeaf />,
@@ -967,12 +968,14 @@ const Home = () => {
           }`,
       overflow: "hidden",
     },
+    // ✅ FIXED: Converted from div to h1 for SEO
     heroTitleContainer: {
       display: "flex",
       flexDirection: isTablet || isMobile ? "column" : "row",
       alignItems:
         responsive.heroLeftTextAlign === "center" ? "center" : "flex-start",
       marginBottom: "0.75rem",
+      marginTop: 0,
       flexWrap: "wrap",
       lineHeight: "1.05",
     },
@@ -1682,6 +1685,10 @@ const Home = () => {
         description="Shop 100% natural, chemical-free Ayurvedic powders at ASudha Beauty. Discover Multani Mitti, Ubtan, Amla, Reetha & Shikakai for glowing skin and healthy hair. Free shipping over ₹500!"
         keywords="ayurvedic skincare, natural face pack, multani mitti powder, ubtan powder, amla powder for hair, reetha shikakai, chemical free skincare india, herbal beauty products, buy ayurvedic powder online"
         url="/"
+        citations={[
+          { label: "NIH NCCIH — Ayurvedic Medicine: In Depth", href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth" },
+          { label: "Ministry of AYUSH — Government of India", href: "https://ayush.gov.in/" }
+        ]}
       />
 
       {/* ─── Rich animated background ─────────────────────────────── */}
@@ -1703,11 +1710,12 @@ const Home = () => {
       <div style={themeStyles.heroWrapper}>
         <section style={themeStyles.heroSection}>
           <div style={themeStyles.heroLeft}>
-            <div style={themeStyles.heroTitleContainer}>
+            {/* ✅ FIXED: Changed from div to h1 for SEO */}
+            <h1 style={themeStyles.heroTitleContainer}>
               <span style={themeStyles.heroTitlePart1}>Pure.</span>
               <span style={themeStyles.heroTitlePart2}>&nbsp;Natural.</span>
               <span style={themeStyles.heroTitlePart3}>&nbsp;You.</span>
-            </div>
+            </h1>
 
             <p style={themeStyles.heroSubtitle}>
               Discover the power of 100% natural Ayurvedic powders. Deep

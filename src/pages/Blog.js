@@ -1,8 +1,8 @@
 // src/pages/Blog.jsx
 import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { useTheme } from "../context/ThemeContext";
+import SEO from "../components/SEO"; // 👈 Imported SEO component
 import {
   FaClock,
   FaUser,
@@ -447,7 +447,8 @@ const Blog = () => {
   const allTags = [...new Set(blogPosts.flatMap((post) => post.tags || []))];
   const currentFeatured = featuredPosts[featuredIndex];
 
-  // ─── JSON-LD: Blog + BlogPosting (with citation) + BreadcrumbList + ItemList ───
+  // ─── JSON-LD: Blog + ItemList ───
+  // (BreadcrumbList and WebPage are handled by the SEO component)
   const blogJsonLd = useMemo(
     () => ({
       "@context": "https://schema.org",
@@ -465,7 +466,7 @@ const Blog = () => {
             url: SITE_URL,
             logo: {
               "@type": "ImageObject",
-              url: `${SITE_URL}/assets/logo.png`,
+              url: `${SITE_URL}/assets/images/Logo.png`,
             },
           },
           blogPost: blogPosts.map((post) => {
@@ -506,19 +507,6 @@ const Blog = () => {
               },
             };
           }),
-        },
-        {
-          "@type": "BreadcrumbList",
-          "@id": `${SITE_URL}/blog#breadcrumb`,
-          itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-            {
-              "@type": "ListItem",
-              position: 2,
-              name: "Ayurvedic Beauty Blog",
-              item: `${SITE_URL}/blog`,
-            },
-          ],
         },
         {
           "@type": "ItemList",
@@ -1136,60 +1124,22 @@ const Blog = () => {
 
   return (
     <div style={themeStyles.container}>
-      {/* ─── SEO: Meta + JSON-LD ─── */}
-      <Helmet>
-        <title>
-          Ayurvedic Beauty Blog | Multani Mitti, Ubtan &amp; Amla Reetha
-          Shikakai Guides | ASudha
-        </title>
-        <meta
-          name="description"
-          content="Evidence-backed Ayurvedic beauty guides: Multani Mitti benefits for skin, Ubtan for glowing skin, and Amla-Reetha-Shikakai hair care. 100% natural, chemical-free routines from ASudha."
-        />
-        <meta
-          name="keywords"
-          content="multani mitti benefits, multani mitti for oily skin, ubtan for glowing skin, ubtan cream benefits, amla reetha shikakai for hair, natural shampoo for hair fall, ayurvedic skincare routine, chemical free skincare, herbal face pack for glowing skin, natural beauty tips India, paraben free skincare"
-        />
-        <link rel="canonical" href={`${SITE_URL}/blog`} />
-        <meta name="robots" content="index, follow, max-image-preview:large" />
-        <meta name="author" content={SITE_NAME} />
-        <meta name="language" content="English" />
-        <meta name="geo.region" content="IN" />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:locale" content="en_IN" />
-        <meta property="og:site_name" content={SITE_NAME} />
-        <meta
-          property="og:title"
-          content="Ayurvedic Beauty Blog | Multani Mitti, Ubtan & Amla Reetha Shikakai | ASudha"
-        />
-        <meta
-          property="og:description"
-          content="Evidence-backed guides on Multani Mitti benefits, Ubtan for glowing skin, and Amla-Reetha-Shikakai hair care."
-        />
-        <meta
-          property="og:image"
-          content={`${SITE_URL}/assets/images/blog/og-blog.png`}
-        />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:url" content={`${SITE_URL}/blog`} />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Ayurvedic Beauty Blog | ASudha" />
-        <meta
-          name="twitter:description"
-          content="Multani Mitti, Ubtan & Amla-Reetha-Shikakai — evidence-backed Ayurvedic guides."
-        />
-        <meta
-          name="twitter:image"
-          content={`${SITE_URL}/assets/images/blog/og-blog.png`}
-        />
-
-        <script type="application/ld+json">{JSON.stringify(blogJsonLd)}</script>
-      </Helmet>
+      {/* ─── SEO: Meta + JSON-LD handled by SEO Component ─── */}
+      <SEO
+        title="Ayurvedic Beauty Blog | Multani Mitti, Ubtan & Amla Reetha Shikakai Guides"
+        description="Evidence-backed Ayurvedic beauty guides: Multani Mitti benefits for skin, Ubtan for glowing skin, and Amla-Reetha-Shikakai hair care. 100% natural, chemical-free routines from ASudha."
+        keywords="multani mitti benefits, multani mitti for oily skin, ubtan for glowing skin, ubtan cream benefits, amla reetha shikakai for hair, natural shampoo for hair fall, ayurvedic skincare routine, chemical free skincare, herbal face pack for glowing skin, natural beauty tips India, paraben free skincare"
+        url="/blog"
+        breadcrumb={[
+          { name: "Home", url: "/" },
+          { name: "Ayurvedic Beauty Blog", url: "/blog" }
+        ]}
+      />
+      {/* Extra JSON-LD for Blog Collection (SEO component handles Breadcrumbs) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
+      />
 
       {/* Hero */}
       <section style={themeStyles.hero} aria-labelledby="blog-hero-title">

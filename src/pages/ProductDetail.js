@@ -49,6 +49,11 @@ const brandColors = {
   green: "#4caf50",
 };
 
+// ─── URL Helper: Prefer slugs for SEO over IDs ───
+const getProductUrl = (product) => {
+  return `/product/${product.slug || product.id}`;
+};
+
 // ─── Category-aware keyword clusters ───
 const getProductKeywords = (product) => {
   const base = [
@@ -222,13 +227,19 @@ const getRelatedBlogLinks = (product) => {
 };
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  // ✅ FIXED: Grab both `id` and `slug` to support App.jsx routing
+  const { id, slug } = useParams(); 
+  const urlParam = id || slug;
+
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
-  const product = products.find((p) => p.id === parseInt(id));
+  // Check if the URL param matches a slug or an ID
+  const product = products.find(
+    (p) => p.id === parseInt(urlParam) || p.slug === urlParam
+  );
 
   // ─── Theme tokens ───
   const T = {
@@ -390,7 +401,6 @@ const ProductDetail = () => {
         outline: none;
       }
 
-      /* ✅ FIX: inline value — only depends on isDarkMode, not on T */
       .pd-product-card {
         transition: transform 0.3s ease, box-shadow 0.3s ease,
                     border-color 0.3s ease;
@@ -1071,7 +1081,7 @@ const ProductDetail = () => {
         <SEO
           title="Product Not Found | ASudha Beauty"
           description="The product you're looking for doesn't exist. Browse our 100% natural Ayurvedic collection."
-          url={`/product/${id}`}
+          url={`/product/${urlParam}`}
           noindex
         />
         <div style={themeStyles.bgBlob1} aria-hidden="true" />
@@ -1105,11 +1115,14 @@ const ProductDetail = () => {
   const productKeywords = getProductKeywords(product);
   const productCitations = getProductCitations(product);
   const relatedBlogLinks = getRelatedBlogLinks(product);
+  const productUrl = getProductUrl(product);
+  
   const productBreadcrumb = [
     { name: "Home", url: "/" },
     { name: "Shop", url: "/shop" },
-    { name: product.name, url: `/product/${product.id}` },
+    { name: product.name, url: productUrl },
   ];
+
   const relatedProducts = products
     .filter((p) => p.id !== product.id)
     .sort((a, b) => {
@@ -1122,13 +1135,14 @@ const ProductDetail = () => {
   return (
     <div style={themeStyles.container}>
       <SEO
-        title={`${product.name} | ASudha Beauty`}
+        title={product.name}
         description={product.description}
         keywords={productKeywords}
         type="product"
         product={product}
-        url={`/product/${product.id}`}
+        url={productUrl}
         breadcrumb={productBreadcrumb}
+        faqs={product.faqs} 
         citations={productCitations.map((c) => ({
           label: c.label,
           href: c.href,
@@ -1148,6 +1162,18 @@ const ProductDetail = () => {
           <FaCopy aria-hidden="true" /> Link copied to clipboard!
         </div>
       )}
+
+      <nav style={themeStyles.breadcrumb} aria-label="Breadcrumb">
+        <Link to="/" style={themeStyles.breadcrumbLink}>
+          Home
+        </Link>
+        <span aria-hidden="true">/</span>
+        <Link to="/shop" style={themeStyles.breadcrumbLink}>
+          Shop
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{product.name}</span>
+      </nav>
 
       <button
         type="button"
@@ -1471,8 +1497,9 @@ const ProductDetail = () => {
           <div style={themeStyles.productGridRelated}>
             {relatedProducts.map((rp) => (
               <Link
-                key={rp.id}
-                to={`/product/${rp.id}`}
+                /* ✅ FIX: Added fallback to ID so React keys are always unique */
+                key={rp.slug || rp.id} 
+                to={getProductUrl(rp)}
                 style={themeStyles.productCard}
                 className="pd-product-card"
                 aria-label={`View ${rp.name}`}

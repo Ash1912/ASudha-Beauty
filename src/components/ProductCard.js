@@ -84,7 +84,9 @@ const ProductCard = ({
   const isNatural =
     safeProduct.category === "Skincare" ||
     safeProduct.category === "Hair Care";
-  const productUrl = `/product/${safeProduct.id}`;
+
+  // ✅ SEO FIX: Prefer slugs for URLs over IDs
+  const productUrl = `/product/${safeProduct.slug || safeProduct.id}`;
 
   const shouldShowBadge =
     showBadge === true ||
@@ -499,7 +501,13 @@ const ProductCard = ({
   };
 
   return (
-    <article style={themeStyles.card} className="pc-card">
+    /* ✅ SEO UPDATE: Added itemScope and itemType for Microdata */
+    <article 
+      style={themeStyles.card} 
+      className="pc-card"
+      itemScope 
+      itemType="https://schema.org/Product"
+    >
       <div
         style={themeStyles.cardAccent}
         className="pc-accent"
@@ -545,6 +553,7 @@ const ProductCard = ({
         className="pc-main-link"
         style={{ textDecoration: "none", display: "block" }}
         aria-label={`View ${safeProduct.name || "product"} details`}
+        itemProp="url"
       >
         <div style={themeStyles.imageContainer}>
           <div style={themeStyles.imageWrapper} className="pc-image-wrap">
@@ -564,6 +573,8 @@ const ProductCard = ({
             )}
             <img
               src={safeProduct.image}
+              /* ✅ SEO UPDATE: Added itemProp */
+              itemProp="image"
               alt={`${safeProduct.name || "Product"} — ${
                 safeProduct.category || "Ayurvedic beauty"
               } by ASudha Beauty`}
@@ -593,7 +604,10 @@ const ProductCard = ({
             )}
             {safeProduct.category}
           </span>
-          <h3 style={themeStyles.name}>{safeProduct.name}</h3>
+          {/* ✅ SEO UPDATE: Added itemProp */}
+          <h3 style={themeStyles.name} itemProp="name">
+            {safeProduct.name}
+          </h3>
           {safeProduct.itemNo && (
             <p style={themeStyles.itemNo}>#{safeProduct.itemNo}</p>
           )}
@@ -609,6 +623,10 @@ const ProductCard = ({
             aria-label={`Rated ${safeProduct.rating} out of 5 from ${
               safeProduct.reviews || 0
             } reviews`}
+            /* ✅ SEO UPDATE: AggregateRating Microdata */
+            itemProp="aggregateRating"
+            itemScope
+            itemType="https://schema.org/AggregateRating"
           >
             <div style={themeStyles.ratingStars}>
               {[...Array(5)].map((_, i) => (
@@ -623,13 +641,25 @@ const ProductCard = ({
               ))}
             </div>
             <span style={themeStyles.ratingCount}>
-              ({safeProduct.reviews || 0})
+              (<span itemProp="reviewCount">{safeProduct.reviews || 0}</span>)
             </span>
+            <meta itemProp="ratingValue" content={safeProduct.rating} />
           </div>
         )}
 
-        <div style={themeStyles.priceContainer}>
-          <span style={themeStyles.price}>₹{priceNum.toFixed(2)}</span>
+        {/* ✅ SEO UPDATE: Offer Microdata */}
+        <div 
+          style={themeStyles.priceContainer}
+          itemProp="offers" 
+          itemScope 
+          itemType="https://schema.org/Offer"
+        >
+          <meta itemProp="priceCurrency" content="INR" />
+          <meta itemProp="availability" content={safeProduct.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"} />
+          
+          <span style={themeStyles.price} itemProp="price" content={priceNum}>
+            ₹{priceNum.toFixed(2)}
+          </span>
           {hasDiscount && (
             <>
               <span style={themeStyles.mrp}>₹{mrpNum.toFixed(2)}</span>
