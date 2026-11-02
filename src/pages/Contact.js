@@ -20,14 +20,14 @@ import {
   FaPaperPlane,
   FaHeadset,
   FaExclamationTriangle,
-  FaSpinner, // 👈 Added spinner icon for loading state
+  FaSpinner, 
 } from "react-icons/fa";
 
 // ─── Site constants ───
 const SITE_URL = "https://www.asudhabeauty.shop";
 const WA_NUMBER = "917518217726";
 
-// 👇 PASTE YOUR WEB3FORMS ACCESS KEY HERE 👇
+// 👇 YOUR WEB3FORMS ACCESS KEY 👇
 const WEB3FORMS_ACCESS_KEY = "9cabea26-5fe3-48de-9063-d4eafbc8b677";
 
 // ─── Brand palette (module scope: stable) ───
@@ -58,8 +58,8 @@ const Contact = () => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // 👈 Loading state
-  const [submitError, setSubmitError] = useState(""); // 👈 Error state
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState(""); 
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
@@ -148,7 +148,7 @@ const Contact = () => {
     setSubmitError("");
 
     try {
-      // 👇 Sends data to Web3Forms API 👇
+      // 👇 Sends data to Web3Forms API with better error checking 👇
       const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
         headers: {
@@ -157,6 +157,8 @@ const Contact = () => {
         },
         body: JSON.stringify({
           access_key: WEB3FORMS_ACCESS_KEY,
+          subject: `New Contact Form Message from ${formData.name}`, // ✅ Added subject to prevent spam blocks
+          from_name: "ASudha Beauty Website", // ✅ Added sender name
           name: formData.name,
           email: formData.email,
           message: formData.message,
@@ -170,10 +172,12 @@ const Contact = () => {
         setFormData({ name: "", email: "", message: "" });
         setTimeout(() => setIsSubmitted(false), 8000);
       } else {
-        setSubmitError("Something went wrong. Please try again or email us directly.");
+        console.error("Web3Forms Error:", result); // ✅ Logs exact error to DevTools
+        setSubmitError(result.message || "Something went wrong. Please try again or email us directly.");
       }
     } catch (error) {
-      setSubmitError("Network error. Please check your connection and try again.");
+      console.error("Network Error:", error); // ✅ Logs network error (e.g., AdBlocker)
+      setSubmitError("Network error. Please check your connection or disable your AdBlocker and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -783,7 +787,6 @@ const Contact = () => {
 
   return (
     <div style={themeStyles.container}>
-      {/* ✅ SEO Added Breadcrumbs */}
       <SEO
         title="Contact Us | ASudha Beauty — Natural Ayurvedic Skincare Support"
         description="Get in touch with ASudha Beauty for product questions, order support, and wholesale inquiries. Call, email, or chat with us on WhatsApp. Visit our store in Gorakhpur."
@@ -808,7 +811,6 @@ const Contact = () => {
       <div style={themeStyles.bgOrb2} aria-hidden="true" />
 
       <main>
-        {/* Hero */}
         <header style={themeStyles.hero}>
           <h1 style={themeStyles.title}>
             Connect with Us
@@ -822,7 +824,6 @@ const Contact = () => {
         </header>
 
         <div style={themeStyles.contactGrid}>
-          {/* Form card */}
           <section style={themeStyles.formSection} aria-labelledby="contact-form-title">
             <div style={themeStyles.formAccentBar} aria-hidden="true" />
             <div style={themeStyles.formTitleRow}>
@@ -953,7 +954,6 @@ const Contact = () => {
             </form>
           </section>
 
-          {/* Info card */}
           <section style={themeStyles.infoSection} aria-labelledby="contact-info-title">
             <div style={themeStyles.infoAccentBar} aria-hidden="true" />
             <div style={themeStyles.infoTitleRow}>
@@ -1023,7 +1023,6 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* WhatsApp Chat Card */}
             <div style={themeStyles.chatSection}>
               <div style={themeStyles.chatIcon} aria-hidden="true">
                 <FaHeadset />
@@ -1045,7 +1044,6 @@ const Contact = () => {
               </a>
             </div>
 
-            {/* Social Links (Instagram & Facebook Only) */}
             <div style={themeStyles.socialSection}>
               <p style={themeStyles.socialTitle}>Follow Us</p>
               <div style={themeStyles.socialLinks}>
@@ -1072,7 +1070,6 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Trust Badge */}
             <div style={themeStyles.trustBadge}>
               <FaHeart
                 aria-hidden="true"
