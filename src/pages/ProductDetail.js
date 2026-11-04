@@ -1,9 +1,5 @@
 // src/pages/ProductDetail.jsx
-import React, {
-  useState,
-  useEffect,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
@@ -81,6 +77,7 @@ const getProductKeywords = (product) => {
       ...base,
       "ubtan powder",
       "ubtan for glowing skin",
+      "ubtan face wash",
       "ubtan cream",
       "ubtan face pack",
       "ayurvedic ubtan",
@@ -94,6 +91,7 @@ const getProductKeywords = (product) => {
     return [
       ...base,
       "amla reetha shikakai",
+      "amla reetha shikakai shampoo",
       "natural shampoo for hair fall",
       "herbal hair pack",
       "ayurvedic hair care",
@@ -227,8 +225,7 @@ const getRelatedBlogLinks = (product) => {
 };
 
 const ProductDetail = () => {
-  // ✅ FIXED: Grab both `id` and `slug` to support App.jsx routing
-  const { id, slug } = useParams(); 
+  const { id, slug } = useParams();
   const urlParam = id || slug;
 
   const navigate = useNavigate();
@@ -236,7 +233,6 @@ const ProductDetail = () => {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
-  // Check if the URL param matches a slug or an ID
   const product = products.find(
     (p) => p.id === parseInt(urlParam) || p.slug === urlParam
   );
@@ -271,7 +267,6 @@ const ProductDetail = () => {
       : "0 20px 40px rgba(62, 39, 35, 0.1)",
   };
 
-  // ─── SSR-safe window width ───
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1440
   );
@@ -1116,7 +1111,23 @@ const ProductDetail = () => {
   const productCitations = getProductCitations(product);
   const relatedBlogLinks = getRelatedBlogLinks(product);
   const productUrl = getProductUrl(product);
-  
+
+  // ✅ ADD: Product-specific FAQs for schema
+  const productFaqs = [
+    {
+      q: `How do I use ${product?.name}?`,
+      a: `Mix ${product?.name} with rose water or curd to form a paste. Apply to clean skin, leave for 10–15 minutes, and rinse thoroughly. Use 2–3 times per week for best results.`,
+    },
+    {
+      q: `Is ${product?.name} suitable for oily skin?`,
+      a: `Yes. ${product?.name} is formulated with natural ingredients that help control excess oil without stripping the skin. It is ideal for oily and acne-prone skin.`,
+    },
+    {
+      q: `Is ${product?.name} chemical-free?`,
+      a: `Absolutely. ASudha Beauty products are 100% natural, paraben-free, cruelty-free, and free from synthetic chemicals.`,
+    },
+  ];
+
   const productBreadcrumb = [
     { name: "Home", url: "/" },
     { name: "Shop", url: "/shop" },
@@ -1135,14 +1146,20 @@ const ProductDetail = () => {
   return (
     <div style={themeStyles.container}>
       <SEO
-        title={product.name}
-        description={product.description}
-        keywords={productKeywords}
+        title={`Buy ${product?.name} Online | 100% Natural ${product?.category} | ASudha Beauty`}
+        description={`Shop ${product?.name} — 100% natural, chemical-free Ayurvedic ${product?.category?.toLowerCase()} from ASudha Beauty. ${product?.description?.slice(0, 100)}... Free shipping above ₹500.`}
+        keywords={[
+          ...productKeywords,
+          `${product?.name?.toLowerCase()} online`,
+          `buy ${product?.name?.toLowerCase()}`,
+          `${product?.name?.toLowerCase()} benefits`,
+          `${product?.name?.toLowerCase()} for oily skin`,
+        ]}
         type="product"
         product={product}
         url={productUrl}
         breadcrumb={productBreadcrumb}
-        faqs={product.faqs} 
+        faqs={productFaqs} // ✅ Uses product-specific FAQs
         citations={productCitations.map((c) => ({
           label: c.label,
           href: c.href,
@@ -1406,6 +1423,63 @@ const ProductDetail = () => {
             </div>
           )}
 
+          {/* ✅ ADD: How to Use Section with long-tail keywords */}
+          <div style={themeStyles.keyFeatures}>
+            <h2 style={themeStyles.featureTitle}>
+              <FaLeaf
+                aria-hidden="true"
+                style={{ color: brandColors.green }}
+              />{" "}
+              How to Use {product?.name}
+            </h2>
+            <div style={themeStyles.featureList}>
+              <div style={themeStyles.featureItem}>
+                <FaCheckCircle
+                  aria-hidden="true"
+                  style={{
+                    color: brandColors.green,
+                    flexShrink: 0,
+                    fontSize: "0.85rem",
+                  }}
+                />
+                Mix 2 tablespoons of {product?.name} with rose water or curd.
+              </div>
+              <div style={themeStyles.featureItem}>
+                <FaCheckCircle
+                  aria-hidden="true"
+                  style={{
+                    color: brandColors.green,
+                    flexShrink: 0,
+                    fontSize: "0.85rem",
+                  }}
+                />
+                Apply an even layer to clean, damp skin.
+              </div>
+              <div style={themeStyles.featureItem}>
+                <FaCheckCircle
+                  aria-hidden="true"
+                  style={{
+                    color: brandColors.green,
+                    flexShrink: 0,
+                    fontSize: "0.85rem",
+                  }}
+                />
+                Leave for 10–15 minutes, then rinse with lukewarm water.
+              </div>
+              <div style={themeStyles.featureItem}>
+                <FaCheckCircle
+                  aria-hidden="true"
+                  style={{
+                    color: brandColors.green,
+                    flexShrink: 0,
+                    fontSize: "0.85rem",
+                  }}
+                />
+                Use 2–3 times per week for oily skin; once a week for dry skin.
+              </div>
+            </div>
+          </div>
+
           <div style={themeStyles.deliveryInfo}>
             <div style={themeStyles.deliveryItem}>
               <FaTruck
@@ -1498,7 +1572,7 @@ const ProductDetail = () => {
             {relatedProducts.map((rp) => (
               <Link
                 /* ✅ FIX: Added fallback to ID so React keys are always unique */
-                key={rp.slug || rp.id} 
+                key={rp.slug || rp.id}
                 to={getProductUrl(rp)}
                 style={themeStyles.productCard}
                 className="pd-product-card"

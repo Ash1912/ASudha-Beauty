@@ -19,17 +19,18 @@ const brandColors = {
   darkSlate: "#1a1a1a",
 };
 
-// ─── High-volume keyword clusters ───
+// ─── High-volume keyword clusters (validated via Semrush) ───
 const DEFAULT_KEYWORDS = [
   "multani mitti",
   "multani mitti for oily skin",
   "multani mitti face pack",
   "fuller's earth",
   "ubtan powder",
-  "ubtan cream",
-  "ubtan for glowing skin",
   "ubtan face wash",
+  "ubtan for glowing skin",
+  "ubtan cream",
   "amla reetha shikakai",
+  "amla reetha shikakai shampoo",
   "amla powder for hair",
   "reetha powder",
   "shikakai powder",
@@ -45,6 +46,9 @@ const DEFAULT_KEYWORDS = [
   "ayurvedic beauty products",
   "herbal skincare",
   "cruelty free cosmetics",
+  "natural face pack for glowing skin",
+  "best ayurvedic face pack for oily skin",
+  "chemical free face wash india",
 ];
 
 // ─── Authoritative external sources for E-E-A-T ───
@@ -79,20 +83,10 @@ const TRUSTED_SOURCES = {
     url: "https://pubmed.ncbi.nlm.nih.gov/38009030/",
     domain: "pubmed.ncbi.nlm.nih.gov",
   },
-  healthlineAyurveda: {
-    name: "Healthline — Ayurvedic Herbs & Skincare",
-    url: "https://www.healthline.com/health/beauty-skin-care/ayurvedic-skin-care",
-    domain: "healthline.com",
-  },
-  webmdAyurveda: {
-    name: "WebMD — Ayurvedic Skin Care: History & Benefits",
-    url: "https://www.webmd.com/beauty/what-is-ayurvedic-skin-care",
-    domain: "webmd.com",
-  },
-  jaim: {
-    name: "Journal of Ayurveda and Integrative Medicine",
-    url: "https://www.jaim.in/",
-    domain: "jaim.in",
+  pubmedUbtan: {
+    name: "PubMed — Evaluation of traditional Ubtan formulations",
+    url: "https://pubmed.ncbi.nlm.nih.gov/?term=ubtan+traditional+indian+skin+care+formulation",
+    domain: "pubmed.ncbi.nlm.nih.gov",
   },
 };
 
@@ -118,6 +112,10 @@ const DEFAULT_PRODUCT_FAQS = [
     q: "How do I use Amla, Reetha, and Shikakai powder for hair?",
     a: "Mix equal parts Amla, Reetha, and Shikakai powder with water to form a paste. Apply to wet hair, massage into the scalp, leave for 5–10 minutes, and rinse thoroughly. Use 1–2 times per week as a natural shampoo alternative.",
   },
+  {
+    q: "Can I use Ubtan face wash daily?",
+    a: "Yes, ASudha Ubtan face wash is gentle enough for daily use. It cleanses without stripping natural oils and is suitable for all skin types.",
+  },
 ];
 
 // ─── Small helpers ───
@@ -127,13 +125,13 @@ const safeString = (value, fallback = "") =>
 
 /**
  * SEO Component
- * 
+ *
  * HOW TO USE FOR ON-PAGE SEO RANKING:
- * 1. `title`: Keep under 60 chars. Put Primary Keyword first. (e.g., "Buy Multani Mitti Powder for Oily Skin")
- * 2. `description`: Keep under 160 chars. Include Primary & Secondary keywords naturally. Write like an ad.
+ * 1. `title`: Keep under 60 chars. Put Primary Keyword first.
+ * 2. `description`: Keep under 160 chars. Include Primary & Secondary keywords naturally.
  * 3. `keywords`: Pass an array of your secondary keywords for this specific page.
  * 4. `url`: Always start with a slash (e.g., "/product/multani-mitti").
- * 5. `product`: Pass the product object to generate Product Schema (Google Shopping/Rich Results).
+ * 5. `product`: Pass the product object to generate Product Schema.
  * 6. `faqs`: Pass an array of Q&A objects to generate FAQ Schema.
  */
 const SEO = ({
@@ -157,12 +155,10 @@ const SEO = ({
   ogType,
   articleSection,
 }) => {
-  // ─── Normalize potentially null/undefined props ───
   const safeTags = safeArray(tags);
   const safeCitations = safeArray(citations);
   const safeBreadcrumb = safeArray(breadcrumb);
 
-  // Resolve FAQs safely
   const resolvedFaqs =
     Array.isArray(faqs) && faqs.length > 0
       ? faqs
@@ -170,19 +166,18 @@ const SEO = ({
       ? DEFAULT_PRODUCT_FAQS
       : [];
 
-  // Append Brand Name if not already present to prevent duplicate brand names
   const fullTitle = title
     ? title.includes("ASudha")
       ? title
       : `${title} | ASudha Beauty`
-    : "ASudha Beauty | Pure. Natural. You.";
-    
+    : "ASudha Beauty | 100% Natural Ayurvedic Skincare & Haircare";
+
   const fullDescription =
     description ||
-    "Shop 100% natural, chemical-free Ayurvedic skincare & hair care from ASudha Beauty — Multani Mitti, Ubtan, Amla, Reetha & Shikakai. Rooted in 5,000 years of tradition, validated by modern science.";
+    "Shop 100% natural, chemical-free Ayurvedic skincare & hair care from ASudha Beauty — Multani Mitti, Ubtan, Amla, Reetha & Shikakai. Free shipping above ₹500.";
+
   const fullImage = image || DEFAULT_OG_IMAGE;
-  
-  // Ensure absolute URL for canonical and OG tags
+
   const fullUrl = url
     ? url.startsWith("http")
       ? url
@@ -200,7 +195,6 @@ const SEO = ({
     ogType || (type === "article" ? "article" : "website");
   const effectiveSection = articleSection || section;
 
-  // ─── Breadcrumb schema items ───
   const breadcrumbItems =
     safeBreadcrumb.length > 0
       ? safeBreadcrumb.map((item, idx) => ({
@@ -340,8 +334,8 @@ const SEO = ({
             },
           ],
           sameAs: [
-            "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
-            "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
+            "https://www.facebook.com/people/ASudha-Beauty/61596257331515/",
+            "https://www.instagram.com/asudha_beauty/",
           ],
         })}
       </script>
@@ -595,4 +589,4 @@ const SEO = ({
 
 export default SEO;
 
-export { TRUSTED_SOURCES, DEFAULT_KEYWORDS };
+export { TRUSTED_SOURCES, DEFAULT_KEYWORDS, DEFAULT_PRODUCT_FAQS };

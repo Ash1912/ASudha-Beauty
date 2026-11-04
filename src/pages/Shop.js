@@ -115,10 +115,6 @@ const TRUSTED_SOURCES = [
 // ─── Shop FAQs (used for FAQPage schema) ───
 const SHOP_FAQS = [
   {
-    q: "Are all ASudha Beauty products 100% natural?",
-    a: "Yes. All ASudha Beauty products — Multani Mitti, Ubtan, Amla, Reetha, and Shikakai — are 100% natural, chemical-free, paraben-free, and cruelty-free.",
-  },
-  {
     q: "Which ASudha product is best for oily skin?",
     a: "For oily skin, we recommend Multani Mitti (Fuller's Earth) — it absorbs excess oil and deep-cleanses pores. For combination skin, try our Ubtan blend.",
   },
@@ -129,6 +125,10 @@ const SHOP_FAQS = [
   {
     q: "Do you offer free shipping?",
     a: "Yes — free shipping on all orders above ₹500 across India, delivered from our store in Gorakhpur to your doorstep.",
+  },
+  {
+    q: "Are ASudha products chemical-free?",
+    a: "Yes. All ASudha Beauty products are 100% natural, paraben-free, cruelty-free, and free from synthetic chemicals.",
   },
 ];
 
@@ -486,7 +486,7 @@ const Shop = () => {
           "@type": "CollectionPage",
           "@id": `${SITE_URL}/shop#page`,
           url: `${SITE_URL}/shop`,
-          name: "Shop Natural Ayurvedic Products | ASudha Beauty",
+          name: "Shop Natural Ayurvedic Products | Multani Mitti, Ubtan, Amla | ASudha Beauty",
           description:
             "Shop 100% natural, chemical-free Ayurvedic skincare and hair care — Multani Mitti, Ubtan, Amla, Reetha, Shikakai. Free shipping above ₹500.",
           isPartOf: { "@id": `${SITE_URL}/#website` },
@@ -514,7 +514,7 @@ const Shop = () => {
             item: {
               "@type": "Product",
               name: p.name,
-              url: `${SITE_URL}/product/${p.id}`,
+              url: `${SITE_URL}/product/${p.slug || p.id}`,
               image: `${SITE_URL}${p.image}`,
               ...(p.price > 0 && {
                 offers: {
@@ -525,10 +525,10 @@ const Shop = () => {
                     p.inStock !== false
                       ? "https://schema.org/InStock"
                       : "https://schema.org/OutOfStock",
-                  url: `${SITE_URL}/product/${p.id}`,
+                  url: `${SITE_URL}/product/${p.slug || p.id}`,
                 },
               }),
-              // Add rating conditionally to fix GSC warnings
+              // ✅ Add aggregateRating conditionally to fix GSC warnings
               ...(p.rating
                 ? {
                     aggregateRating: {
@@ -540,7 +540,7 @@ const Shop = () => {
                     },
                   }
                 : {}),
-            }
+            },
           })),
         },
         {
@@ -1490,8 +1490,8 @@ const Shop = () => {
             ? "Shop Natural Ayurvedic Products | Multani Mitti, Ubtan, Amla | ASudha"
             : `${selectedCategory} Products | ASudha Beauty`
         }
-        description="Shop ASudha Beauty's 100% natural Ayurvedic skincare and hair care powders — Multani Mitti, Ubtan, Amla, Reetha, Shikakai. Chemical-free, cruelty-free, free shipping above ₹500."
-        keywords="natural skincare products online, ayurvedic beauty products, multani mitti online, buy ubtan powder, amla reetha shikakai, chemical free skincare india, herbal skincare products, best natural face pack, ayurvedic skincare routine"
+        description="Shop ASudha Beauty's 100% natural Ayurvedic skincare and hair care powders — Multani Mitti for oily skin, Ubtan for glowing skin, Amla-Reetha-Shikakai for hair. Chemical-free, cruelty-free, free shipping above ₹500."
+        keywords="natural skincare products online, ayurvedic beauty products, multani mitti online, buy ubtan powder, amla reetha shikakai, chemical free skincare india, herbal skincare products, best natural face pack"
         url="/shop"
         breadcrumb={shopBreadcrumb}
         citations={shopCitations}

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useCart } from "../context/CartContext";
 import ProductCard from "../components/ProductCard";
-import SEO from "../components/SEO"; 
+import SEO from "../components/SEO";
 import { products } from "../data/products";
 import {
   FaArrowRight,
@@ -314,7 +314,7 @@ const Home = () => {
       .value-item:hover .value-icon {
         transform: rotate(-6deg) scale(1.12);
       }
-      
+
       /* ✅ Ensures React Icons are perfectly centered in their halo */
       .value-icon {
         width: 52px; height: 52px;
@@ -402,14 +402,14 @@ const Home = () => {
   const sliderImages = [
     {
       url: "/assets/images/home/MultaniMitti_Hero.jpeg",
-      alt: "ASudha Beauty Multani Mitti Powder - Deep Cleansing & Oil Control",
+      alt: "ASudha Beauty Multani Mitti Powder - Deep Cleansing & Oil Control for Oily Skin",
       title: "Multani Mitti",
       subtitle: "Deep Cleansing & Oil Control",
       link: "/product/11001",
     },
     {
       url: "/assets/images/home/UbtanPowder_Hero.jpeg",
-      alt: "ASudha Beauty Ubtan Powder - Traditional Glow & Radiance",
+      alt: "ASudha Beauty Ubtan Powder - Traditional Glow & Radiance for Glowing Skin",
       title: "Ubtan Powder",
       subtitle: "Traditional Glow & Radiance",
       link: "/product/11002",
@@ -437,7 +437,7 @@ const Home = () => {
     },
     {
       url: "/assets/images/home/HerbalMix_Hero.jpeg",
-      alt: "ASudha Beauty Herbal Mix - Complete Hair Care Pack",
+      alt: "ASudha Beauty Herbal Mix - Complete Hair Care Pack with Amla Reetha Shikakai",
       title: "Herbal Mix",
       subtitle: "Complete Hair Care Pack",
       link: "/product/12004",
@@ -968,7 +968,6 @@ const Home = () => {
           }`,
       overflow: "hidden",
     },
-    // ✅ FIXED: Converted from div to h1 for SEO
     heroTitleContainer: {
       display: "flex",
       flexDirection: isTablet || isMobile ? "column" : "row",
@@ -1679,15 +1678,21 @@ const Home = () => {
 
   return (
     <div style={themeStyles.container}>
-      {/* ✅ HIGH-AUTHORITY SEO TAGS */}
+      {/* ✅ UPDATED SEO TAGS FOR HIGH-VOLUME KEYWORDS */}
       <SEO
-        title="ASudha Beauty | 100% Natural Ayurvedic Skincare & Haircare Powders"
-        description="Shop 100% natural, chemical-free Ayurvedic powders at ASudha Beauty. Discover Multani Mitti, Ubtan, Amla, Reetha & Shikakai for glowing skin and healthy hair. Free shipping over ₹500!"
-        keywords="ayurvedic skincare, natural face pack, multani mitti powder, ubtan powder, amla powder for hair, reetha shikakai, chemical free skincare india, herbal beauty products, buy ayurvedic powder online"
+        title="Buy Multani Mitti, Ubtan & Ayurvedic Powders Online | ASudha Beauty"
+        description="Shop 100% natural, chemical-free Ayurvedic powders at ASudha Beauty. Multani Mitti for oily skin, Ubtan for glowing skin, Amla-Reetha-Shikakai for hair. Free shipping above ₹500."
+        keywords="multani mitti for oily skin, ubtan for glowing skin, amla reetha shikakai shampoo, natural face pack for glowing skin, chemical free skincare india, buy ayurvedic powder online"
         url="/"
         citations={[
           { label: "NIH NCCIH — Ayurvedic Medicine: In Depth", href: "https://www.nccih.nih.gov/health/ayurvedic-medicine-in-depth" },
-          { label: "Ministry of AYUSH — Government of India", href: "https://ayush.gov.in/" }
+          { label: "Ministry of AYUSH — Government of India", href: "https://ayush.gov.in/" },
+          { label: "MDPI Cosmetics 2025 — Multani Mitti Anti-Aging Study", href: "https://doi.org/10.3390/cosmetics12030124" },
+        ]}
+        faqs={[
+          { q: "What is Multani Mitti good for?", a: "Multani Mitti (Fuller's Earth) is a natural clay that absorbs excess oil, deep-cleanses pores, and gently exfoliates. It is ideal for oily and acne-prone skin." },
+          { q: "How do I use Ubtan for glowing skin?", a: "Mix Ubtan powder with curd or rose water, apply to damp skin, leave for 10 minutes, and rinse while gently scrubbing. Use 2–3 times per week." },
+          { q: "Is Amla-Reetha-Shikakai good for hair fall?", a: "Yes. Amla strengthens roots, Reetha cleanses naturally, and Shikakai conditions. Together they reduce hair fall and add shine without harsh chemicals." },
         ]}
       />
 
@@ -1710,17 +1715,31 @@ const Home = () => {
       <div style={themeStyles.heroWrapper}>
         <section style={themeStyles.heroSection}>
           <div style={themeStyles.heroLeft}>
-            {/* ✅ FIXED: Changed from div to h1 for SEO */}
+            {/* ✅ UPDATED H1 WITH PRIMARY KEYWORDS */}
             <h1 style={themeStyles.heroTitleContainer}>
-              <span style={themeStyles.heroTitlePart1}>Pure.</span>
-              <span style={themeStyles.heroTitlePart2}>&nbsp;Natural.</span>
-              <span style={themeStyles.heroTitlePart3}>&nbsp;You.</span>
+              <span style={themeStyles.heroTitlePart1}>100% Natural</span>
+              <span style={themeStyles.heroTitlePart2}>&nbsp;Ayurvedic</span>
+              <span style={themeStyles.heroTitlePart3}>
+                &nbsp;Skincare &amp; Haircare
+              </span>
             </h1>
 
             <p style={themeStyles.heroSubtitle}>
-              Discover the power of 100% natural Ayurvedic powders. Deep
-              cleansing, oil control, and natural radiance—trusted by nature,
-              loved by you. <Link to="/about" style={{ color: brandColors.primary, fontWeight: "600", textDecoration: "none" }}>Learn more about our Ayurvedic roots.</Link>
+              Discover the power of{" "}
+              <strong>Multani Mitti for oily skin</strong>,{" "}
+              <strong>Ubtan for glowing skin</strong>, and{" "}
+              <strong>Amla-Reetha-Shikakai for healthy hair</strong>. 100%
+              natural, chemical-free powders trusted by nature.{" "}
+              <Link
+                to="/about"
+                style={{
+                  color: brandColors.primary,
+                  fontWeight: "600",
+                  textDecoration: "none",
+                }}
+              >
+                Learn more about our Ayurvedic roots.
+              </Link>
             </p>
 
             <div style={themeStyles.heroStats}>
@@ -1886,25 +1905,61 @@ const Home = () => {
       </div>
 
       {/* ─── FEATURE BADGES (Clickable Internal Links for SEO) ──────── */}
-      <div style={{ ...hyperlinkStyles.featureBadges, position: "relative", zIndex: 1 }}>
-        <Link to="/shipping" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
-          <span style={hyperlinkStyles.featureBadgeIcon}><FaTruck /></span>
+      <div
+        style={{
+          ...hyperlinkStyles.featureBadges,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <Link
+          to="/shipping"
+          style={hyperlinkStyles.featureBadge}
+          className="feature-badge fade-up"
+        >
+          <span style={hyperlinkStyles.featureBadgeIcon}>
+            <FaTruck />
+          </span>
           <span>Free Shipping ₹500+</span>
         </Link>
-        <Link to="/about" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
-          <span style={hyperlinkStyles.featureBadgeIcon}><FaShieldAlt /></span>
+        <Link
+          to="/about"
+          style={hyperlinkStyles.featureBadge}
+          className="feature-badge fade-up"
+        >
+          <span style={hyperlinkStyles.featureBadgeIcon}>
+            <FaShieldAlt />
+          </span>
           <span>100% Natural</span>
         </Link>
-        <Link to="/blog" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
-          <span style={hyperlinkStyles.featureBadgeIcon}><FaLeaf /></span>
+        <Link
+          to="/blog"
+          style={hyperlinkStyles.featureBadge}
+          className="feature-badge fade-up"
+        >
+          <span style={hyperlinkStyles.featureBadgeIcon}>
+            <FaLeaf />
+          </span>
           <span>Ayurvedic Care</span>
         </Link>
-        <Link to="/faqs" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
-          <span style={hyperlinkStyles.featureBadgeIcon}><FaHeart /></span>
+        <Link
+          to="/faqs"
+          style={hyperlinkStyles.featureBadge}
+          className="feature-badge fade-up"
+        >
+          <span style={hyperlinkStyles.featureBadgeIcon}>
+            <FaHeart />
+          </span>
           <span>Chemical Free</span>
         </Link>
-        <Link to="/shop" style={hyperlinkStyles.featureBadge} className="feature-badge fade-up">
-          <span style={hyperlinkStyles.featureBadgeIcon}><FaRegSnowflake /></span>
+        <Link
+          to="/shop"
+          style={hyperlinkStyles.featureBadge}
+          className="feature-badge fade-up"
+        >
+          <span style={hyperlinkStyles.featureBadgeIcon}>
+            <FaRegSnowflake />
+          </span>
           <span>All Skin Types</span>
         </Link>
       </div>
@@ -1945,7 +2000,6 @@ const Home = () => {
                   }}
                   className="value-icon"
                 >
-                  {/* ✅ Exact SVG Icons replacing emojis */}
                   {value.icon}
                 </div>
                 <h3 style={themeStyles.valueTitle}>{value.title}</h3>
@@ -2077,7 +2131,29 @@ const Home = () => {
           <h3 style={themeStyles.ctaTitle}>100% Natural Ayurvedic Care</h3>
           <p style={themeStyles.ctaText}>
             Chemical Free • Paraben Free • Preservative Free • Suitable for All
-            Skin & Hair Types. <Link to="/blog" style={{ color: brandColors.primary, fontWeight: "600", textDecoration: "none" }}>Read our Blog</Link> or <Link to="/faqs" style={{ color: brandColors.primary, fontWeight: "600", textDecoration: "none" }}>check our FAQs</Link> to learn more.
+            Skin &amp; Hair Types.{" "}
+            <Link
+              to="/blog"
+              style={{
+                color: brandColors.primary,
+                fontWeight: "600",
+                textDecoration: "none",
+              }}
+            >
+              Read our Blog
+            </Link>{" "}
+            or{" "}
+            <Link
+              to="/faqs"
+              style={{
+                color: brandColors.primary,
+                fontWeight: "600",
+                textDecoration: "none",
+              }}
+            >
+              check our FAQs
+            </Link>{" "}
+            to learn more.
           </p>
           <Link
             to="/shop?category=Skincare"

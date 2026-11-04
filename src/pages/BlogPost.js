@@ -1,12 +1,8 @@
 // src/pages/BlogPost.jsx
-import React, {
-  useState,
-  useEffect,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import SEO from "../components/SEO"; 
+import SEO from "../components/SEO";
 import {
   FaArrowLeft,
   FaUser,
@@ -120,8 +116,9 @@ const RELATED_PRODUCTS = [
 const POST_DATA = {
   1: {
     id: 1,
+    // ✅ UPDATED TITLE: Includes primary keyword "Multani Mitti for oily skin" and "Ubtan for glowing skin"
     title:
-      "Multani Mitti & Ubtan for Glowing Skin: The Complete Ayurvedic Guide",
+      "Multani Mitti for Oily Skin & Ubtan for Glowing Skin: Complete Ayurvedic Guide (2026)",
     excerpt:
       "Evidence-backed guide to Multani Mitti benefits for oily skin and Ubtan for glowing skin. Learn how this 5,000-year-old Ayurvedic duo deep-cleanses, controls oil, and restores natural radiance — validated by peer-reviewed research.",
     slug: "multani-mitti-ubtan-glowing-skin",
@@ -166,6 +163,10 @@ const POST_DATA = {
       {
         q: "Can I use Multani Mitti and Ubtan together?",
         a: "Yes. Use Multani Mitti first to deep-cleanse and control oil, then apply Ubtan to nourish and brighten. This two-step ritual is the traditional Ayurvedic approach.",
+      },
+      {
+        q: "What is the best Multani Mitti face pack for oily skin?",
+        a: "Mix 2 tablespoons of Multani Mitti with rose water and a pinch of turmeric. Apply to oily areas, leave for 10 minutes, and rinse. Use 2–3 times per week.",
       },
     ],
     content: `
@@ -229,8 +230,8 @@ const BlogPost = () => {
   const [comment, setComment] = useState("");
   const [isCommentPosted, setIsCommentPosted] = useState(false);
   const [avatarErrors, setAvatarErrors] = useState({});
-  
-  // ✅ ADDED: State to handle author avatar load errors
+
+  // ✅ State to handle author avatar load errors
   const [authorAvatarError, setAuthorAvatarError] = useState(false);
 
   const [comments, setComments] = useState([
@@ -1142,9 +1143,15 @@ const BlogPost = () => {
     <div style={themeStyles.container}>
       {/* ─── SEO: Meta + JSON-LD handled by SEO Component ─── */}
       <SEO
-        title={post.title}
+        title={`${post.title} | ASudha Beauty`}
         description={post.excerpt}
-        keywords={post.secondaryKeywords || post.tags}
+        keywords={[
+          ...(post.secondaryKeywords || post.tags),
+          "multani mitti for oily skin",
+          "ubtan for glowing skin",
+          "natural face pack for glowing skin",
+          "ayurvedic skincare routine",
+        ]}
         url={`/blog/${post.id}`}
         type="article"
         publishedTime={new Date(post.date).toISOString()}
@@ -1156,11 +1163,11 @@ const BlogPost = () => {
           label: c.label,
           href: c.url,
         }))}
-        faqs={post.faqs} 
+        faqs={post.faqs}
         breadcrumb={[
           { name: "Home", url: "/" },
           { name: "Blog", url: "/blog" },
-          { name: post.title, url: `/blog/${post.id}` }
+          { name: post.title, url: `/blog/${post.id}` },
         ]}
       />
 
