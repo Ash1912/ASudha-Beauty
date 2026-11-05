@@ -74,7 +74,8 @@ const GLOBAL_JSON_LD = {
         "ASudha Beauty crafts 100% natural, chemical-free Ayurvedic skincare and hair care products — Multani Mitti, Ubtan, Amla, Reetha & Shikakai — backed by 5,000 years of tradition and modern science.",
       sameAs: [
         "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
-        "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6"
+        "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6",
+        "https://youtube.com/@asudhabeauty?si=oZqbLl7COM0Kiqrr"
       ],
       contactPoint: [
         {

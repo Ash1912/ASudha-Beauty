@@ -999,7 +999,7 @@ const Footer = () => {
                 <FaFacebook />
               </a>
               <a
-                href="https://youtube.com"
+                href="https://youtube.com/@asudhabeauty?si=oZqbLl7COM0Kiqrr"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={themeStyles.socialLink}

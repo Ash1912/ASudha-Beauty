@@ -336,6 +336,7 @@ const SEO = ({
           sameAs: [
             "https://www.facebook.com/people/ASudha-Beauty/61596257331515/",
             "https://www.instagram.com/asudha_beauty/",
+            "https://youtube.com/@asudhabeauty?si=oZqbLl7COM0Kiqrr",
           ],
         })}
       </script>
