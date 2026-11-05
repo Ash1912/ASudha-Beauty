@@ -21,7 +21,8 @@ import {
   FaHeadset,
   FaExclamationTriangle,
   FaSpinner,
-  FaYoutube, 
+  FaYoutube,
+  FaLinkedin, 
 } from "react-icons/fa";
 
 // ─── Site constants ───
@@ -1077,6 +1078,16 @@ const Contact = () => {
                   aria-label="Follow ASudha Beauty on Youtube"
                 >
                   <FaYoutube aria-hidden="true" />
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/asudha-beauty-a7b994448/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={themeStyles.socialLink}
+                  className="social-link"
+                  aria-label="Follow ASudha Beauty on LinkedIn"
+                >
+                  <FaLinkedin aria-hidden="true" />
                 </a>
               </div>
             </div>

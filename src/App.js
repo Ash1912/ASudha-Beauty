@@ -75,7 +75,8 @@ const GLOBAL_JSON_LD = {
       sameAs: [
         "https://www.facebook.com/people/ASudha-Beauty/61596257331515/?sk=photos",
         "https://www.instagram.com/asudha_beauty?utm_source=qr&igsh=aGY4bHp3aGo2MzN6",
-        "https://youtube.com/@asudhabeauty?si=oZqbLl7COM0Kiqrr"
+        "https://youtube.com/@asudhabeauty?si=oZqbLl7COM0Kiqrr",
+        "https://www.linkedin.com/in/asudha-beauty-a7b994448/"
       ],
       contactPoint: [
         {

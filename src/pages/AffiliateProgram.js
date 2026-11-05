@@ -18,7 +18,6 @@ import {
   FaWhatsapp,
   FaInstagram,
   FaFacebook,
-  FaTwitter,
   FaYoutube,
   FaLaptopCode,
   FaHeart,
@@ -36,6 +35,7 @@ import {
   FaQuestionCircle,
   FaHeadset,
   FaGavel,
+  FaLinkedin,
 } from "react-icons/fa";
 
 // ─── Site constants ───
@@ -58,7 +58,7 @@ const brandColors = {
   instagram: "#E4405F",
   youtube: "#FF0000",
   facebook: "#1877F2",
-  twitter: "#1DA1F2",
+  linkedin: "#1DA1F2",
   blog: "#FF5722",
 };
 
@@ -133,8 +133,8 @@ const PLATFORMS = [
     color: brandColors.facebook,
   },
   {
-    name: "Twitter/X",
-    icon: <FaTwitter />,
+    name: "LinkedIn",
+    icon: <FaLinkedin />,
     followers: "500+",
     color: brandColors.twitter,
   },

@@ -33,6 +33,7 @@ import {
   FaNewspaper,
   FaRegHeart,
   FaPaperPlane,
+  FaLinkedin,
 } from "react-icons/fa";
 import { SiRazorpay, SiPaytm, SiPhonepe } from "react-icons/si";
 
@@ -997,6 +998,16 @@ const Footer = () => {
                 aria-label="Facebook"
               >
                 <FaFacebook />
+              </a>
+              <a
+                href="https://www.linkedin.com/in/asudha-beauty-a7b994448/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={themeStyles.socialLink}
+                className="footer-social"
+                aria-label="LinkedIn"
+              >
+                <FaLinkedin />
               </a>
               <a
                 href="https://youtube.com/@asudhabeauty?si=oZqbLl7COM0Kiqrr"
