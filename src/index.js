@@ -6,7 +6,17 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import ReactGA from 'react-ga4';
 
-// 👇 REPLACE 'G-XXXXXXXXXX' WITH YOUR ACTUAL MEASUREMENT ID
+/**
+ * ⚠️ IMPORTANT NOTE ON DOUBLE TRACKING:
+ * You are initializing Google Analytics 4 directly here using 'react-ga4'.
+ * 
+ * Because you also added Google Tag Manager (GTM-PS2X7SM3) to your index.html:
+ * 1. If you set up a GA4 Configuration tag inside GTM for 'G-QKYBG1SCDF', 
+ *    you will track every visitor TWICE. 
+ * 2. Choose one setup:
+ *    - EITHER keep this ReactGA initialization (and only use GTM for Google Ads).
+ *    - OR delete these two ReactGA lines entirely and manage ALL tracking via GTM.
+ */
 ReactGA.initialize('G-QKYBG1SCDF');
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

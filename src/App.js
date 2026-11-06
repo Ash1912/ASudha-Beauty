@@ -53,7 +53,7 @@ const WHATSAPP_MESSAGE = encodeURIComponent(
 );
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
 const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/images/og-default.png`;
-const LOGO_URL = `${SITE_URL}/assets/images/Logo.png`; // ✅ Fixed path
+const LOGO_URL = `${SITE_URL}/assets/images/Logo.png`;
 
 // ─── Global JSON-LD ───
 const GLOBAL_JSON_LD = {
@@ -122,15 +122,34 @@ const ScrollToTop = () => {
   return null;
 };
 
-// ─── Google Analytics Page Tracker ───
+// ─── Analytics Page Tracker (GA4 & GTM) ───
 const RouteTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
+    const pagePath = location.pathname + location.search;
+
+    // 1. Existing React-GA4 tracking
     ReactGA.send({
       hitType: "pageview",
-      page: location.pathname + location.search,
+      page: pagePath,
     });
+
+    // 2. Push virtual pageview to Google Tag Manager dataLayer
+    // We use a slight timeout so React Helmet has time to update the <title> tag
+    setTimeout(() => {
+      if (typeof window !== "undefined" && window.dataLayer) {
+        window.dataLayer.push({
+          event: "virtual_pageview",
+          page: {
+            path: pagePath,
+            title: document.title,
+            url: window.location.href,
+          },
+        });
+      }
+    }, 100);
+    
   }, [location]);
 
   return null;
@@ -349,9 +368,6 @@ function App() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
 
-        {/* Google Search Console verification — uncomment & paste your token */}
-        {/* <meta name="google-site-verification" content="YOUR_VERIFICATION_TOKEN" /> */}
-
         {/* Global Organization + WebSite schema (Knowledge Panel + Sitelinks Search Box) */}
         <script type="application/ld+json">
           {JSON.stringify(GLOBAL_JSON_LD)}
@@ -381,7 +397,6 @@ function App() {
                         <Routes>
                           <Route path="/" element={<Home />} />
                           <Route path="/shop" element={<Shop />} />
-                          {/* ✅ Using :slug allows for SEO friendly URLs while still functioning with IDs */}
                           <Route
                             path="/product/:slug"
                             element={<ProductDetail />}
