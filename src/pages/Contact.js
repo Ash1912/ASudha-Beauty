@@ -159,8 +159,8 @@ const Contact = () => {
         },
         body: JSON.stringify({
           access_key: WEB3FORMS_ACCESS_KEY,
-          subject: `New Contact Form Message from ${formData.name}`, // ✅ Added subject to prevent spam blocks
-          from_name: "ASudha Beauty Website", // ✅ Added sender name
+          subject: `New Contact Form Message from ${formData.name}`, 
+          from_name: "ASudha Beauty Website", 
           name: formData.name,
           email: formData.email,
           message: formData.message,
@@ -171,14 +171,23 @@ const Contact = () => {
 
       if (result.success) {
         setIsSubmitted(true);
+        
+        // ✅ GOOGLE ADS CONVERSION TRACKING EVENT
+        // This fires ONLY when the form is successfully submitted.
+        if (typeof window !== "undefined" && window.gtag) {
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-18546415529/8zRrCN3j2rMdEKmvz4tF'
+          });
+        }
+
         setFormData({ name: "", email: "", message: "" });
         setTimeout(() => setIsSubmitted(false), 8000);
       } else {
-        console.error("Web3Forms Error:", result); // ✅ Logs exact error to DevTools
+        console.error("Web3Forms Error:", result); 
         setSubmitError(result.message || "Something went wrong. Please try again or email us directly.");
       }
     } catch (error) {
-      console.error("Network Error:", error); // ✅ Logs network error (e.g., AdBlocker)
+      console.error("Network Error:", error); 
       setSubmitError("Network error. Please check your connection or disable your AdBlocker and try again.");
     } finally {
       setIsLoading(false);
