@@ -43,6 +43,7 @@ import TrackOrder from "./pages/TrackOrder";
 import ReturnsExchanges from "./pages/ReturnsExchanges";
 import ShippingInfo from "./pages/ShippingInfo";
 import FAQs from "./pages/FAQs";
+import Privacy from "./pages/Privacy"; // 👈 ADDED IMPORT
 
 // ─── Site constants ───
 const SITE_URL = "https://www.asudhabeauty.shop";
@@ -136,7 +137,6 @@ const RouteTracker = () => {
     });
 
     // 2. Push virtual pageview to Google Tag Manager dataLayer
-    // We use a slight timeout so React Helmet has time to update the <title> tag
     setTimeout(() => {
       if (typeof window !== "undefined" && window.dataLayer) {
         window.dataLayer.push({
@@ -423,6 +423,8 @@ function App() {
                           />
                           <Route path="/partners" element={<BecomePartner />} />
                           <Route path="/terms" element={<TermsConditions />} />
+                          {/* 👇 ADDED PRIVACY ROUTE 👇 */}
+                          <Route path="/privacy" element={<Privacy />} /> 
                           <Route path="/size-guide" element={<SizeGuide />} />
                           <Route path="/track-order" element={<TrackOrder />} />
                           <Route

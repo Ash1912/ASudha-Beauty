@@ -1,3 +1,4 @@
+// src/components/Footer.jsx
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
@@ -608,7 +609,6 @@ const Footer = () => {
       flexWrap: "wrap",
       alignItems: "center",
     },
-    // ✅ Payment icon "chip" — light pill so the icon is always visible
     paymentIconChip: {
       width: isMobile ? "40px" : "46px",
       height: isMobile ? "28px" : "30px",
@@ -622,7 +622,6 @@ const Footer = () => {
         ? "0 2px 8px rgba(0,0,0,0.35)"
         : "0 2px 8px rgba(62, 39, 35, 0.08)",
     },
-    // ✅ Icon itself — always dark on white chip so it's ALWAYS visible
     paymentIcon: {
       fontSize: isMobile ? "1.1rem" : "1.25rem",
       color: isDarkMode ? "#1a1a1a" : brandColors.earthDark,
