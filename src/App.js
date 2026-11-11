@@ -43,7 +43,7 @@ import TrackOrder from "./pages/TrackOrder";
 import ReturnsExchanges from "./pages/ReturnsExchanges";
 import ShippingInfo from "./pages/ShippingInfo";
 import FAQs from "./pages/FAQs";
-import Privacy from "./pages/Privacy"; // 👈 ADDED IMPORT
+import Privacy from "./pages/Privacy";
 
 // ─── Site constants ───
 const SITE_URL = "https://www.asudhabeauty.shop";
@@ -123,7 +123,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-// ─── Analytics Page Tracker (GA4 & GTM) ───
+// ─── Analytics Page Tracker (GA4, GTM & Meta Pixel) ───
 const RouteTracker = () => {
   const location = useLocation();
 
@@ -149,6 +149,11 @@ const RouteTracker = () => {
         });
       }
     }, 100);
+
+    // 3. Meta Pixel PageView tracking
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq('track', 'PageView');
+    }
     
   }, [location]);
 
@@ -423,7 +428,6 @@ function App() {
                           />
                           <Route path="/partners" element={<BecomePartner />} />
                           <Route path="/terms" element={<TermsConditions />} />
-                          {/* 👇 ADDED PRIVACY ROUTE 👇 */}
                           <Route path="/privacy" element={<Privacy />} /> 
                           <Route path="/size-guide" element={<SizeGuide />} />
                           <Route path="/track-order" element={<TrackOrder />} />
