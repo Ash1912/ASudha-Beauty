@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import SEO from "../components/SEO"; // 👈 Imported SEO component
+import SEO from "../components/SEO";
 import {
   FaClock,
   FaUser,
@@ -125,6 +125,21 @@ const POST_CITATIONS = {
     href: "https://pubmed.ncbi.nlm.nih.gov/34954266/",
     anchor: "ethnodermatological review of Indian medicinal plants",
   },
+  8: {
+    label: "Comparison of clay masks vs herbal packs — PubMed",
+    href: "https://pubmed.ncbi.nlm.nih.gov/38009030/",
+    anchor: "clinical study on clay mask efficacy",
+  },
+  9: {
+    label: "Fuller's Earth mineralogy and skin absorption — MDPI",
+    href: "https://www.mdpi.com/2079-9284/12/3/124",
+    anchor: "mineralogy of Fuller's Earth",
+  },
+  10: {
+    label: "Daily skincare routines with Ayurvedic ingredients — NIH",
+    href: "https://www.nccih.nih.gov/health/ayurveda",
+    anchor: "NIH Ayurvedic skincare guidelines",
+  }
 };
 
 const Blog = () => {
@@ -188,22 +203,69 @@ const Blog = () => {
   // ─── Blog posts with keyword-optimised titles, excerpts & citations ───
   const blogPosts = [
     {
-      id: 1,
-      title:
-        "Multani Mitti Benefits for Glowing Skin: The Complete Ayurvedic Guide",
-      excerpt:
-        "Discover the science-backed benefits of 100% natural Multani Mitti (Fuller's Earth) for oily and acne-prone skin. Learn how this healing clay deep-cleanses, controls oil, and reveals your natural radiance — validated by a ",
+      id: 9,
+      title: "How to Choose the Best Multani Mitti in India (Delhi NCR Guide)",
+      excerpt: "Struggling to find pure Multani Mitti? Learn how to test purity, avoid harmful additives, and why ASudha is the best choice for Delhi NCR buyers.",
       image: "/assets/images/blog/multani-mitti-guide.png",
       category: "Skincare",
-      tags: [
-        "Multani Mitti",
-        "Multani Mitti benefits",
-        "Fuller's Earth",
-        "Skincare",
-        "Ayurveda",
-        "Oily Skin",
-        "Natural Beauty",
-      ],
+      tags: ["Best Multani Mitti", "Delhi NCR", "Buy Pure Multani Mitti", "Skincare"],
+      author: "Ashram Mishra",
+      authorAvatar: "/assets/images/founders/ashram.jpeg",
+      date: "March 25, 2026",
+      readTime: "6 min read",
+      views: 450,
+      comments: 12,
+      likes: 34,
+      featured: true,
+      relatedId: 8,
+      relatedLabel: "Multani Mitti vs Ubtan",
+      primaryKeyword: "best multani mitti in delhi ncr",
+    },
+    {
+      id: 8,
+      title: "Multani Mitti vs Ubtan: Which is Better for Oily Skin?",
+      excerpt: "Both are Ayurvedic superstars, but which one actually controls oil better? We compare Multani Mitti and Ubtan for oily and acne-prone skin.",
+      image: "/assets/images/blog/herbal-face-packs.png",
+      category: "Skincare",
+      tags: ["Multani Mitti vs Ubtan", "Oily Skin", "Acne", "Comparison"],
+      author: "Ashish Kumar Mishra",
+      authorAvatar: "/assets/images/founders/ashish.jpg",
+      date: "March 22, 2026",
+      readTime: "5 min read",
+      views: 890,
+      comments: 24,
+      likes: 56,
+      featured: true,
+      relatedId: 1,
+      relatedLabel: "Complete Multani Mitti Guide",
+      primaryKeyword: "multani mitti vs ubtan for oily skin",
+    },
+    {
+      id: 10,
+      title: "The Ultimate Ubtan Face Wash Routine for Glowing Skin",
+      excerpt: "Ditch chemical cleansers. Learn how to use Ubtan powder as a daily face wash to remove tan, clear dead skin, and get a natural glow.",
+      image: "/assets/images/blog/daily-ayurvedic-routine.png",
+      category: "Beauty Tips",
+      tags: ["Ubtan Face Wash", "Glowing Skin", "Daily Routine", "Natural Cleanser"],
+      author: "Ashram Mishra",
+      authorAvatar: "/assets/images/founders/ashram.jpeg",
+      date: "March 18, 2026",
+      readTime: "4 min read",
+      views: 620,
+      comments: 15,
+      likes: 42,
+      featured: false,
+      relatedId: 2,
+      relatedLabel: "Ubtan for Glowing Skin",
+      primaryKeyword: "ubtan face wash for glowing skin",
+    },
+    {
+      id: 1,
+      title: "Multani Mitti Benefits for Glowing Skin: The Complete Ayurvedic Guide",
+      excerpt: "Discover the science-backed benefits of 100% natural Multani Mitti (Fuller's Earth) for oily and acne-prone skin.",
+      image: "/assets/images/blog/multani-mitti-guide.png",
+      category: "Skincare",
+      tags: ["Multani Mitti", "Fuller's Earth", "Oily Skin"],
       author: "Ashram Mishra",
       authorAvatar: "/assets/images/founders/ashram.jpeg",
       date: "March 15, 2026",
@@ -211,27 +273,18 @@ const Blog = () => {
       views: 1345,
       comments: 23,
       likes: 89,
-      featured: true,
-      relatedId: 6,
-      relatedLabel: "Herbal Face Packs for Every Skin Type",
+      featured: false,
+      relatedId: 8,
+      relatedLabel: "Multani Mitti vs Ubtan",
       primaryKeyword: "multani mitti benefits for skin",
     },
     {
       id: 2,
       title: "Ubtan for Glowing Skin: The 5000-Year-Old Ayurvedic Ritual",
-      excerpt:
-        "Ubtan has been a staple in Indian households for centuries. Here's how this traditional turmeric, sandalwood & besan blend gives you a chemical-free glow — supported by ",
+      excerpt: "Ubtan has been a staple in Indian households for centuries. Here's how this traditional turmeric, sandalwood & besan blend gives you a chemical-free glow.",
       image: "/assets/images/blog/ubtan-guide.png",
       category: "Ayurveda",
-      tags: [
-        "Ubtan",
-        "Ubtan benefits",
-        "Ayurvedic ubtan",
-        "Glowing Skin",
-        "Turmeric",
-        "Natural Glow",
-        "Herbal",
-      ],
+      tags: ["Ubtan", "Turmeric", "Natural Glow"],
       author: "Ashish Kumar Mishra",
       authorAvatar: "/assets/images/founders/ashish.jpg",
       date: "March 10, 2026",
@@ -239,26 +292,18 @@ const Blog = () => {
       views: 2103,
       comments: 45,
       likes: 156,
-      featured: true,
-      relatedId: 1,
-      relatedLabel: "Multani Mitti Benefits for Glowing Skin",
-      primaryKeyword: "ubtan benefits for glowing skin",
+      featured: false,
+      relatedId: 10,
+      relatedLabel: "Ubtan Face Wash Routine",
+      primaryKeyword: "ubtan for glowing skin",
     },
     {
       id: 3,
-      title:
-        "Amla, Reetha & Shikakai for Hair: The Ultimate Natural Hair Care Trio",
-      excerpt:
-        "Ditch chemical-laden shampoos. Discover how Amla, Reetha, and Shikakai restore hair strength, shine, and vitality — backed by a ",
+      title: "Amla, Reetha & Shikakai for Hair: The Ultimate Natural Hair Care Trio",
+      excerpt: "Ditch chemical-laden shampoos. Discover how Amla, Reetha, and Shikakai restore hair strength, shine, and vitality.",
       image: "/assets/images/blog/hair-care-trio.png",
       category: "Hair Care",
-      tags: [
-        "Amla Reetha Shikakai",
-        "Natural Shampoo",
-        "Hair Fall Remedy",
-        "Ayurvedic Hair Care",
-        "Chemical Free Hair",
-      ],
+      tags: ["Amla Reetha Shikakai", "Natural Shampoo", "Hair Fall"],
       author: "Ashram Mishra",
       authorAvatar: "/assets/images/founders/ashram.jpeg",
       date: "March 5, 2026",
@@ -266,26 +311,18 @@ const Blog = () => {
       views: 1876,
       comments: 32,
       likes: 112,
-      featured: true,
+      featured: false,
       relatedId: 7,
-      relatedLabel: "The Science Behind Ayurvedic Herbs",
+      relatedLabel: "Science of Ayurvedic Herbs",
       primaryKeyword: "amla reetha shikakai for hair",
     },
     {
       id: 4,
-      title:
-        "5 Simple Ways to Add Ayurvedic Powders to Your Daily Skincare Routine",
-      excerpt:
-        "Wondering how to use Multani Mitti, Ubtan, and herbal hair powders? Here are 5 practical, easy ways to build a natural beauty ritual — guided by the ",
+      title: "5 Simple Ways to Add Ayurvedic Powders to Your Daily Skincare Routine",
+      excerpt: "Wondering how to use Multani Mitti, Ubtan, and herbal hair powders? Here are 5 practical, easy ways to build a natural beauty ritual.",
       image: "/assets/images/blog/daily-ayurvedic-routine.png",
       category: "Beauty Tips",
-      tags: [
-        "Ayurvedic Skincare Routine",
-        "Daily Routine",
-        "Natural Beauty Tips",
-        "Herbal Powders",
-        "Ayurveda",
-      ],
+      tags: ["Ayurvedic Routine", "Daily Routine", "Natural Beauty"],
       author: "Ashish Kumar Mishra",
       authorAvatar: "/assets/images/founders/ashish.jpg",
       date: "February 28, 2026",
@@ -294,25 +331,17 @@ const Blog = () => {
       comments: 15,
       likes: 67,
       featured: false,
-      relatedId: 2,
-      relatedLabel: "Ubtan Ritual for Radiant Skin",
+      relatedId: 10,
+      relatedLabel: "Ubtan Face Wash Routine",
       primaryKeyword: "ayurvedic skincare routine",
     },
     {
       id: 5,
-      title:
-        "Clean Beauty in India: Why 100% Natural, Chemical-Free Powders Matter",
-      excerpt:
-        "Clean beauty is more than a trend — it's a health choice. Discover why switching to paraben-free, chemical-free herbal powders matters, according to ",
+      title: "Clean Beauty in India: Why 100% Natural, Chemical-Free Powders Matter",
+      excerpt: "Clean beauty is more than a trend — it's a health choice. Discover why switching to paraben-free, chemical-free herbal powders matters.",
       image: "/assets/images/blog/clean-beauty-ayurveda.png",
       category: "Beauty Trends",
-      tags: [
-        "Clean Beauty",
-        "Chemical Free Skincare",
-        "Paraben Free",
-        "Natural Beauty India",
-        "Sustainable Beauty",
-      ],
+      tags: ["Clean Beauty", "Chemical Free", "Paraben Free"],
       author: "Ashram Mishra",
       authorAvatar: "/assets/images/founders/ashram.jpeg",
       date: "February 20, 2026",
@@ -322,24 +351,16 @@ const Blog = () => {
       likes: 103,
       featured: false,
       relatedId: 7,
-      relatedLabel: "The Science Behind Ayurvedic Herbs",
+      relatedLabel: "Science of Ayurvedic Herbs",
       primaryKeyword: "chemical free skincare",
     },
     {
       id: 6,
-      title:
-        "Herbal Face Pack for Glowing Skin: The Ultimate Guide for Every Skin Type",
-      excerpt:
-        "From oily to dry to sensitive, find the perfect natural face pack. Explore how ingredients like Multani Mitti and Ubtan transform your complexion — supported by ",
+      title: "Herbal Face Pack for Glowing Skin: The Ultimate Guide for Every Skin Type",
+      excerpt: "From oily to dry to sensitive, find the perfect natural face pack. Explore how ingredients like Multani Mitti and Ubtan transform your complexion.",
       image: "/assets/images/blog/herbal-face-packs.png",
       category: "Skincare",
-      tags: [
-        "Herbal Face Pack",
-        "Natural Face Pack",
-        "Multani Mitti Face Pack",
-        "Ubtan Face Pack",
-        "Glowing Skin",
-      ],
+      tags: ["Herbal Face Pack", "Natural Face Pack", "Glowing Skin"],
       author: "Ashish Kumar Mishra",
       authorAvatar: "/assets/images/founders/ashish.jpg",
       date: "February 12, 2026",
@@ -354,20 +375,11 @@ const Blog = () => {
     },
     {
       id: 7,
-      title:
-        "The Science Behind Ayurvedic Herbs: Why Amla, Reetha & Shikakai Work",
-      excerpt:
-        "Ayurveda is rooted in ancient wisdom — and modern science explains why. Discover the clinical evidence behind Amla, Reetha, and Shikakai for skin and hair wellness, drawn from ",
+      title: "The Science Behind Ayurvedic Herbs: Why Amla, Reetha & Shikakai Work",
+      excerpt: "Ayurveda is rooted in ancient wisdom — and modern science explains why. Discover the clinical evidence behind Amla, Reetha, and Shikakai for skin and hair wellness.",
       image: "/assets/images/blog/ayurvedic-science.png",
       category: "Ayurveda",
-      tags: [
-        "Ayurvedic Herbs",
-        "Herbal Science",
-        "Amla Benefits",
-        "Reetha Benefits",
-        "Shikakai Benefits",
-        "Ayurveda",
-      ],
+      tags: ["Ayurvedic Herbs", "Herbal Science", "Amla"],
       author: "Ashram Mishra",
       authorAvatar: "/assets/images/founders/ashram.jpeg",
       date: "February 5, 2026",
@@ -377,7 +389,7 @@ const Blog = () => {
       likes: 94,
       featured: false,
       relatedId: 3,
-      relatedLabel: "Amla, Reetha & Shikakai Hair Care Trio",
+      relatedLabel: "Amla Reetha Shikakai Trio",
       primaryKeyword: "ayurvedic herbs science",
     },
   ];
@@ -448,7 +460,6 @@ const Blog = () => {
   const currentFeatured = featuredPosts[featuredIndex];
 
   // ─── JSON-LD: Blog + ItemList ───
-  // (BreadcrumbList and WebPage are handled by the SEO component)
   const blogJsonLd = useMemo(
     () => ({
       "@context": "https://schema.org",
@@ -561,7 +572,6 @@ const Blog = () => {
       .page-btn:hover:not(:disabled) { background-color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important; color: ${isDarkMode ? brandColors.black : "#ffffff"} !important; border-color: ${isDarkMode ? brandColors.gold : brandColors.primary} !important; }
       .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       button:focus-visible, a:focus-visible { outline: 2px solid ${isDarkMode ? brandColors.gold : brandColors.primary}; outline-offset: 3px; border-radius: 6px; }
-      @keyframes blogFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     `;
     document.head.appendChild(style);
     return () => {
@@ -1124,18 +1134,16 @@ const Blog = () => {
 
   return (
     <div style={themeStyles.container}>
-      {/* ─── SEO: Meta + JSON-LD handled by SEO Component ─── */}
       <SEO
         title="Ayurvedic Beauty Blog | Multani Mitti, Ubtan & Amla Reetha Shikakai Guides"
         description="Evidence-backed Ayurvedic beauty guides: Multani Mitti benefits for skin, Ubtan for glowing skin, and Amla-Reetha-Shikakai hair care. 100% natural, chemical-free routines from ASudha."
-        keywords="multani mitti benefits, multani mitti for oily skin, ubtan for glowing skin, ubtan cream benefits, amla reetha shikakai for hair, natural shampoo for hair fall, ayurvedic skincare routine, chemical free skincare, herbal face pack for glowing skin, natural beauty tips India, paraben free skincare"
+        keywords="best multani mitti in delhi ncr, multani mitti vs ubtan, ubtan face wash, multani mitti benefits, ubtan for glowing skin, amla reetha shikakai for hair"
         url="/blog"
         breadcrumb={[
           { name: "Home", url: "/" },
           { name: "Ayurvedic Beauty Blog", url: "/blog" }
         ]}
       />
-      {/* Extra JSON-LD for Blog Collection (SEO component handles Breadcrumbs) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
@@ -1340,7 +1348,6 @@ const Blog = () => {
                         </h3>
                       </Link>
 
-                      {/* Excerpt with contextual external citation hyperlink */}
                       <p style={themeStyles.blogExcerpt}>
                         {post.excerpt}
                         {citation && (
@@ -1356,7 +1363,6 @@ const Blog = () => {
                         .
                       </p>
 
-                      {/* Internal related link */}
                       {post.relatedId && post.relatedLabel && (
                         <Link
                           to={`/blog/${post.relatedId}`}
@@ -1596,7 +1602,6 @@ const Blog = () => {
             </div>
           </div>
 
-          {/* High-authority external backlinks (E-E-A-T) */}
           <div style={themeStyles.sidebarWidget}>
             <h3 style={themeStyles.widgetTitle}>Trusted Sources</h3>
             <p
