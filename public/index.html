@@ -1,4 +1,4 @@
-<!-- index.html -->
+```html
 <!doctype html>
 <html lang="en-IN">
   <head>
@@ -15,7 +15,7 @@
       gtag("js", new Date());
     </script>
 
-    <!-- 👇 META PIXEL BASE CODE 👇 -->
+    <!-- META PIXEL BASE CODE -->
     <script>
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -28,14 +28,25 @@
       fbq('init', '1153795907118836');
       fbq('track', 'PageView');
     </script>
-    <!-- 👆 END META PIXEL BASE CODE 👆 -->
+    <!-- END META PIXEL BASE CODE -->
 
+    <!-- AHREFS ANALYTICS -->
+    <script>
+      var ahrefs_analytics_script = document.createElement('script');
+      ahrefs_analytics_script.async = true;
+      ahrefs_analytics_script.src = 'https://analytics.ahrefs.com/analytics.js';
+      ahrefs_analytics_script.setAttribute('data-key', 'G0FYcKJpwOtmbukO45O0Bg');
+      document.getElementsByTagName('head')[0].appendChild(ahrefs_analytics_script);
+    </script>
+    <!-- END AHREFS ANALYTICS -->
+
+    <!-- Theme Initialization -->
     <script>
       (function () {
         try {
           var stored = localStorage.getItem("theme");
           var prefersDark = window.matchMedia(
-            "(prefers-color-scheme: dark)",
+            "(prefers-color-scheme: dark)"
           ).matches;
           var isDark = stored ? stored === "dark" : prefersDark;
           var cls = isDark ? "dark-mode" : "light-mode";
@@ -47,16 +58,18 @@
         } catch (e) {}
       })();
     </script>
+
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/Logo.png" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/Logo.png" />
+
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=5"
     />
     <meta name="theme-color" content="#f5346b" />
 
-    <!-- Primary Meta Tags (Fallbacks: React Helmet overrides these dynamically) -->
+    <!-- Primary SEO Meta Tags -->
     <title>
       Buy Multani Mitti, Ubtan & Ayurvedic Powders Online | ASudha Beauty
     </title>
@@ -65,6 +78,7 @@
       content="Shop 100% natural, chemical-free Ayurvedic powders at ASudha Beauty. Multani Mitti for oily skin, Ubtan for glowing skin, Amla-Reetha-Shikakai for hair. Free shipping above ₹500."
     />
     <meta name="author" content="ASudha Beauty" />
+
     <link
       rel="alternate"
       hreflang="en-IN"
@@ -76,7 +90,7 @@
       href="https://www.asudhabeauty.shop/"
     />
 
-    <!-- Open Graph / Facebook (Fallbacks) -->
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta
       property="og:title"
@@ -90,7 +104,7 @@
     <meta property="og:site_name" content="ASudha Beauty" />
     <meta property="og:locale" content="en_IN" />
 
-    <!-- Twitter (Fallbacks) -->
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
@@ -139,9 +153,13 @@
 
     <!-- Preconnect to External Domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
 
-    <!-- Font Awesome (Optional) -->
+    <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -182,24 +200,32 @@
       }
     </script>
 
-    <!-- Verification for Google Search Console (Optional) -->
-    <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE" />
+    <!-- Google Search Console Verification -->
+    <meta
+      name="google-site-verification"
+      content="YOUR_VERIFICATION_CODE"
+    />
 
-    <!-- Verification for Bing Webmaster Tools (Optional) -->
-    <meta name="msvalidate.01" content="YOUR_BING_VERIFICATION_CODE" />
+    <!-- Bing Webmaster Tools Verification -->
+    <meta
+      name="msvalidate.01"
+      content="YOUR_BING_VERIFICATION_CODE"
+    />
   </head>
+
   <body>
-    <!-- 👇 META PIXEL NOSCRIPT FALLBACK 👇 -->
+    <!-- META PIXEL NOSCRIPT FALLBACK -->
     <noscript>
-      <img 
-        height="1" 
-        width="1" 
+      <img
+        height="1"
+        width="1"
         style="display:none"
-        src="https://www.facebook.com/tr?id=1153795907118836&ev=PageView&noscript=1" 
+        src="https://www.facebook.com/tr?id=1153795907118836&ev=PageView&noscript=1"
       />
     </noscript>
-    <!-- 👆 END META PIXEL NOSCRIPT 👆 -->
+    <!-- END META PIXEL NOSCRIPT -->
 
+    <!-- Google Tag Manager NOSCRIPT -->
     <noscript>
       <iframe
         src="https://www.googletagmanager.com/ns.html?id=GTM-PS2X7SM3"
@@ -208,7 +234,9 @@
         style="display: none; visibility: hidden"
       ></iframe>
     </noscript>
+
     <noscript>You need to enable JavaScript to run this app.</noscript>
+
     <div id="root"></div>
   </body>
 </html>
